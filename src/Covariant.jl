@@ -36,5 +36,3 @@ function Coveriant(X, xₒ, kₒ, σₒ, l, order)
 	return Kₙₘ
 end
 
-
-export Coveriant
