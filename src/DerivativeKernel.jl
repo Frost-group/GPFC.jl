@@ -72,8 +72,4 @@ function kernel(kₒ, σₒ , l, xₜ, vₜ, grad)
             , xₜ)
     
         end
-    end
-
 end
-
-export kernel

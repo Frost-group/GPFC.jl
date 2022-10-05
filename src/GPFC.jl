@@ -6,20 +6,17 @@ using ForwardDiff
 using Plots
 using LinearAlgebra
 
+include("DerivativeKernel.jl")
 export kernel
-include("DerivativeKernel")
 
+include("Marginal.jl") 
 export Marginal
-include("Marginal")
 
+include("Covariant.jl")
 export Covariant
-include("Covariant")
 
 
-export Covariant
-include("Covariant")
-
+include("Posterior.jl")
 export Posterior
-include("Posterior")
 
 end
