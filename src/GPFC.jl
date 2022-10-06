@@ -1,10 +1,15 @@
 
 module GPFC
 
+
 using KernelFunctions
 using ForwardDiff
 using Plots
 using LinearAlgebra
+
+using YAML
+using HDF5
+
 
 include("DerivativeKernel.jl")
 export kernel
