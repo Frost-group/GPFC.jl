@@ -11,7 +11,7 @@ k = σₒ * SqExponentialKernel() ∘ ScaleTransform(l)
 
 #@test 
 
-@testset "GPFC.jl" begin
+#@testset "GPFC.jl" begin
     
 
-end
+#end
