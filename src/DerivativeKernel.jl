@@ -1,7 +1,5 @@
-function kernel(kₒ, σₒ , l, xₜ, vₜ, grad)
+function kernel(k, xₜ, vₜ, grad)
 
-    k = σₒ * kₒ ∘ ScaleTransform(l)
-    
     #order 0
         if grad == [0,0]
             return k(xₜ, vₜ)
@@ -11,6 +9,7 @@ function kernel(kₒ, σₒ , l, xₜ, vₜ, grad)
             return   ForwardDiff.gradient(
                 x -> k(x, vₜ)
                 , xₜ)
+    
         elseif grad == [0,1]
             return - ForwardDiff.gradient(
                 x -> k(x, vₜ)
@@ -24,6 +23,7 @@ function kernel(kₒ, σₒ , l, xₜ, vₜ, grad)
                     x -> k(x, vₜ)
                     , x)
                 , xₜ)
+    
         elseif grad == [2,0] || grad == [0,2]
             return   ForwardDiff.jacobian(
                 x -> ForwardDiff.gradient(
@@ -40,6 +40,7 @@ function kernel(kₒ, σₒ , l, xₜ, vₜ, grad)
                     , x)
                 , x)
             , xₜ)
+    
         elseif grad == [2,1] || grad == [0,3]
             return - ForwardDiff.jacobian(
             x -> ForwardDiff.jacobian(
@@ -60,6 +61,7 @@ function kernel(kₒ, σₒ , l, xₜ, vₜ, grad)
                     , x)
                 , x)
             , xₜ)
+    
         elseif grad == [3,1] || grad == [1,3] 
             return - ForwardDiff.jacobian(
             x ->ForwardDiff.jacobian(
@@ -73,7 +75,3 @@ function kernel(kₒ, σₒ , l, xₜ, vₜ, grad)
     
         end
     end
-
-end
-
-export kernel
