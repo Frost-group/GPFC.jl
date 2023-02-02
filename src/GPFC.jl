@@ -7,8 +7,12 @@ using ForwardDiff
 using Plots
 using LinearAlgebra
 using Einsum
-using HDF5
 using CSV
+using DataFrames
+using DelimitedFiles
+using Optim
+using HDF5
+
 
 include("FeatureTarget.jl")
 export ASEFeatureTarget

@@ -77,7 +77,7 @@ function Coveriant(X, xₒ, k, order)
 			K₃ₙₘ[:,:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = 
 				reshape(
 					kernel(
-						kₛₑ, X[:,j], xₒ, [1,3]
+						k, X[:,j], xₒ, [1,3]
 					), (dim, dim, dim, dim)
 				)
 		end
