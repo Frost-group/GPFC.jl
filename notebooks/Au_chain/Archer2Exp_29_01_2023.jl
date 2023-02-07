@@ -4,521 +4,151 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 130d7e40-701c-11ed-27e5-4dde891d1ef2
+# ╔═╡ d09279b0-a033-11ed-3cfe-a98c24e4f144
+using Plots; gr()
+
+# ╔═╡ 50183979-f5d2-4e9c-81c6-ac572de00f53
 begin
-	using KernelFunctions
-	using ForwardDiff
-	using Plots
-	using LinearAlgebra
-	using Einsum
-	using CSV
-	using DataFrames
-	using DelimitedFiles
-end
-
-# ╔═╡ 1029e37f-6e26-4579-aa48-b738a07180ee
-function kernel(k, xₜ, vₜ, grad)
-
-#order 0
-	if grad == [0,0]
-		return k(xₜ, vₜ)
-
-#order 1
-	elseif grad == [1,0]
-		return   ForwardDiff.gradient(
-			x -> k(x, vₜ)
-			, xₜ)
-
-	elseif grad == [0,1]
-		return - ForwardDiff.gradient(
-			x -> k(x, vₜ)
-			, xₜ)
-
-#order 2		
-
-	elseif grad == [1,1]
-		return - ForwardDiff.jacobian(
-			x -> ForwardDiff.gradient(
-				x -> k(x, vₜ)
-				, x)
-			, xₜ)
-
-	elseif grad == [2,0] || grad == [0,2]
-		return   ForwardDiff.jacobian(
-			x -> ForwardDiff.gradient(
-				x -> k(x, vₜ)
-				, x)
-			, xₜ)
-
-#order 3		
-	elseif grad == [3,0] || grad == [1,2]
-		return   ForwardDiff.jacobian(
-		x -> ForwardDiff.jacobian(
-			x -> ForwardDiff.gradient(
-				x -> k(x, vₜ)
-				, x)
-			, x)
-		, xₜ)
-
-	elseif grad == [2,1] || grad == [0,3]
-		return - ForwardDiff.jacobian(
-		x -> ForwardDiff.jacobian(
-			x -> ForwardDiff.gradient(
-				x -> k(x, vₜ)
-				, x)
-			, x)
-		, xₜ)
-
-#order 4
-	elseif grad == [4,0] || grad == [2,2] || grad == [0,4]
-		return   ForwardDiff.jacobian(
-		x ->ForwardDiff.jacobian(
-			x -> ForwardDiff.jacobian(
-				x -> ForwardDiff.gradient(
-					x -> k(x, vₜ)
-					, x)
-				, x)
-			, x)
-		, xₜ)
-
-	elseif grad == [3,1] || grad == [1,3] 
-		return - ForwardDiff.jacobian(
-		x ->ForwardDiff.jacobian(
-			x -> ForwardDiff.jacobian(
-				x -> ForwardDiff.gradient(
-					x -> k(x, vₜ)
-					, x)
-				, x)
-			, x)
-		, xₜ)
-
-	end
-end
-
-# ╔═╡ 776f1989-11f0-461d-8644-adb028b2e4ca
-begin
-	X = 0.01*rand(3, 5)
-	dim = size(X,1)
-	num = size(X,2)
-	xₒ = zeros(dim,1)
-	E = X[:, 1]' * X[:, 1]
-	F = 2 * X[:, 1]	
-	T2 = vcat(E,F)
-	k₃ = reshape([1 0 0 
-	 0 0 0 
-	 0 0 0 ;;;
-		
-	 0 0 0 
-	 0 1 0 
-	 0 0 0 ;;;
-
-	 0 0 0 
-	 0 0 0 
-	 0 0 1], (dim^2, dim^1))
-	k₂ = 1 * Matrix(I, dim, dim)
-	E = zeros(num)
-	F = zeros(dim, num)
-	for j in 1:num 
-		E[j] = 1/2 * k₂ * X[:,j] · X[:,j] + 1/6 * reshape(k₃ * X[:,j], (dim^1, dim^1)) * X[:,j] ⋅ X[:,j]
-		F[:,j] = - k₂ * X[:,j] - 1/2 * reshape(k₃ * X[:,j], (dim^1, dim^1)) * X[:,j]
-	end
-	T = zeros((1+dim) * num)
-	for j in 1:num
-		T[(1+dim)*j-dim:(1+dim)*j] = [E[j];-F[:,j]]
-	end
-end
-
-# ╔═╡ 87c7223c-6550-458e-8f1f-882b6611e137
-function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, num)
-	feature = (
-		CSV.File(
-			FileFeature
-		)|> Tables.matrix
-	)[
-		begin:3:end
-		,2:num+1
-	]
-	equi = feature[:,1]
-	dim = size(feature,1)
-	num = size(feature,2)
-	
-	energy = (
-		CSV.File(
-			FileEnergy
-		)|> Tables.matrix
-	)[
-		begin:num
-		,2
-	]
-
-	force = -reshape(
-	(
-		CSV.File(
-			FileForce
-		)|> Tables.matrix
-	)[
-		begin:3:end
-		,2:num+1
-	]
-	, (dim*num,1)
+	Au_PW = 100*[3, 4, 5, 6, 7, 8]
+	Au_PW_size = [151, 86, 60, 26, 18, 11]
+	Au_p1 = plot(Au_PW,
+		Au_PW_size,
+		title="PW-cutoff (kpt = 30, ΔE = 10^{-5}, Δρ = 10^{-5})",
+		titlefont=font(8),
+		label="PW-cutoff",
+		linewidth=3
 	)
+	xlabel!("PW-cutoff (eV)")
+	ylabel!("File Size")
 
-	Target = vcat(
-		energy
-		, reshape(
-			force
-			, (dim*num,1)
-		)
+	Au_kpt = 5*[ 2, 3, 4, 5, 6, 7]
+	Au_kpt_size = [105, 86, 78, 61, 60, 51]
+	Au_p2 = plot(Au_kpt,
+		Au_kpt_size,
+		title="k-points (PW = 500, ΔE = 10^{-5}, Δρ = 10^{-5})",
+		titlefont=font(8),
+		label="k-points",
+		linewidth=3
 	)
+	xlabel!("k-points")
+	ylabel!("File Size")
 
-	return equi, feature, energy, force, Target
-end
-
-# ╔═╡ fc82811b-5857-42ef-a326-5dc46cd16570
-num3 = 4
-
-# ╔═╡ 0a01dcf3-52f3-4995-8aec-e612b08a3920
-energy = (CSV.File("Au_311spc_energies_03-100.csv")|> Tables.matrix)[begin:num3,2]
-
-# ╔═╡ a8ba11f3-9f3c-448b-9efe-37f245b0e12b
-begin
-	feature = (CSV.File("Au_311spc_feature_03-100.csv")|> Tables.matrix)[begin:3:end,2:num3+1]
-	dim2 = size(feature,1)
-	num2 = size(feature,2)
-end
-
-# ╔═╡ ff77a56e-ad03-4d3f-b486-6842f8c5941e
-force = (CSV.File("Au_311spc_force_03-100.csv")|> Tables.matrix)[begin:3:end,2:num3+1] 
-
-# ╔═╡ 428ddec0-cd8b-49c3-ad12-d5e7457ee57c
-begin
-	σₒ = 0.225
-	l = 1.2
-	σₙ = 0.001
-	order = 2
-	numt = 101
-	kₛₑ2 = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
-end
-
-# ╔═╡ 0d085ddf-11d6-4d1f-8f04-fc6696d1910a
-begin
-	γ = 2
-	r = 2.9 * ones(Float64, 3)
-	kₛₑ = σₒ * SqExponentialKernel() ∘ ScaleTransform(l)
-	kᵧ= GammaExponentialKernel(;γ)
-	k₃₂ₘ = Matern32Kernel()
-	k₅₂ₘ = Matern52Kernel()
-	kₚ = PeriodicKernel(;r) 
-	#k = compose(SqExponentialKernel(), ScaleTransform(2.0))
-end
-
-# ╔═╡ 88b5d0de-18b7-406b-84ba-91846a1a296b
-function Coveriant(X, xₒ, k, order)
-	dim = size(X,1)
-	num = size(X,2)
-
-	Kₙₘ= zeros(
-		(
-			(dim^order), (1+dim)*num
-		)
+	Au_econ = [ 10^-7, 10^-6, 10^-5, 10^-4, 10^-3]
+	Au_econ_size = [87, 87, 87, 88, 87]
+	Au_dcon_size = [29, 57, 86, 125, 125]
+	Au_p3 = plot(Au_econ,
+		[Au_econ_size,Au_dcon_size],
+		title="ΔE and Δρ (PW = 500, kpt = 15, Δρ = 10^{-5})",
+		titlefont=font(8),
+		xaxis=:log10,
+		label=["ΔE" "Δρ"],
+		xflip = true,
+		linewidth=3
 	)
-	if order == 0
-		K₀ₙₘ= zeros(
-			((1+dim)*num)
-		)
-		for j in 1:num 
-			K₀ₙₘ[j] = 
-				kernel(
-					k, X[:,j], xₒ, [0,0]
-			)
-			K₀ₙₘ[(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = 
-				kernel(
-					k, X[:,j], xₒ, [1,0]
-				)
-		end
-		Kₙₘ = K₀ₙₘ
-		
-	elseif order == 1
-		K₁ₙₘ= zeros(
-			(dim, (1+dim)*num)
-		)
-		for j in 1:num 
-			K₁ₙₘ[:,j] = 
-				reshape(
-					kernel(
-						k, X[:,j], xₒ, [0,1]
-					), (dim)
-				)
-			K₁ₙₘ[:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = 
-				reshape(
-					kernel(
-						k, X[:,j], xₒ, [1,1]
-					), (dim, dim)
-				)
-		end
-		Kₙₘ = K₁ₙₘ  
-	
-	elseif order == 2
-		K₂ₙₘ= zeros(
-			(dim, dim, (1+dim)*num)
-		)
-		for j in 1:num 
-			K₂ₙₘ[:,:,j] = 
-				reshape(
-					kernel(
-						k, X[:,j], xₒ, [0,2]
-					), (dim, dim)
-				)
-			K₂ₙₘ[:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = 
-				reshape(
-					kernel(
-						k, X[:,j], xₒ, [1,2]
-					), (dim, dim, dim)
-				)
-		end
-		Kₙₘ = K₂ₙₘ
+	xlabel!("Convergence factor (eV)")
+	ylabel!("File Size")
 
-	elseif order == 3
-		K₃ₙₘ= zeros(
-			(dim, dim, dim, (1+dim)*num)
-		) 
-		for j in 1:num 
-			K₃ₙₘ[:,:,:,j] = 
-				reshape(
-					kernel(
-						k, X[:,j], xₒ, [0,3]
-					), (dim, dim, dim)
-				)
-			K₃ₙₘ[:,:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = 
-				reshape(
-					kernel(
-						kₛₑ, X[:,j], xₒ, [1,3]
-					), (dim, dim, dim, dim)
-				)
-		end
-		Kₙₘ = K₃ₙₘ
-	end
-
-	return Kₙₘ
+	l = @layout [grid(1,2) ; grid(1,2)  ]
+	plot(Au_p1, Au_p2, Au_p3; layout = l)
 end
 
-# ╔═╡ d1ec42e4-5599-4bdf-bd5a-d983aeb458a7
+# ╔═╡ cf1b118e-44b9-4bb4-8f08-c752cedd438f
 begin
-	kₛₑ
-	kᵧ
-	k₃₂ₘ
-	k₅₂ₘ
-	kₚ
-end
-
-# ╔═╡ 51b3278c-da3e-4c21-b229-a902dba19f50
-size(Coveriant(X, xₒ, kₛₑ, 3))
-
-# ╔═╡ cb8612d7-0679-4032-b6ad-98d7fcbbb673
-function invMarginal(X, k, σₙ)
-	dim = size(X,1)
-	num = size(X,2)
-	KK = zeros(
-		(
-			(1+dim)*num, (1+dim)*num
-		)
+	Si_PW = 100*[3, 4, 5, 6, 7, 8]
+	Si_PW_size = [15, 12, 9, 6, 4, 2]
+	Si_p1 = plot(Si_PW,
+		Si_PW_size,
+		title="PW-cutoff (kpt = 8, ΔE = 10^{-5}, Δρ = 10^{-5})",
+		titlefont=font(8),
+		label="PW-cutoff",
+		linewidth=3
 	)
+	xlabel!("PW-cutoff (eV)")
+	ylabel!("File Size (kB)")
 
-	for i in 1:num 
-		for j in 1:num 
-			KK[i, j] = kernel(
-				k, X[:,i], X[:,j], [0,0]
-			)
-			
-			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernel(
-				k, X[:,i], X[:,j], [1,0]
-			)
-			
-			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = kernel(
-				k, X[:,i], X[:,j], [0,1]
-			)
-			
-			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,
-				(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = kernel(
-					k, X[:,i], X[:,j], [1,1]
-				)
-		end
-	end
-	
-	Iee = σₙ * Matrix(I, num, num)
-	Iff = σₙ / l * Matrix(I, dim * num, dim * num)
-	Ief = zeros(num, dim * num)
-	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
-		
-	Kₘₘ⁻¹ = inv(KK+II)
-	return Kₘₘ⁻¹
-end
-
-# ╔═╡ 6903b788-456d-43a9-a9ca-c1f373466431
-function Posterior(X, xₒ, Target, k, σₙ, order)
-	dim = size(X,1)
-	num = size(X,2)
-	Kₘₘ⁻¹ = invMarginal(X, k, σₙ)
-	Kₙₘ = Coveriant(X, xₒ, k, order)
-	
-	if order == 0
-		Meanₚ = Kₙₘ' * Kₘₘ⁻¹ * Target
-		
-	elseif order == 1
-		Meanₚ = ones(dim)
-		@einsum Meanₚ[i] = Kₙₘ[i, m] * Kₘₘ⁻¹[m, n] * Target[n]
-	
-	elseif order == 2
-		Meanₚ = ones(dim, dim)
-		@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * Kₘₘ⁻¹[m, n] * Target[n]
-
-	elseif order == 3
-		Meanₚ = ones(dim, dim, dim)
-		@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * Kₘₘ⁻¹[m, n] * Target[n]
-	end
-	
-	return Meanₚ
-end
-
-# ╔═╡ b775e0d6-7d3b-4f74-aa40-18eeb706754e
-Posterior(X, xₒ, T, kₛₑ, σₙ, 1)
-
-# ╔═╡ 8526f3c0-eb8f-4e5d-8c52-bf05031ea4df
-begin
-	KKₘ = zeros(
-			(
-				(1+dim), (1+dim)
-			)
-		)
-	KKₘ[1,1] = kernel(kₛₑ, X[:,1], X[:,1], [0,0])
-	KKₘ[1,2:4] = kernel(kₛₑ, X[:,1], X[:,1], [0,1])
-	KKₘ[2:4,1] = kernel(kₛₑ, X[:,1], X[:,1], [0,1])
-	KKₘ[2:4,2:4] = kernel(kₛₑ, X[:,1], X[:,1], [1,1])
-
-	Iee = σₙ * Matrix(I, 1, 1)
-	Iff = σₙ / l * Matrix(I, dim * 1, dim * 1)
-	Ief = zeros(1, dim * 1)
-	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
-	
-	Kₘₘ⁻¹ = inv(KKₘ+II)
-end
-
-# ╔═╡ bb7ebda7-3f4f-4501-bf31-ccd8a4b03cf3
-begin
-	K₀ₙₘ= zeros(
-		(
-			 (1+dim)
-		)
+	Si_kpt = [ 4, 5, 6, 7, 8, 9, 10, 11, 12]
+	Si_kpt_size = [34, 24, 16, 12, 9, 6, 6, 4, 4]
+	Si_p2 = plot(Si_kpt,
+		Si_kpt_size,
+		title="k-points (PW = 500, ΔE = 10^{-5}, Δρ = 10^{-5})",
+		titlefont=font(8),
+		label="k-points",
+		linewidth=3
 	)
-	K₀ₙₘ[1] = kernel(kₛₑ, X[:,1], xₒ, [0,0])
-	K₀ₙₘ[2:4] = kernel(kₛₑ, X[:,1], xₒ, [1,0])
-	KK₀ₙₘ0 = K₀ₙₘ' * Kₘₘ⁻¹ * T2
-end
+	xlabel!("k-points")
+	ylabel!("File Size (kB)")
 
-# ╔═╡ ff66542f-92e8-417f-bf4f-2c5fb68e04f3
-begin
-	K₁ₙₘ= zeros(
-		(
-			 (dim), (1+dim)
-		)
+	Si_econ = [ 10^-8, 10^-7, 10^-6, 10^-5, 10^-4, 10^-3]
+	Si_econ_size = [9, 9, 9, 9, 9, 9]
+	Si_dcon_size = [4, 6, 7, 9, 13, 15]
+	Si_p3 = plot(Si_econ,
+		[Si_econ_size, Si_dcon_size],
+		title="ΔE and Δρ (PW = 500, kpt = 8, Δρ = 10^{-5})",
+		titlefont=font(8),
+		xaxis=:log10,
+		label=["ΔE" "Δρ"],
+		xflip = true,
+		linewidth=3
 	)
-	K₁ₙₘ[:,1] = reshape(kernel(kₛₑ, X[:,1], xₒ, [0,1]), (dim))
-	K₁ₙₘ[:,2:4] = reshape(kernel(kₛₑ, X[:,1], xₒ, [1,1]), (dim, dim))
-	KK₁ₙₘ = ones(dim)
-	@einsum KK₁ₙₘ[i] = K₁ₙₘ[i, m] * Kₘₘ⁻¹[m, n] * T2[n]
+	xlabel!("Convergence factor (a.u.)")
+	ylabel!("File Size (kB)")
+	
+	l1 = @layout [grid(1,2) ; grid(1,2) ]
+	plot(Si_p1, Si_p2, Si_p3; layout = l1)
 end
 
-# ╔═╡ eecea87c-87b8-4434-805a-3f4e4068fa46
-K₁ₙₘ 
-
-# ╔═╡ 0caa506e-2197-483c-aacc-4d4f3ab10a17
+# ╔═╡ e890550a-5139-4334-a72c-d9b2c13e9ce9
 begin
-	K₂ₙₘ= zeros(
-		(
-			(dim), (dim), (1+dim)
-		)
+	CsPbI3_PW = 100*[3, 4, 5, 6, 7, 8]
+	CsPbI3_PW_size = [33, 19, 10, 10, 0, 0]
+	CsPbI3_p1 = plot(CsPbI3_PW,
+		CsPbI3_PW_size,
+		title="PW-cutoff (kpt = 2, ΔE = 10^{-5}, Δρ = 10^{-5})",
+		titlefont=font(8),
+		label="PW-cutoff",
+		linewidth=3
 	)
-	K₂ₙₘ[:,:,1] = reshape(kernel(kₛₑ, X[:,1], xₒ, [0,2]), (dim, dim))
-	K₂ₙₘ[:,:,2:4] = reshape(kernel(kₛₑ, X[:,1], xₒ, [1,2]), (dim, dim, dim))
-	KK₂ₙₘ2 = ones(dim, dim)
-	@einsum KK₂ₙₘ2[i, j] = K₂ₙₘ[i, j, m] * Kₘₘ⁻¹[m, n] * T2[n]
+	xlabel!("PW-cutoff (eV)")
+	ylabel!("File Size (kB)")
+
+	CsPbI3_kpt = [1, 2, 3, 4, 5, 6, 7]
+	CsPbI3_kpt_size = [94, 19, 4, 0, 0, 0, 0]
+	CsPbI3_p2 = plot(CsPbI3_kpt,
+		CsPbI3_kpt_size,
+		title="k-points (PW = 300, ΔE = 10^{-5}, Δρ = 10^{-5})",
+		titlefont=font(8),
+		label="k-points",
+		linewidth=3
+	)
+	xlabel!("k-points")
+	ylabel!("File Size (kB)")
+
+	CsPbI3_econ = [ 10^-8, 10^-7, 10^-6, 10^-5, 10^-4, 10^-3]
+	CsPbI3_econ_size = [33, 33, 33, 33, 33, 33]
+	CsPbI3_dcon_size = [13, 19, 22, 33, 51, 51]
+	CsPbI3_p3 = plot(CsPbI3_econ,
+		[CsPbI3_econ_size, CsPbI3_dcon_size],
+		title="ΔE and Δρ (PW = 300, kpt = 2, Δρ = 10^{-5})",
+		titlefont=font(8),
+		xaxis=:log10,
+		label=["ΔE" "Δρ"],
+		xflip = true,
+		linewidth=3
+	)
+	xlabel!("Convergence factor (a.u.)")
+	ylabel!("File Size (kB)")
+	
+	l2 = @layout [grid(1,2) ; grid(1,2) ]
+	plot(CsPbI3_p1, CsPbI3_p2, CsPbI3_p3; layout = l2)
 end
-
-# ╔═╡ 2c1ecd0f-c742-4447-bb87-8e6f7bc8a4a6
-begin
-	K₃ₙₘ= zeros(
-		(
-			(dim), (dim), (dim), (1+dim)
-		)
-	) 
-	K₃ₙₘ[:,:,:,1] = reshape(kernel(kₛₑ,X[:,1], xₒ, [0,3]), (dim, dim, dim))
-	K₃ₙₘ[:,:,:,2:4] = reshape(kernel(kₛₑ, X[:,1], xₒ, [1,3]), (dim, dim, dim, dim))
-	KK₃ₙₘ3 = ones(dim, dim, dim)
-	@einsum KK₃ₙₘ3[i, j, k] = K₃ₙₘ[i, j, k, m] * Kₘₘ⁻¹[m, n] * T2[n]
-end
-
-# ╔═╡ 7e372362-f73b-4dd8-b58d-fe612a99ccb8
-begin
-	equiAu, featureAu, energyAu, forceAu, TargetAu = ASEFeatureTarget(
-		"Au_311spc_feature_03-100.csv",
-		"Au_311spc_energies_03-100.csv", 
-		"Au_311spc_force_03-100.csv", numt)
-	Posterior(featureAu, equiAu, TargetAu, kₛₑ2, σₙ, order)
-end
-
-# ╔═╡ 0b2d3c7f-b036-4e04-92b5-1679fb708048
-begin
-	equiAg, featureAg, energyAg, forceAg, TargetAg = ASEFeatureTarget(
-		"Ag_311spc_feature_03-100.csv", 
-		"Ag_311spc_energies_03-100.csv", 
-		"Ag_311spc_force_03-100.csv", numt)
-	Fc= Posterior(featureAg, equiAg, TargetAg, kₛₑ2, σₙ, order)
-end
-
-# ╔═╡ 4b851b69-39aa-47b9-b0db-6600c00f3a3f
-begin
-	equiCu, featureCu, energyCu, forceCu, TargetCu = ASEFeatureTarget(
-		"Cu_311spc_feature_03-100.csv", 
-		"Cu_311spc_energies_03-100.csv", 
-		"Cu_311spc_force_03-100.csv", numt)
-	Posterior(featureCu, equiCu, TargetCu, kₛₑ2, σₙ, order)
-end
-
-# ╔═╡ 327769c0-f264-4757-badd-92a0240a95d1
-
-
-# ╔═╡ 538b1e36-4570-499c-bdd3-3513dfebf062
-begin
-	r2 = 5.8 * ones(Float64, 3)
-	r3 = [0.0, 2.9, 5.8] + 0.00001* ones(Float64, 3)
-	kₚ2 = PeriodicKernel(;r = r3) 
-end
-
-# ╔═╡ e2d7d7ca-d899-43c7-a9f6-2234a9e750c3
-Posterior(featureAu, equiAu, TargetAu, kₛₑ + kₚ2, σₙ, order)
-
-# ╔═╡ c3ec8c40-0583-4214-b08c-3dfb968c3cf0
-eigvals(Fc)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
-CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
-DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
-Einsum = "b7d42ee7-0b51-5a75-98ca-779d3107e4c0"
-ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
-KernelFunctions = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 
 [compat]
-CSV = "~0.10.7"
-DataFrames = "~1.4.3"
-Einsum = "~0.4.1"
-ForwardDiff = "~0.10.33"
-KernelFunctions = "~0.10.50"
-Plots = "~1.36.6"
+Plots = "~1.38.3"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -547,12 +177,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "19a35467a82e236ff51bc17a3a44b69ef35185a2"
 uuid = "6e34b625-4abd-537c-b88f-471c36dfa7a0"
 version = "1.0.8+0"
-
-[[deps.CSV]]
-deps = ["CodecZlib", "Dates", "FilePathsBase", "InlineStrings", "Mmap", "Parsers", "PooledArrays", "SentinelArrays", "SnoopPrecompile", "Tables", "Unicode", "WeakRefStrings", "WorkerUtilities"]
-git-tree-sha1 = "c700cce799b51c9045473de751e9319bdd1c6e94"
-uuid = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
-version = "0.10.9"
 
 [[deps.Cairo_jll]]
 deps = ["Artifacts", "Bzip2_jll", "CompilerSupportLibraries_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "JLLWrappers", "LZO_jll", "Libdl", "Pixman_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Zlib_jll", "libpng_jll"]
@@ -602,58 +226,31 @@ git-tree-sha1 = "fc08e5930ee9a4e03f84bfb5211cb54e7769758a"
 uuid = "5ae59095-9a9b-59fe-a467-6f913c188581"
 version = "0.12.10"
 
-[[deps.CommonSubexpressions]]
-deps = ["MacroTools", "Test"]
-git-tree-sha1 = "7b8a93dba8af7e3b42fecabf646260105ac373f7"
-uuid = "bbf7d656-a473-5ed7-a52c-81e309532950"
-version = "0.3.0"
-
 [[deps.Compat]]
 deps = ["Dates", "LinearAlgebra", "UUIDs"]
-git-tree-sha1 = "61fdd77467a5c3ad071ef8277ac6bd6af7dd4c04"
+git-tree-sha1 = "00a2cccc7f098ff3b66806862d275ca3db9e6e5a"
 uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
-version = "4.6.0"
+version = "4.5.0"
 
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-
-[[deps.CompositionsBase]]
-git-tree-sha1 = "455419f7e328a1a2493cabc6428d79e951349769"
-uuid = "a33af91c-f02d-484b-be07-31d278c5ca2b"
-version = "0.1.1"
 
 [[deps.Contour]]
 git-tree-sha1 = "d05d9e7b7aedff4e5b51a029dced05cfb6125781"
 uuid = "d38c429a-6771-53c6-b99e-75d170b6e991"
 version = "0.6.2"
 
-[[deps.Crayons]]
-git-tree-sha1 = "249fe38abf76d48563e2f4556bebd215aa317e15"
-uuid = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
-version = "4.1.1"
-
 [[deps.DataAPI]]
 git-tree-sha1 = "e8119c1a33d267e16108be441a287a6981ba1630"
 uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
 version = "1.14.0"
-
-[[deps.DataFrames]]
-deps = ["Compat", "DataAPI", "Future", "InvertedIndices", "IteratorInterfaceExtensions", "LinearAlgebra", "Markdown", "Missings", "PooledArrays", "PrettyTables", "Printf", "REPL", "Random", "Reexport", "SnoopPrecompile", "SortingAlgorithms", "Statistics", "TableTraits", "Tables", "Unicode"]
-git-tree-sha1 = "d4f69885afa5e6149d0cab3818491565cf41446d"
-uuid = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-version = "1.4.4"
 
 [[deps.DataStructures]]
 deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
 git-tree-sha1 = "d1fff3a548102f48987a52a2e0d114fa97d730f0"
 uuid = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 version = "0.18.13"
-
-[[deps.DataValueInterfaces]]
-git-tree-sha1 = "bfc1187b79289637fa0ef6d4436ebdfe6905cbd6"
-uuid = "e2d170a0-9d28-54be-80f0-106bbe20a464"
-version = "1.0.0"
 
 [[deps.Dates]]
 deps = ["Printf"]
@@ -662,24 +259,6 @@ uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
 [[deps.DelimitedFiles]]
 deps = ["Mmap"]
 uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
-
-[[deps.DiffResults]]
-deps = ["StaticArraysCore"]
-git-tree-sha1 = "782dd5f4561f5d267313f23853baaaa4c52ea621"
-uuid = "163ba53b-c6d8-5494-b064-1a9d43ac40c5"
-version = "1.1.0"
-
-[[deps.DiffRules]]
-deps = ["IrrationalConstants", "LogExpFunctions", "NaNMath", "Random", "SpecialFunctions"]
-git-tree-sha1 = "c5b6685d53f933c11404a3ae9822afe30d522494"
-uuid = "b552c78f-8df3-52c6-915a-8e097449b14b"
-version = "1.12.2"
-
-[[deps.Distances]]
-deps = ["LinearAlgebra", "SparseArrays", "Statistics", "StatsAPI"]
-git-tree-sha1 = "3258d0659f812acde79e8a74b11f17ac06d0ca04"
-uuid = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
-version = "0.10.7"
 
 [[deps.DocStringExtensions]]
 deps = ["LibGit2"]
@@ -690,12 +269,6 @@ version = "0.9.3"
 [[deps.Downloads]]
 deps = ["ArgTools", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
-
-[[deps.Einsum]]
-deps = ["Compat"]
-git-tree-sha1 = "4a6b3eee0161c89700b6c1949feae8b851da5494"
-uuid = "b7d42ee7-0b51-5a75-98ca-779d3107e4c0"
-version = "0.4.1"
 
 [[deps.Expat_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -715,18 +288,6 @@ git-tree-sha1 = "74faea50c1d007c85837327f6775bea60b5492dd"
 uuid = "b22a6f82-2f65-5046-a5b2-351ab43fb4e5"
 version = "4.4.2+2"
 
-[[deps.FilePathsBase]]
-deps = ["Compat", "Dates", "Mmap", "Printf", "Test", "UUIDs"]
-git-tree-sha1 = "e27c4ebe80e8699540f2d6c805cc12203b614f12"
-uuid = "48062228-2e41-5def-b9a4-89aafe57970f"
-version = "0.9.20"
-
-[[deps.FillArrays]]
-deps = ["LinearAlgebra", "Random", "SparseArrays", "Statistics"]
-git-tree-sha1 = "d3ba08ab64bdfd27234d3f61956c966266757fe6"
-uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
-version = "0.13.7"
-
 [[deps.FixedPointNumbers]]
 deps = ["Statistics"]
 git-tree-sha1 = "335bfdceacc84c5cdf16aadc768aa5ddfc5383cc"
@@ -745,12 +306,6 @@ git-tree-sha1 = "8339d61043228fdd3eb658d86c926cb282ae72a8"
 uuid = "59287772-0a20-5a39-b81b-1366585eb4c0"
 version = "0.4.2"
 
-[[deps.ForwardDiff]]
-deps = ["CommonSubexpressions", "DiffResults", "DiffRules", "LinearAlgebra", "LogExpFunctions", "NaNMath", "Preferences", "Printf", "Random", "SpecialFunctions", "StaticArrays"]
-git-tree-sha1 = "a69dd6db8a809f78846ff259298678f0d6212180"
-uuid = "f6369f11-7733-5829-9624-2563aa707210"
-version = "0.10.34"
-
 [[deps.FreeType2_jll]]
 deps = ["Artifacts", "Bzip2_jll", "JLLWrappers", "Libdl", "Pkg", "Zlib_jll"]
 git-tree-sha1 = "87eb71354d8ec1a96d4a7636bd57a7347dde3ef9"
@@ -762,16 +317,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "aa31987c2ba8704e23c6c8ba8a4f769d5d7e4f91"
 uuid = "559328eb-81f9-559d-9380-de523a88c83c"
 version = "1.0.10+0"
-
-[[deps.Functors]]
-deps = ["LinearAlgebra"]
-git-tree-sha1 = "61fa9cf802d35fe1b5b8ea9fbaac4b8f020d19b1"
-uuid = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
-version = "0.4.2"
-
-[[deps.Future]]
-deps = ["Random"]
-uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 
 [[deps.GLFW_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libglvnd_jll", "Pkg", "Xorg_libXcursor_jll", "Xorg_libXi_jll", "Xorg_libXinerama_jll", "Xorg_libXrandr_jll"]
@@ -831,12 +376,6 @@ git-tree-sha1 = "f550e6e32074c939295eb5ea6de31849ac2c9625"
 uuid = "83e8ac13-25f8-5344-8a64-a9f2b223428f"
 version = "0.5.1"
 
-[[deps.InlineStrings]]
-deps = ["Parsers"]
-git-tree-sha1 = "9cc2baf75c6d09f9da536ddf58eb2f29dedaf461"
-uuid = "842dd82b-1e85-43dc-bf29-5d0ee9dffc48"
-version = "1.4.0"
-
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
@@ -847,20 +386,10 @@ git-tree-sha1 = "49510dfcb407e572524ba94aeae2fced1f3feb0f"
 uuid = "3587e190-3f89-42d0-90ee-14403ec27112"
 version = "0.1.8"
 
-[[deps.InvertedIndices]]
-git-tree-sha1 = "82aec7a3dd64f4d9584659dc0b62ef7db2ef3e19"
-uuid = "41ab1584-1d38-5bbf-9106-f11c6c58b48f"
-version = "1.2.0"
-
 [[deps.IrrationalConstants]]
 git-tree-sha1 = "7fd44fd4ff43fc60815f8e764c0f352b83c49151"
 uuid = "92d709cd-6900-40b7-9082-c6be49f344b6"
 version = "0.1.1"
-
-[[deps.IteratorInterfaceExtensions]]
-git-tree-sha1 = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
-uuid = "82899510-4779-5014-852e-03e436cf321d"
-version = "1.0.0"
 
 [[deps.JLFzf]]
 deps = ["Pipe", "REPL", "Random", "fzf_jll"]
@@ -885,12 +414,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "b53380851c6e6664204efb2e62cd24fa5c47e4ba"
 uuid = "aacddb02-875f-59d6-b918-886e6ef4fbf8"
 version = "2.1.2+0"
-
-[[deps.KernelFunctions]]
-deps = ["ChainRulesCore", "Compat", "CompositionsBase", "Distances", "FillArrays", "Functors", "IrrationalConstants", "LinearAlgebra", "LogExpFunctions", "Random", "Requires", "SpecialFunctions", "Statistics", "StatsBase", "TensorCore", "Test", "ZygoteRules"]
-git-tree-sha1 = "0e9ed147ebbd8c5dc4a05ed164068beeca77dffb"
-uuid = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
-version = "0.10.51"
 
 [[deps.LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -994,9 +517,9 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[deps.LogExpFunctions]]
 deps = ["ChainRulesCore", "ChangesOfVariables", "DocStringExtensions", "InverseFunctions", "IrrationalConstants", "LinearAlgebra"]
-git-tree-sha1 = "680e733c3a0a9cea9e935c8c2184aea6a63fa0b5"
+git-tree-sha1 = "45b288af6956e67e621c5cbb2d75a261ab58300b"
 uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
-version = "0.3.21"
+version = "0.3.20"
 
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
@@ -1102,9 +625,9 @@ uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
 
 [[deps.Parsers]]
 deps = ["Dates", "SnoopPrecompile"]
-git-tree-sha1 = "151d91d63d8d6c1a5789ecb7de51547e00480f1b"
+git-tree-sha1 = "8175fc2b118a3755113c8e68084dc1a9e63c61ee"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "2.5.4"
+version = "2.5.3"
 
 [[deps.Pipe]]
 git-tree-sha1 = "6842804e7867b115ca9de748a0cf6b364523c16d"
@@ -1134,28 +657,16 @@ uuid = "995b91a9-d308-5afd-9ec6-746e21dbc043"
 version = "1.3.4"
 
 [[deps.Plots]]
-deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers", "GR", "JLFzf", "JSON", "LaTeXStrings", "Latexify", "LinearAlgebra", "Measures", "NaNMath", "Pkg", "PlotThemes", "PlotUtils", "Printf", "REPL", "Random", "RecipesBase", "RecipesPipeline", "Reexport", "RelocatableFolders", "Requires", "Scratch", "Showoff", "SnoopPrecompile", "SparseArrays", "Statistics", "StatsBase", "UUIDs", "UnicodeFun", "Unzip"]
-git-tree-sha1 = "6a9521b955b816aa500462951aa67f3e4467248a"
+deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers", "GR", "JLFzf", "JSON", "LaTeXStrings", "Latexify", "LinearAlgebra", "Measures", "NaNMath", "Pkg", "PlotThemes", "PlotUtils", "Preferences", "Printf", "REPL", "Random", "RecipesBase", "RecipesPipeline", "Reexport", "RelocatableFolders", "Requires", "Scratch", "Showoff", "SnoopPrecompile", "SparseArrays", "Statistics", "StatsBase", "UUIDs", "UnicodeFun", "Unzip"]
+git-tree-sha1 = "0a3a23e0c67adf9433111467b0522077c596de58"
 uuid = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-version = "1.36.6"
-
-[[deps.PooledArrays]]
-deps = ["DataAPI", "Future"]
-git-tree-sha1 = "a6062fe4063cdafe78f4a0a81cfffb89721b30e7"
-uuid = "2dfb63ee-cc39-5dd5-95bd-886bf059d720"
-version = "1.4.2"
+version = "1.38.3"
 
 [[deps.Preferences]]
 deps = ["TOML"]
 git-tree-sha1 = "47e5f437cc0e7ef2ce8406ce1e7e24d44915f88d"
 uuid = "21216c6a-2e73-6563-6e65-726566657250"
 version = "1.3.0"
-
-[[deps.PrettyTables]]
-deps = ["Crayons", "Formatting", "LaTeXStrings", "Markdown", "Reexport", "StringManipulation", "Tables"]
-git-tree-sha1 = "96f6db03ab535bdb901300f88335257b0018689d"
-uuid = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
-version = "2.2.2"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -1213,12 +724,6 @@ git-tree-sha1 = "f94f779c94e58bf9ea243e77a37e16d9de9126bd"
 uuid = "6c6a2e73-6563-6170-7368-637461726353"
 version = "1.1.1"
 
-[[deps.SentinelArrays]]
-deps = ["Dates", "Random"]
-git-tree-sha1 = "c02bd3c9c3fc8463d3591a62a378f90d2d8ab0f3"
-uuid = "91c51154-3ec4-41a3-a24f-3f23e20d615c"
-version = "1.3.17"
-
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 
@@ -1258,17 +763,6 @@ git-tree-sha1 = "d75bda01f8c31ebb72df80a46c88b25d1c79c56d"
 uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
 version = "2.1.7"
 
-[[deps.StaticArrays]]
-deps = ["LinearAlgebra", "Random", "StaticArraysCore", "Statistics"]
-git-tree-sha1 = "6954a456979f23d05085727adb17c4551c19ecd1"
-uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.5.12"
-
-[[deps.StaticArraysCore]]
-git-tree-sha1 = "6b7ba252635a5eff6a0b0664a41ee140a1c9e72a"
-uuid = "1e83bf80-4336-4d27-bf5d-d5a4f845583c"
-version = "1.4.0"
-
 [[deps.Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
 uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
@@ -1285,26 +779,9 @@ git-tree-sha1 = "d1bf48bfcc554a3761a133fe3a9bb01488e06916"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 version = "0.33.21"
 
-[[deps.StringManipulation]]
-git-tree-sha1 = "46da2434b41f41ac3594ee9816ce5541c6096123"
-uuid = "892a3eda-7b42-436c-8928-eab12a02cf0e"
-version = "0.3.0"
-
 [[deps.TOML]]
 deps = ["Dates"]
 uuid = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
-
-[[deps.TableTraits]]
-deps = ["IteratorInterfaceExtensions"]
-git-tree-sha1 = "c06b2f539df1c6efa794486abfb6ed2022561a39"
-uuid = "3783bdb8-4a98-5b6b-af9a-565f29a5fe9c"
-version = "1.0.1"
-
-[[deps.Tables]]
-deps = ["DataAPI", "DataValueInterfaces", "IteratorInterfaceExtensions", "LinearAlgebra", "OrderedCollections", "TableTraits", "Test"]
-git-tree-sha1 = "c79322d36826aa2f4fd8ecfa96ddb47b174ac78d"
-uuid = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
-version = "1.10.0"
 
 [[deps.Tar]]
 deps = ["ArgTools", "SHA"]
@@ -1360,17 +837,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "4528479aa01ee1b3b4cd0e6faef0e04cf16466da"
 uuid = "2381bf8a-dfd0-557d-9999-79630e7b1b91"
 version = "1.25.0+0"
-
-[[deps.WeakRefStrings]]
-deps = ["DataAPI", "InlineStrings", "Parsers"]
-git-tree-sha1 = "b1be2855ed9ed8eac54e5caff2afcdb442d52c23"
-uuid = "ea10d353-3f73-51f8-a26c-33c1cb351aa5"
-version = "1.4.2"
-
-[[deps.WorkerUtilities]]
-git-tree-sha1 = "cd1659ba0d57b71a464a29e64dbc67cfe83d54e7"
-uuid = "76eceee3-57b5-4d4a-8e66-0e911cebbf60"
-version = "1.6.1"
 
 [[deps.XML2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Pkg", "Zlib_jll"]
@@ -1520,12 +986,6 @@ git-tree-sha1 = "e45044cd873ded54b6a5bac0eb5c971392cf1927"
 uuid = "3161d3a3-bdf6-5164-811a-617609db77b4"
 version = "1.5.2+0"
 
-[[deps.ZygoteRules]]
-deps = ["MacroTools"]
-git-tree-sha1 = "8c1a8e4dfacb1fd631745552c8db35d0deb09ea0"
-uuid = "700de1a5-db45-46bc-99cf-38207098b444"
-version = "0.2.2"
-
 [[deps.fzf_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "868e669ccb12ba16eaf50cb2957ee2ff61261c56"
@@ -1594,34 +1054,9 @@ version = "1.4.1+0"
 """
 
 # ╔═╡ Cell order:
-# ╠═130d7e40-701c-11ed-27e5-4dde891d1ef2
-# ╠═0d085ddf-11d6-4d1f-8f04-fc6696d1910a
-# ╠═1029e37f-6e26-4579-aa48-b738a07180ee
-# ╠═cb8612d7-0679-4032-b6ad-98d7fcbbb673
-# ╠═88b5d0de-18b7-406b-84ba-91846a1a296b
-# ╠═6903b788-456d-43a9-a9ca-c1f373466431
-# ╠═776f1989-11f0-461d-8644-adb028b2e4ca
-# ╠═b775e0d6-7d3b-4f74-aa40-18eeb706754e
-# ╠═d1ec42e4-5599-4bdf-bd5a-d983aeb458a7
-# ╠═8526f3c0-eb8f-4e5d-8c52-bf05031ea4df
-# ╠═bb7ebda7-3f4f-4501-bf31-ccd8a4b03cf3
-# ╠═ff66542f-92e8-417f-bf4f-2c5fb68e04f3
-# ╠═0caa506e-2197-483c-aacc-4d4f3ab10a17
-# ╠═2c1ecd0f-c742-4447-bb87-8e6f7bc8a4a6
-# ╠═51b3278c-da3e-4c21-b229-a902dba19f50
-# ╠═eecea87c-87b8-4434-805a-3f4e4068fa46
-# ╠═87c7223c-6550-458e-8f1f-882b6611e137
-# ╠═fc82811b-5857-42ef-a326-5dc46cd16570
-# ╠═0a01dcf3-52f3-4995-8aec-e612b08a3920
-# ╠═a8ba11f3-9f3c-448b-9efe-37f245b0e12b
-# ╠═ff77a56e-ad03-4d3f-b486-6842f8c5941e
-# ╠═428ddec0-cd8b-49c3-ad12-d5e7457ee57c
-# ╠═7e372362-f73b-4dd8-b58d-fe612a99ccb8
-# ╠═0b2d3c7f-b036-4e04-92b5-1679fb708048
-# ╠═4b851b69-39aa-47b9-b0db-6600c00f3a3f
-# ╠═327769c0-f264-4757-badd-92a0240a95d1
-# ╠═538b1e36-4570-499c-bdd3-3513dfebf062
-# ╠═e2d7d7ca-d899-43c7-a9f6-2234a9e750c3
-# ╠═c3ec8c40-0583-4214-b08c-3dfb968c3cf0
+# ╠═d09279b0-a033-11ed-3cfe-a98c24e4f144
+# ╠═50183979-f5d2-4e9c-81c6-ac572de00f53
+# ╠═cf1b118e-44b9-4bb4-8f08-c752cedd438f
+# ╠═e890550a-5139-4334-a72c-d9b2c13e9ce9
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
