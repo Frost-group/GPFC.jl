@@ -18,14 +18,15 @@ begin
 end
 
 # ╔═╡ e1a2b43c-3a00-4758-9cf7-f13ee8f4c171
-function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, num)
+function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt, dimA)
+	a  = 4 - dimA
 	feature = (
 		CSV.File(
 			FileFeature
 		)|> Tables.matrix
 	)[
-		begin:3:end
-		,2:num+1
+		begin:a:end
+		,2:numt+1
 	]
 	equi = feature[:,1]
 	dim = size(feature,1)
@@ -36,7 +37,7 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, num)
 			FileEnergy
 		)|> Tables.matrix
 	)[
-		begin:num
+		begin:numt
 		,2
 	]
 
@@ -46,8 +47,8 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, num)
 			FileForce
 		)|> Tables.matrix
 	)[
-		begin:3:end
-		,2:num+1
+		begin:a:end
+		,2:numt+1
 	]
 	, (dim*num,1)
 	)
@@ -234,13 +235,14 @@ end
 
 # ╔═╡ b799c4af-709a-49df-81d0-37cd20e09428
 begin
-	σₒ = 0.8
-	l = 0.1
-	σₑ = 0.00001
+	σₒ = 0.04
+	l = 0.3
+	σₑ = 0.0001
 	σₙ = 0.000001
+	DIM = 3
 	model = 1
 	order = 2
-	numt = 1
+	numt = 24
 	kₛₑ2 = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end
 
@@ -414,13 +416,24 @@ begin
 	equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
 			"feature_Si_222spc_01__PW800_kpts10_e100_d1.csv",
 			"energy_Si_222spc_01__PW800_kpts10_e100_d1.csv", 
-			"force_Si_222spc_01__PW800_kpts10_e100_d1.csv", numt)
+			"force_Si_222spc_01__PW800_kpts10_e100_d1.csv", numt, DIM)
 	FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, σₑ, σₙ, order, model)
 	sum(FC_Si)
 end
 
 # ╔═╡ 02bb48de-7e7e-4bea-92a6-a6bb15e00ee8
 FC_Si
+
+# ╔═╡ d569deaa-e372-494a-8ef9-82b864767c99
+featureSi
+
+# ╔═╡ 80610c55-ebaa-44e2-b531-7d08f6718185
+begin
+	dimA = 3
+	a  = 4 - dimA
+	num = 2
+	feature = ( CSV.File( "feature_Si_222spc_01__PW800_kpts10_e100_d1.csv")|> 		Tables.matrix)[begin:a:end , 2 : num+1]
+end
 
 # ╔═╡ ba41bd4b-5e03-48dd-9e30-73ae7ae895e6
 log(det(inv(K₀₀)))
@@ -1641,6 +1654,8 @@ version = "1.4.1+0"
 # ╠═b799c4af-709a-49df-81d0-37cd20e09428
 # ╠═dcfaa7a9-7717-44d7-9477-9e6dd556ecbb
 # ╠═02bb48de-7e7e-4bea-92a6-a6bb15e00ee8
+# ╠═d569deaa-e372-494a-8ef9-82b864767c99
+# ╠═80610c55-ebaa-44e2-b531-7d08f6718185
 # ╠═ba41bd4b-5e03-48dd-9e30-73ae7ae895e6
 # ╠═6356e382-3374-4925-9b3e-0892cd345fe5
 # ╠═74d21522-42dc-4e96-a80d-2e5ef6dae7d0
