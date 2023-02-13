@@ -235,14 +235,14 @@ end
 
 # ╔═╡ b799c4af-709a-49df-81d0-37cd20e09428
 begin
-	σₒ = 0.04
-	l = 0.3
+	σₒ = 0.1
+	l = 0.4
 	σₑ = 0.0001
 	σₙ = 0.000001
 	DIM = 3
 	model = 1
 	order = 2
-	numt = 24
+	numt = 40
 	kₛₑ2 = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end
 
@@ -414,25 +414,32 @@ end
 # ╔═╡ dcfaa7a9-7717-44d7-9477-9e6dd556ecbb
 begin
 	equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
-			"feature_Si_222spc_01__PW800_kpts10_e100_d1.csv",
-			"energy_Si_222spc_01__PW800_kpts10_e100_d1.csv", 
-			"force_Si_222spc_01__PW800_kpts10_e100_d1.csv", numt, DIM)
+			"feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
+			"energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
+			"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", numt, DIM)
 	FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, σₑ, σₙ, order, model)
 	sum(FC_Si)
 end
 
-# ╔═╡ 02bb48de-7e7e-4bea-92a6-a6bb15e00ee8
+# ╔═╡ d569deaa-e372-494a-8ef9-82b864767c99
 FC_Si
 
-# ╔═╡ d569deaa-e372-494a-8ef9-82b864767c99
-featureSi
+# ╔═╡ 0f2de449-73ab-446e-8fe4-9725e4fbf5a9
+begin
+	heatmap(1:size(FC_Si,1),
+	    1:size(FC_Si,2), FC_Si,
+	    c=cgrad([:blue, :white, :red, :yellow]),
+	    xlabel="feature coord. (n x d)", ylabel="feature coord. (n x d)",
+	    title="FC2")
+	savefig("Si_FC2.png")
+end
 
 # ╔═╡ 80610c55-ebaa-44e2-b531-7d08f6718185
 begin
 	dimA = 3
 	a  = 4 - dimA
 	num = 2
-	feature = ( CSV.File( "feature_Si_222spc_01__PW800_kpts10_e100_d1.csv")|> 		Tables.matrix)[begin:a:end , 2 : num+1]
+	feature = ( CSV.File( "feature_Si_222spc_01_PW800_kpts10_e100_d1.csv")|> 		Tables.matrix)[begin:a:end , 2 : num+1]
 end
 
 # ╔═╡ ba41bd4b-5e03-48dd-9e30-73ae7ae895e6
@@ -1653,8 +1660,8 @@ version = "1.4.1+0"
 # ╠═a89a0a84-9c57-4ea6-b8b3-857520144375
 # ╠═b799c4af-709a-49df-81d0-37cd20e09428
 # ╠═dcfaa7a9-7717-44d7-9477-9e6dd556ecbb
-# ╠═02bb48de-7e7e-4bea-92a6-a6bb15e00ee8
 # ╠═d569deaa-e372-494a-8ef9-82b864767c99
+# ╠═0f2de449-73ab-446e-8fe4-9725e4fbf5a9
 # ╠═80610c55-ebaa-44e2-b531-7d08f6718185
 # ╠═ba41bd4b-5e03-48dd-9e30-73ae7ae895e6
 # ╠═6356e382-3374-4925-9b3e-0892cd345fe5
