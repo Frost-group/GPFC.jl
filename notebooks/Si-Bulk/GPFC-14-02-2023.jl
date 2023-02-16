@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.12
+# v0.19.16
 
 using Markdown
 using InteractiveUtils
@@ -15,6 +15,17 @@ begin
 	using DataFrames
 	using DelimitedFiles
 	using Optim
+end
+
+# ╔═╡ 1d48bfbf-6033-44e3-9464-34acd36990a0
+begin
+	using Random
+	
+	anim = @animate for i in 1:50
+	    Random.seed!(123)
+	    scatter(cumsum(randn(i)), ms=i, lab="", alpha = 1 - i/50, 
+	        xlim=(0,50), ylim=(-5, 7))
+	end
 end
 
 # ╔═╡ 4d59cfec-47c8-444c-9599-e7d2536f6563
@@ -238,14 +249,19 @@ end
 
 # ╔═╡ b799c4af-709a-49df-81d0-37cd20e09428
 begin
+	#σₒ = 0.1
+	#l = 0.4
+	#σₑ = 0.00001
+	#numt = 48
 	σₒ = 0.1
 	l = 0.4
 	σₑ = 0.00001
+	
 	σₙ = 0.000001
 	DIM = 3
 	model = 1
 	order = 2
-	numt = 48
+	
 	kₛₑ2 = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end
 
@@ -414,17 +430,37 @@ function Marginal2(X, k, σₑ, σₙ; model = 1)
 	return  Kₘₘ
 end
 
-# ╔═╡ dcfaa7a9-7717-44d7-9477-9e6dd556ecbb
+# ╔═╡ 3c48274e-0d7c-41aa-b15f-82824a425f11
 begin
+	P = zeros((48, 48, 9))
+	nd = [1,5,10,15,20,30,40,50,60]
+	SumRule = zeros((9))
+end
+
+# ╔═╡ a8024340-d453-4a69-9d71-7e79d3dece49
+for i in 1:9
+	numt = nd[i]
 	equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
 			"feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
 			"energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
 			"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", numt, DIM)
 	FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, σₑ, σₙ, order, model)
-	sum(FC_Si)
+	P[:,:,i] = FC_Si
+	
+	SumRule[i] = abs(sum(FC_Si))
+end 
+
+# ╔═╡ e157b611-612b-48a5-b2ff-f38d29613d3c
+begin
+	numt = 48
+	equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
+				"feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
+				"energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
+				"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", numt, DIM)
+	FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, σₑ, σₙ, order, model)
 end
 
-# ╔═╡ d569deaa-e372-494a-8ef9-82b864767c99
+# ╔═╡ 7d655d8f-cbaf-4705-ab5c-c50b2375b6b3
 FC_Si
 
 # ╔═╡ 0f2de449-73ab-446e-8fe4-9725e4fbf5a9
@@ -437,11 +473,44 @@ begin
 	#savefig("Si_FC2.png")
 end
 
+# ╔═╡ bbb959a8-2c47-4a60-9913-cb2cfce1a167
+(
+	P[1:3,34:36,9] + P[4:6,31:33,9]+ P[7:9,28:30,9]+ P[10:12,25:27,9]+
+	P[13:15,46:48,9] + P[16:18,43:45,9]+ P[19:21,40:42,9]+ P[22:24,37:39,9]+
+	P[25:27,10:12,9] + P[28:30,7:9,9]+ P[31:33,4:6,9]+ P[34:36,1:3,9]+
+	P[37:39,22:24,9] + P[40:42,19:21,9]+ P[43:45,16:18,9]+ P[46:48,13:15,9]
+)/16
+
+# ╔═╡ ffb7268c-5ad7-4cfb-b81c-ff8b04711376
+(
+	P[1:3,46:48,9] + P[4:6,43:45,9]+ P[7:9,40:42,9]+ P[10:12,37:39,9]+
+	P[13:15,34:36,9] + P[16:18,31:33,9]+ P[19:21,28:30,9]+ P[22:24,25:27,9]+
+	P[25:27,22:24,9] + P[28:30,19:21,9]+ P[31:33,16:18,9]+ P[34:36,13:15,9]+
+	P[37:39,10:12,9] + P[40:42,7:9,9]+ P[43:45,4:6,9]+ P[46:48,1:3,9]
+)/16
+
+# ╔═╡ 76ffe83a-746a-4da2-8f31-ef396f590ccb
+(
+	P[1:3,4:6,9] + P[4:6,1:3,9]+ P[7:9,10:12,9]+ P[10:12,7:9,9]+
+	P[13:15,16:18,9] + P[16:18,13:15,9]+ P[19:21,22:24,9]+ P[22:24,19:21,9]+
+	P[25:27,28:30,9] + P[28:30,25:27,9]+ P[31:33,34:36,9]+ P[34:36,31:33,9]+
+	P[37:39,40:42,9] + P[40:42,37:39,9]+ P[43:45,46:48,9]+ P[46:48,43:45,9]
+)/16
+
 # ╔═╡ 8c408f49-cadf-492d-8b7c-a5317d4361bd
 natom = Int64(size(FC_Si,1)/3)
 
-# ╔═╡ 1098ec43-3ec2-4c26-8552-fc214380680c
+# ╔═╡ ac053182-bb10-4074-b21c-1b53d1936384
+anim2 = @animate for i in 1:9
+	heatmap(1:size(P[:,:,i],1),
+	    1:size(P[:,:,i],2), P[:,:,i],
+	    c=cgrad([:blue, :white, :red, :yellow]),
+	    xlabel="feature coord. (n x d)", ylabel="feature coord. (n x d)",
+	    title="FC2 (Traning Data = " *string(nd[i]) *")" )
+end
 
+# ╔═╡ ad656b86-b052-4a05-88b6-345db31fb303
+gif(anim2, "Si_FC_fps2.gif", fps=2)
 
 # ╔═╡ 7f3a1017-8434-41f5-8348-9926af717703
 begin
@@ -454,28 +523,52 @@ begin
 		for j in 1:natom
 			FC_out[:,:, i, j] = FC_Si[ 3*i-2:3*i, 3*j-2:3*j]
 		end
-	end	
-end
-
-# ╔═╡ b37aafe2-155b-450f-841a-4e1554dc9ae3
-FC_out
-
-# ╔═╡ ec4940bc-04d0-4529-aabf-3b6ff7e67eec
-featureSi[:,1]
-
-# ╔═╡ c9a21f0e-18e0-4cbb-8f1d-8201c0ddbf25
-
-
-# ╔═╡ 80610c55-ebaa-44e2-b531-7d08f6718185
-begin
-	dimA = 3
-	a  = 4 - dimA
-	num = 2
-	feature = ( CSV.File( "feature_Si_222spc_01_PW800_kpts10_e100_d1.csv")|> 		Tables.matrix)[begin:a:end , 2 : num+1]
+	end
 end
 
 # ╔═╡ ba41bd4b-5e03-48dd-9e30-73ae7ae895e6
-log(det(inv(K₀₀)))
+begin
+	FC_out2 = zeros(
+			(
+				3, 3, natom, natom
+			)
+		)
+	for i in 1:natom
+		for j in 1:natom
+			FC_out2[:,:, i, j] = P[ 3*i-2:3*i, 3*j-2:3*j,9]
+		end
+	end
+end
+
+# ╔═╡ ec4940bc-04d0-4529-aabf-3b6ff7e67eec
+for i in 1:16
+	println(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"*string(i))
+	for j in 1:16
+		println("")
+		println("")
+		println("Pair Cluster:")
+		println(featureSi[3*i-2:3*i,1])
+		println(featureSi[3*j-2:3*j,1])
+		println("Distance:")
+		println(norm(featureSi[3*i-2:3*i,1]-featureSi[3*j-2:3*j,1]))
+		println("")
+		println("Force constant matrix:")
+		println("")
+		display(P[3*i-2:3*i, 3*j-2:3*j,9])
+	end
+end	
+
+# ╔═╡ b37aafe2-155b-450f-841a-4e1554dc9ae3
+begin
+	scatter(nd,SumRule,
+		xlabel="Training points",
+		ylabel="Sum of FC2 element",
+		title="Sum Rule relation")
+	savefig("Si_FC2_sumrule.png")
+end
+
+# ╔═╡ c9a21f0e-18e0-4cbb-8f1d-8201c0ddbf25
+SumRule
 
 # ╔═╡ 6356e382-3374-4925-9b3e-0892cd345fe5
 log(det(inv(K₁₁)))
@@ -533,6 +626,7 @@ Kronecker = "2c470bb0-bcc8-11e8-3dad-c9649493f05e"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [compat]
 CSV = "~0.10.9"
@@ -549,9 +643,8 @@ Plots = "~1.38.5"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.8.1"
+julia_version = "1.7.2"
 manifest_format = "2.0"
-project_hash = "ec66bc27223d8b6b0f7caea042c6f36a3ee7775f"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -561,7 +654,6 @@ version = "1.2.1"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
-version = "1.1.1"
 
 [[deps.ArrayInterfaceCore]]
 deps = ["LinearAlgebra", "SnoopPrecompile", "SparseArrays", "SuiteSparse"]
@@ -655,7 +747,6 @@ version = "4.6.0"
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "0.5.2+0"
 
 [[deps.CompositionsBase]]
 git-tree-sha1 = "455419f7e328a1a2493cabc6428d79e951349769"
@@ -743,9 +834,8 @@ uuid = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 version = "0.9.3"
 
 [[deps.Downloads]]
-deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
+deps = ["ArgTools", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
-version = "1.6.0"
 
 [[deps.Einsum]]
 deps = ["Compat"]
@@ -776,9 +866,6 @@ deps = ["Compat", "Dates", "Mmap", "Printf", "Test", "UUIDs"]
 git-tree-sha1 = "e27c4ebe80e8699540f2d6c805cc12203b614f12"
 uuid = "48062228-2e41-5def-b9a4-89aafe57970f"
 version = "0.9.20"
-
-[[deps.FileWatching]]
-uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
 
 [[deps.FillArrays]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "Statistics"]
@@ -995,12 +1082,10 @@ version = "0.15.18"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "7.84.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -1009,7 +1094,6 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1106,7 +1190,6 @@ version = "1.1.7"
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
-version = "2.28.0+0"
 
 [[deps.Measures]]
 git-tree-sha1 = "c13304c81eec1ed3af7fc20e75fb6b26092a1102"
@@ -1124,7 +1207,6 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
-version = "2022.2.1"
 
 [[deps.NLSolversBase]]
 deps = ["DiffResults", "Distributed", "FiniteDiff", "ForwardDiff"]
@@ -1146,7 +1228,6 @@ version = "0.2.50"
 
 [[deps.NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
-version = "1.2.0"
 
 [[deps.Ogg_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1157,12 +1238,10 @@ version = "1.3.5+1"
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.20+0"
 
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
-version = "0.8.1+0"
 
 [[deps.OpenSSL]]
 deps = ["BitFlags", "Dates", "MozillaCACerts_jll", "OpenSSL_jll", "Sockets"]
@@ -1202,7 +1281,6 @@ version = "1.4.1"
 [[deps.PCRE2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
-version = "10.40.0+0"
 
 [[deps.Parameters]]
 deps = ["OrderedCollections", "UnPack"]
@@ -1230,7 +1308,6 @@ version = "0.40.1+0"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.8.0"
 
 [[deps.PlotThemes]]
 deps = ["PlotUtils", "Statistics"]
@@ -1323,7 +1400,6 @@ version = "1.3.0"
 
 [[deps.SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
-version = "0.7.0"
 
 [[deps.Scratch]]
 deps = ["Dates"]
@@ -1421,7 +1497,6 @@ uuid = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 [[deps.TOML]]
 deps = ["Dates"]
 uuid = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
-version = "1.0.0"
 
 [[deps.TableTraits]]
 deps = ["IteratorInterfaceExtensions"]
@@ -1438,7 +1513,6 @@ version = "1.10.0"
 [[deps.Tar]]
 deps = ["ArgTools", "SHA"]
 uuid = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
-version = "1.10.0"
 
 [[deps.TensorCore]]
 deps = ["LinearAlgebra"]
@@ -1648,13 +1722,12 @@ version = "1.4.0+3"
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
 uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
-version = "1.2.12+3"
 
 [[deps.Zstd_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "e45044cd873ded54b6a5bac0eb5c971392cf1927"
+deps = ["Artifacts", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "c6edfe154ad7b313c01aceca188c05c835c67360"
 uuid = "3161d3a3-bdf6-5164-811a-617609db77b4"
-version = "1.5.2+0"
+version = "1.5.4+0"
 
 [[deps.ZygoteRules]]
 deps = ["MacroTools"]
@@ -1683,7 +1756,6 @@ version = "0.15.1+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl", "OpenBLAS_jll"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.1.1+0"
 
 [[deps.libfdk_aac_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1706,12 +1778,10 @@ version = "1.3.7+1"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.48.0+0"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
-version = "17.4.0+0"
 
 [[deps.x264_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1741,18 +1811,24 @@ version = "1.4.1+0"
 # ╠═dc8e6e59-e509-4636-ae26-7b8d2b8ab1b4
 # ╠═a89a0a84-9c57-4ea6-b8b3-857520144375
 # ╠═b799c4af-709a-49df-81d0-37cd20e09428
-# ╠═dcfaa7a9-7717-44d7-9477-9e6dd556ecbb
-# ╠═d569deaa-e372-494a-8ef9-82b864767c99
+# ╠═3c48274e-0d7c-41aa-b15f-82824a425f11
+# ╠═a8024340-d453-4a69-9d71-7e79d3dece49
+# ╠═e157b611-612b-48a5-b2ff-f38d29613d3c
+# ╠═7d655d8f-cbaf-4705-ab5c-c50b2375b6b3
 # ╠═0f2de449-73ab-446e-8fe4-9725e4fbf5a9
+# ╠═bbb959a8-2c47-4a60-9913-cb2cfce1a167
+# ╠═ffb7268c-5ad7-4cfb-b81c-ff8b04711376
+# ╠═76ffe83a-746a-4da2-8f31-ef396f590ccb
 # ╠═8c408f49-cadf-492d-8b7c-a5317d4361bd
-# ╠═1098ec43-3ec2-4c26-8552-fc214380680c
+# ╠═ac053182-bb10-4074-b21c-1b53d1936384
+# ╠═1d48bfbf-6033-44e3-9464-34acd36990a0
+# ╠═ad656b86-b052-4a05-88b6-345db31fb303
 # ╠═7f3a1017-8434-41f5-8348-9926af717703
-# ╠═b37aafe2-155b-450f-841a-4e1554dc9ae3
+# ╠═ba41bd4b-5e03-48dd-9e30-73ae7ae895e6
 # ╠═ec4940bc-04d0-4529-aabf-3b6ff7e67eec
+# ╠═b37aafe2-155b-450f-841a-4e1554dc9ae3
 # ╠═4d59cfec-47c8-444c-9599-e7d2536f6563
 # ╠═c9a21f0e-18e0-4cbb-8f1d-8201c0ddbf25
-# ╠═80610c55-ebaa-44e2-b531-7d08f6718185
-# ╠═ba41bd4b-5e03-48dd-9e30-73ae7ae895e6
 # ╠═6356e382-3374-4925-9b3e-0892cd345fe5
 # ╠═74d21522-42dc-4e96-a80d-2e5ef6dae7d0
 # ╠═e82975de-28b8-4875-92ed-b62d1813fa4f
