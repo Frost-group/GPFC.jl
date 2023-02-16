@@ -7,24 +7,22 @@ using ForwardDiff
 using LinearAlgebra
 using Einsum
 using CSV
+using DataFrames
+using Optim
+using Distributed
 using HDF5
 
 
-#include("FeatureTarget.jl")
-#export ASEFeatureTarget
+include("ASEreading.jl")
+export ASEFeatureTarget
 
 include("DerivativeKernel.jl")
 export kernel
 
-include("Marginal.jl") 
-export invMarginal
-
-include("Covariant.jl")
-export Covariant
-
-
 include("Posterior.jl")
-export Posterior
+export MarginalLike
+export CovariantMatrix
+export PosteriorMean
 
 end
 

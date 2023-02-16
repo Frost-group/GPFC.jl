@@ -1,4 +1,139 @@
-function MarginalLike(X, k, l, σₑ, σₙ, model)
+begin
+	using KernelFunctions
+	using ForwardDiff
+	using LinearAlgebra
+	using Einsum
+	using CSV
+	using DataFrames
+	using Optim
+	using Distributed
+end
+
+function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt, dimA)
+	a  = 4 - dimA
+	feature = (
+		CSV.File(
+			FileFeature
+		)|> Tables.matrix
+	)[
+		begin:a:end
+		,2:numt+1
+	]
+	equi = feature[:,1]
+	dim = size(feature,1)
+	num = size(feature,2)
+	
+	energy = (
+		CSV.File(
+			FileEnergy
+		)|> Tables.matrix
+	)[
+		begin:numt
+		,2
+	]
+
+	force = -reshape(
+	(
+		CSV.File(
+			FileForce
+		)|> Tables.matrix
+	)[
+		begin:a:end
+		,2:numt+1
+	]
+	, (dim*num,1)
+	)
+
+	Target = vcat(
+		energy
+		, reshape(
+			force
+			, (dim*num,1)
+		)
+	)
+
+	return equi, feature, energy, force, Target
+end
+
+function kernel(k, xₜ, vₜ, grad)
+
+#order 0
+	if grad == [0,0]
+		return k(xₜ, vₜ)
+
+#order 1
+	elseif grad == [1,0]
+		return   ForwardDiff.gradient(
+			x -> k(x, vₜ)
+			, xₜ)
+
+	elseif grad == [0,1]
+		return - ForwardDiff.gradient(
+			x -> k(x, vₜ)
+			, xₜ)
+
+#order 2		
+
+	elseif grad == [1,1]
+		return - ForwardDiff.jacobian(
+			x -> ForwardDiff.gradient(
+				x -> k(x, vₜ)
+				, x)
+			, xₜ)
+
+	elseif grad == [2,0] || grad == [0,2]
+		return   ForwardDiff.jacobian(
+			x -> ForwardDiff.gradient(
+				x -> k(x, vₜ)
+				, x)
+			, xₜ)
+
+#order 3		
+	elseif grad == [3,0] || grad == [1,2]
+		return   ForwardDiff.jacobian(
+		x -> ForwardDiff.jacobian(
+			x -> ForwardDiff.gradient(
+				x -> k(x, vₜ)
+				, x)
+			, x)
+		, xₜ)
+
+	elseif grad == [2,1] || grad == [0,3]
+		return - ForwardDiff.jacobian(
+		x -> ForwardDiff.jacobian(
+			x -> ForwardDiff.gradient(
+				x -> k(x, vₜ)
+				, x)
+			, x)
+		, xₜ)
+
+#order 4
+	elseif grad == [4,0] || grad == [2,2] || grad == [0,4]
+		return   ForwardDiff.jacobian(
+		x ->ForwardDiff.jacobian(
+			x -> ForwardDiff.jacobian(
+				x -> ForwardDiff.gradient(
+					x -> k(x, vₜ)
+					, x)
+				, x)
+			, x)
+		, xₜ)
+
+	elseif grad == [3,1] || grad == [1,3] 
+		return - ForwardDiff.jacobian(
+		x ->ForwardDiff.jacobian(
+			x -> ForwardDiff.jacobian(
+				x -> ForwardDiff.gradient(
+					x -> k(x, vₜ)
+					, x)
+				, x)
+			, x)
+		, xₜ)
+
+	end
+end
+
+function Marginal(X, k, σₑ, σₙ; model = 1)
 	dim = size(X,1)
 	num = size(X,2)
 	KK = zeros(
@@ -38,7 +173,8 @@ function MarginalLike(X, k, l, σₑ, σₙ, model)
 			
 			K₀₀[i, j] = KK[i, j]
 			K₁₁[(1)+((i-1)*dim):(1)+((i)*dim)-1,
-				(1)+((j-1)*dim):(1)+((j)*dim)-1] = KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1, (num+1)+((j-1)*dim):(num+1)+((j)*dim)-1]
+				(1)+((j-1)*dim):(1)+((j)*dim)-1] = KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1, 
+(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1]
 			
 		end
 	end
@@ -66,7 +202,9 @@ function MarginalLike(X, k, l, σₑ, σₙ, model)
 	return K₀₀, K₁₁, Kₘₘ
 end
 
-function CovariantMatrix(X, xₒ, k, order)
+
+
+function Coveriant(X, xₒ, k, order)
 	dim = size(X,1)
 	num = size(X,2)
 
@@ -155,12 +293,11 @@ function CovariantMatrix(X, xₒ, k, order)
 	return Kₙₘ
 end
 
-
-function PosteriorMean(X, xₒ, Target, k, l, σₑ, σₙ, order, model)
+function Posterior(X, xₒ, Target, k, σₑ, σₙ, order, model)
 	dim = size(X,1)
 	num = size(X,2)
-	K₀₀, K₁₁, Kₘₘ = MarginalLike(X, k, l, σₑ, σₙ, model )
-	Kₙₘ = CovariantMatrix(X, xₒ, k, order)
+	K₀₀, K₁₁, Kₘₘ = Marginal(X, k, σₑ, σₙ; model )
+	Kₙₘ = Coveriant(X, xₒ, k, order)
 	Kₘₘ⁻¹ = inv(Kₘₘ)
 	
 	if order == 0
@@ -180,4 +317,32 @@ function PosteriorMean(X, xₒ, Target, k, l, σₑ, σₙ, order, model)
 	end
 	
 	return Meanₚ, K₀₀, K₁₁, Kₘₘ, Kₙₘ
+end
+
+begin
+	#σₒ = 0.1
+	#l = 0.4
+	#σₑ = 0.00001
+	#numt = 48
+	σₒ = 0.1
+	l = 0.4
+	σₑ = 0.00001
+	
+	σₙ = 0.000001
+	DIM = 3
+	model = 1
+	order = 2
+	
+	kₛₑ2 = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
+end
+
+
+begin
+	numt = 1
+	equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
+				"feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
+				"energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
+				"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", numt, DIM)
+	FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, σₑ, σₙ, order, model)
+	FC_Si
 end

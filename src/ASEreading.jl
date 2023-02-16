@@ -1,11 +1,12 @@
-function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, num)
+function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt, dimA)
+	a  = 4 - dimA
 	feature = (
 		CSV.File(
 			FileFeature
 		)|> Tables.matrix
 	)[
-		begin:3:end
-		,2:num+1
+		begin:a:end
+		,2:numt+1
 	]
 	equi = feature[:,1]
 	dim = size(feature,1)
@@ -16,7 +17,7 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, num)
 			FileEnergy
 		)|> Tables.matrix
 	)[
-		begin:num
+		begin:numt
 		,2
 	]
 
@@ -26,8 +27,8 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, num)
 			FileForce
 		)|> Tables.matrix
 	)[
-		begin:3:end
-		,2:num+1
+		begin:a:end
+		,2:numt+1
 	]
 	, (dim*num,1)
 	)
