@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ deebe580-a292-11ed-0fe9-29d8796af820
+# ╔═╡ cb32a060-b048-11ed-340c-e798d815993a
 begin
 	using KernelFunctions
 	using ForwardDiff
@@ -17,7 +17,7 @@ begin
 	using Optim
 end
 
-# ╔═╡ 1d48bfbf-6033-44e3-9464-34acd36990a0
+# ╔═╡ 82014e87-8857-40c2-8b87-44aa755997a1
 begin
 	using Random
 	
@@ -28,10 +28,7 @@ begin
 	end
 end
 
-# ╔═╡ 4d59cfec-47c8-444c-9599-e7d2536f6563
-using Kronecker
-
-# ╔═╡ e1a2b43c-3a00-4758-9cf7-f13ee8f4c171
+# ╔═╡ 8b7ec538-5fdb-45e4-bec4-7c1a804a43e1
 function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
 	a  = 4 - dimA
 	feature = (
@@ -78,7 +75,7 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 	return equi, feature, energy, force, Target
 end
 
-# ╔═╡ 55729b97-de8c-4d9d-9e42-815d531c4818
+# ╔═╡ edc26ecc-9d6d-49f5-b86e-d319862ba529
 function kernel(k, xₜ::Vector{Float64}, vₜ::Vector{Float64}, grad)
 
 #order 0
@@ -157,7 +154,7 @@ function kernel(k, xₜ::Vector{Float64}, vₜ::Vector{Float64}, grad)
 	end
 end
 
-# ╔═╡ 87598f64-d4d8-4528-ab0b-c3e6edbaa80c
+# ╔═╡ 5805ab2b-b5ad-4986-a316-031511e01555
 function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64, model::Int64)
 	dim = size(X,1)
 	num = size(X,2)
@@ -226,7 +223,7 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 	return K₀₀, K₁₁, Kₘₘ
 end
 
-# ╔═╡ dc8e6e59-e509-4636-ae26-7b8d2b8ab1b4
+# ╔═╡ aa796522-9a4f-46f4-9843-fc0a391fcd0e
 function Coveriant(X::Matrix{Float64}, xₒ::Vector{Float64}, k, order::Int64)
 	dim = size(X,1)
 	num = size(X,2)
@@ -316,11 +313,11 @@ function Coveriant(X::Matrix{Float64}, xₒ::Vector{Float64}, k, order::Int64)
 	return Kₙₘ
 end
 
-# ╔═╡ a89a0a84-9c57-4ea6-b8b3-857520144375
+# ╔═╡ 2f2e68a5-e2d4-41ca-9741-4a67c102c1b1
 function Posterior(X::Matrix{Float64}, xₒ::Vector{Float64}, Target::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64, order::Int64, model::Int64)
 	dim = size(X,1)
 	num = size(X,2)
-	K₀₀, K₁₁, Kₘₘ = Marginal(X, k, l, σₑ, σₙ; model )
+	K₀₀, K₁₁, Kₘₘ = Marginal(X, k, l, σₑ, σₙ, model )
 	Kₙₘ = Coveriant(X, xₒ, k, order)
 	Kₘₘ⁻¹ = inv(Kₘₘ)
 	
@@ -343,7 +340,7 @@ function Posterior(X::Matrix{Float64}, xₒ::Vector{Float64}, Target::Matrix{Flo
 	return Meanₚ, K₀₀, K₁₁, Kₘₘ, Kₙₘ
 end
 
-# ╔═╡ b799c4af-709a-49df-81d0-37cd20e09428
+# ╔═╡ f283cfba-c529-4cd1-8793-df271198f980
 begin
 	#σₒ = 0.1
 	#l = 0.4
@@ -361,83 +358,28 @@ begin
 	kₛₑ2 = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end
 
-# ╔═╡ 01a40b87-c4ae-4898-9a93-c83a36d96afd
-function Marginal2(X, k, σₑ::Float64, σₙ::Float64; model = 1)
-	dim = size(X,1)
-	num = size(X,2)
-	KK = zeros(
-		(
-			(1+dim)*num, (1+dim)*num
-		)
-	)
-	K₀₀ = zeros(
-		(
-			(1)*num, (1)*num
-		)
-	)
-	K₁₁ = zeros(
-		(
-			(dim)*num, (dim)*num
-		)
-	)
-	
-	for i in 1:num 
-		for j in 1:num 
-			KK[i, j] = kernel(
-				k, X[:,i], X[:,j], [0,0]
-			)
-			
-			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernel(
-				k, X[:,i], X[:,j], [1,0]
-			)
-			
-			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = kernel(
-				k, X[:,i], X[:,j], [0,1]
-			)
-			
-			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,
-				(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = kernel(
-					k, X[:,i], X[:,j], [1,1]
-				)
-			
-			K₀₀[i, j] = KK[i, j]
-			K₁₁[(1)+((i-1)*dim):(1)+((i)*dim)-1,
-				(1)+((j-1)*dim):(1)+((j)*dim)-1] = KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1, (num+1)+((j-1)*dim):(num+1)+((j)*dim)-1]
-			
-		end
-	end
-	
-	if model == 1
-		Iee = σₑ^2 * Matrix(I, num, num)
-		Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
-		Ief = zeros(num, dim * num)
-		II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
-
-		Kₘₘ = KK + II
-		K₀₀ = K₀₀ + Iee 
-		K₁₁ = K₁₁ + Iff
-	else
-		Iee = σₑ^2 * Matrix(I, num, num)
-		Iff = σₙ^2 * Matrix(I, dim * num, dim * num)
-		Ief = zeros(num, dim * num)
-		II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
-
-		Kₘₘ = KK + II
-		K₀₀ = K₀₀ + Iee 
-		K₁₁ = K₁₁ + Iff
-	end
-	#Kₘₘ⁻¹ = inv(KK+II)
-	return  Kₘₘ
-end
-
-# ╔═╡ 3c48274e-0d7c-41aa-b15f-82824a425f11
+# ╔═╡ 366c8588-9245-477d-a321-150a4e8aa76b
 begin
-	P = zeros((48, 48, 10))
-	nd = [1,5,10,15,20,30,40,50,60,80]
-	SumRule = zeros((10))
+	numt = 2
+	equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
+				"feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
+				"energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
+				"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", numt, DIM)
+	FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, l, σₑ, σₙ, order, model)
+	FC_Si
 end
 
-# ╔═╡ a8024340-d453-4a69-9d71-7e79d3dece49
+# ╔═╡ c74e57d2-be7a-4809-8c48-8593e783f706
+
+
+# ╔═╡ cb3fbe40-070e-44ff-bfef-636f7d15b2c4
+begin
+	P2 = zeros((48, 48, 10))
+	nd = [1,5,10,15,20,30,40,50,60,80]
+	SumRule2 = zeros((10))
+end
+
+# ╔═╡ d9ec3144-e218-4420-98b8-4fcd0fe87eb6
 for i in 1:10
 	numt = nd[i]
 	equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
@@ -445,173 +387,19 @@ for i in 1:10
 			"energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
 			"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", numt, DIM)
 	FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, l, σₑ, σₙ, order, model)
-	P[:,:,i] = FC_Si
+	P2[:,:,i] = FC_Si
 	
-	SumRule[i] = abs(sum(FC_Si))
+	SumRule2[i] = abs(sum(FC_Si))
 end 
 
-# ╔═╡ e157b611-612b-48a5-b2ff-f38d29613d3c
-begin
-	numt = 48
-	equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
-				"feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
-				"energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
-				"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", numt, DIM)
-	FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, σₑ, σₙ, order, model)
-end
+# ╔═╡ 188f0af3-3bb3-4024-9e23-1beba7bec232
 
-# ╔═╡ 7d655d8f-cbaf-4705-ab5c-c50b2375b6b3
-FC_Si
 
-# ╔═╡ 0f2de449-73ab-446e-8fe4-9725e4fbf5a9
-begin
-	heatmap(1:size(FC_Si,1),
-	    1:size(FC_Si,2), FC_Si,
-	    c=cgrad([:blue, :white, :red, :yellow]),
-	    xlabel="feature coord. (n x d)", ylabel="feature coord. (n x d)",
-	    title="FC2")
-	#savefig("Si_FC2.png")
-end
+# ╔═╡ f9e0caa7-c132-4f31-bd66-c8d37e99b49e
 
-# ╔═╡ bbb959a8-2c47-4a60-9913-cb2cfce1a167
-(
-	P[1:3,34:36,9] + P[4:6,31:33,9]+ P[7:9,28:30,9]+ P[10:12,25:27,9]+
-	P[13:15,46:48,9] + P[16:18,43:45,9]+ P[19:21,40:42,9]+ P[22:24,37:39,9]+
-	P[25:27,10:12,9] + P[28:30,7:9,9]+ P[31:33,4:6,9]+ P[34:36,1:3,9]+
-	P[37:39,22:24,9] + P[40:42,19:21,9]+ P[43:45,16:18,9]+ P[46:48,13:15,9]
-)/16
 
-# ╔═╡ ffb7268c-5ad7-4cfb-b81c-ff8b04711376
-(
-	P[1:3,46:48,9] + P[4:6,43:45,9]+ P[7:9,40:42,9]+ P[10:12,37:39,9]+
-	P[13:15,34:36,9] + P[16:18,31:33,9]+ P[19:21,28:30,9]+ P[22:24,25:27,9]+
-	P[25:27,22:24,9] + P[28:30,19:21,9]+ P[31:33,16:18,9]+ P[34:36,13:15,9]+
-	P[37:39,10:12,9] + P[40:42,7:9,9]+ P[43:45,4:6,9]+ P[46:48,1:3,9]
-)/16
+# ╔═╡ 6157d062-0aa4-4b30-836a-4bd852f5b74f
 
-# ╔═╡ 76ffe83a-746a-4da2-8f31-ef396f590ccb
-(
-	P[1:3,4:6,9] + P[4:6,1:3,9]+ P[7:9,10:12,9]+ P[10:12,7:9,9]+
-	P[13:15,16:18,9] + P[16:18,13:15,9]+ P[19:21,22:24,9]+ P[22:24,19:21,9]+
-	P[25:27,28:30,9] + P[28:30,25:27,9]+ P[31:33,34:36,9]+ P[34:36,31:33,9]+
-	P[37:39,40:42,9] + P[40:42,37:39,9]+ P[43:45,46:48,9]+ P[46:48,43:45,9]
-)/16
-
-# ╔═╡ 8c408f49-cadf-492d-8b7c-a5317d4361bd
-natom = Int64(size(FC_Si,1)/3)
-
-# ╔═╡ ac053182-bb10-4074-b21c-1b53d1936384
-anim2 = @animate for i in 1:9
-	heatmap(1:size(P[:,:,i],1),
-	    1:size(P[:,:,i],2), P[:,:,i],
-	    c=cgrad([:blue, :white, :red, :yellow]),
-	    xlabel="feature coord. (n x d)", ylabel="feature coord. (n x d)",
-	    title="FC2 (Traning Data = " *string(nd[i]) *")" )
-end
-
-# ╔═╡ ad656b86-b052-4a05-88b6-345db31fb303
-gif(anim2, "Si_FC_fps2.gif", fps=2)
-
-# ╔═╡ 7f3a1017-8434-41f5-8348-9926af717703
-begin
-	FC_out = zeros(
-			(
-				3, 3, natom, natom
-			)
-		)
-	for i in 1:natom
-		for j in 1:natom
-			FC_out[:,:, i, j] = FC_Si[ 3*i-2:3*i, 3*j-2:3*j]
-		end
-	end
-end
-
-# ╔═╡ ba41bd4b-5e03-48dd-9e30-73ae7ae895e6
-begin
-	FC_out2 = zeros(
-			(
-				3, 3, natom, natom
-			)
-		)
-	for i in 1:natom
-		for j in 1:natom
-			FC_out2[:,:, i, j] = P[ 3*i-2:3*i, 3*j-2:3*j,9]
-		end
-	end
-end
-
-# ╔═╡ ec4940bc-04d0-4529-aabf-3b6ff7e67eec
-for i in 1:16
-	println(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"*string(i))
-	for j in 1:16
-		println("")
-		println("")
-		println("Pair Cluster:")
-		println(featureSi[3*i-2:3*i,1])
-		println(featureSi[3*j-2:3*j,1])
-		println("Distance:")
-		println(norm(featureSi[3*i-2:3*i,1]-featureSi[3*j-2:3*j,1]))
-		println("")
-		println("Force constant matrix:")
-		println("")
-		display(P[3*i-2:3*i, 3*j-2:3*j,9])
-	end
-end	
-
-# ╔═╡ b37aafe2-155b-450f-841a-4e1554dc9ae3
-begin
-	scatter(nd,SumRule,
-		xlabel="Training points",
-		ylabel="Sum of FC2 element",
-		title="Sum Rule relation")
-	savefig("Si_FC2_sumrule.png")
-end
-
-# ╔═╡ c9a21f0e-18e0-4cbb-8f1d-8201c0ddbf25
-SumRule
-
-# ╔═╡ 6356e382-3374-4925-9b3e-0892cd345fe5
-log(det(inv(K₁₁)))
-
-# ╔═╡ 74d21522-42dc-4e96-a80d-2e5ef6dae7d0
-log(det(inv(Kₘₘ)))
-
-# ╔═╡ e82975de-28b8-4875-92ed-b62d1813fa4f
-function MaximumLogLike(σₒ::Real, l::Real, σₙ::Real, Target, kₒ, X ; upper_limit = [1., 5., 0.001],  lower_limit = [0.01, 0.05, 0.0])
-	
-	initial = [σₒ, l, σₙ]
-	
-	# Limits of the optimisation.
-	lower =  lower_limit
-    upper =  upper_limit
-	
-	LogM(x) = -(
-		-0.5*
-		(Target' 
-		* Marginal2(X, x[1].^2. * kₒ ∘ ScaleTransform(x[2]), x[3], σₙ; model )
-		* Target
-		)
-		-0.5*
-		(log(det(inv(Marginal2(X, x[1].^2. * kₒ ∘ ScaleTransform(x[2]), x[3], σₙ; model )))))
-	)
-	
-	solution = Optim.optimize(
-        Optim.OnceDifferentiable(LogM, initial; autodiff=:forward),
-        lower,
-        upper,
-        initial,
-        Fminbox(BFGS())
-    )
-	
-	
-	σₒ, l, σₙ = Optim.minimizer(solution)
-	
-	
-	return σₒ, l, σₙ
-end 	
-
-# ╔═╡ f74edb54-c206-4421-85e7-3e515b45e2d4
-MaximumLogLike(0.1, 1, 0.001, TargetAu,  SqExponentialKernel(), featureAu ; upper_limit = [1, 5, 0.01],  lower_limit = [0.01, 0.05, 0.0])
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -622,7 +410,6 @@ DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Einsum = "b7d42ee7-0b51-5a75-98ca-779d3107e4c0"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 KernelFunctions = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
-Kronecker = "2c470bb0-bcc8-11e8-3dad-c9649493f05e"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
@@ -634,7 +421,6 @@ DataFrames = "~1.5.0"
 Einsum = "~0.4.1"
 ForwardDiff = "~0.10.34"
 KernelFunctions = "~0.10.51"
-Kronecker = "~0.5.3"
 Optim = "~1.7.4"
 Plots = "~1.38.5"
 """
@@ -645,12 +431,6 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.7.2"
 manifest_format = "2.0"
-
-[[deps.AbstractFFTs]]
-deps = ["ChainRulesCore", "LinearAlgebra"]
-git-tree-sha1 = "69f7020bd72f069c219b5e8c236c1fa90d2cb409"
-uuid = "621f4979-c628-5d54-868e-fcf4e3e8185c"
-version = "1.2.1"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -763,12 +543,6 @@ version = "1.4.1"
 git-tree-sha1 = "d05d9e7b7aedff4e5b51a029dced05cfb6125781"
 uuid = "d38c429a-6771-53c6-b99e-75d170b6e991"
 version = "0.6.2"
-
-[[deps.CovarianceEstimation]]
-deps = ["LinearAlgebra", "Statistics", "StatsBase"]
-git-tree-sha1 = "3c8de95b4e932d76ec8960e12d681eba580e9674"
-uuid = "587fd27a-f159-11e8-2dae-1979310e6154"
-version = "0.2.8"
 
 [[deps.Crayons]]
 git-tree-sha1 = "249fe38abf76d48563e2f4556bebd215aa317e15"
@@ -1044,12 +818,6 @@ git-tree-sha1 = "0e9ed147ebbd8c5dc4a05ed164068beeca77dffb"
 uuid = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
 version = "0.10.51"
 
-[[deps.Kronecker]]
-deps = ["LinearAlgebra", "NamedDims", "SparseArrays", "StatsBase"]
-git-tree-sha1 = "78d9909daf659c901ae6c7b9de7861ba45a743f4"
-uuid = "2c470bb0-bcc8-11e8-3dad-c9649493f05e"
-version = "0.5.3"
-
 [[deps.LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "f6250b16881adf048549549fba48b1161acdac8c"
@@ -1219,12 +987,6 @@ deps = ["OpenLibm_jll"]
 git-tree-sha1 = "0877504529a3e5c3343c6f8b4c0381e57e4387e4"
 uuid = "77ba4419-2d1f-58cd-9bb1-8ffee604a2e3"
 version = "1.0.2"
-
-[[deps.NamedDims]]
-deps = ["AbstractFFTs", "ChainRulesCore", "CovarianceEstimation", "LinearAlgebra", "Pkg", "Requires", "Statistics"]
-git-tree-sha1 = "cb8ebcee2b4e07b72befb9def593baef8aa12f07"
-uuid = "356022a1-0364-5f58-8944-0da4b18d706f"
-version = "0.2.50"
 
 [[deps.NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
@@ -1803,35 +1565,20 @@ version = "1.4.1+0"
 """
 
 # ╔═╡ Cell order:
-# ╠═deebe580-a292-11ed-0fe9-29d8796af820
-# ╠═e1a2b43c-3a00-4758-9cf7-f13ee8f4c171
-# ╠═55729b97-de8c-4d9d-9e42-815d531c4818
-# ╠═87598f64-d4d8-4528-ab0b-c3e6edbaa80c
-# ╠═01a40b87-c4ae-4898-9a93-c83a36d96afd
-# ╠═dc8e6e59-e509-4636-ae26-7b8d2b8ab1b4
-# ╠═a89a0a84-9c57-4ea6-b8b3-857520144375
-# ╠═b799c4af-709a-49df-81d0-37cd20e09428
-# ╠═3c48274e-0d7c-41aa-b15f-82824a425f11
-# ╠═a8024340-d453-4a69-9d71-7e79d3dece49
-# ╠═e157b611-612b-48a5-b2ff-f38d29613d3c
-# ╠═7d655d8f-cbaf-4705-ab5c-c50b2375b6b3
-# ╠═0f2de449-73ab-446e-8fe4-9725e4fbf5a9
-# ╠═bbb959a8-2c47-4a60-9913-cb2cfce1a167
-# ╠═ffb7268c-5ad7-4cfb-b81c-ff8b04711376
-# ╠═76ffe83a-746a-4da2-8f31-ef396f590ccb
-# ╠═8c408f49-cadf-492d-8b7c-a5317d4361bd
-# ╠═ac053182-bb10-4074-b21c-1b53d1936384
-# ╠═1d48bfbf-6033-44e3-9464-34acd36990a0
-# ╠═ad656b86-b052-4a05-88b6-345db31fb303
-# ╠═7f3a1017-8434-41f5-8348-9926af717703
-# ╠═ba41bd4b-5e03-48dd-9e30-73ae7ae895e6
-# ╠═ec4940bc-04d0-4529-aabf-3b6ff7e67eec
-# ╠═b37aafe2-155b-450f-841a-4e1554dc9ae3
-# ╠═4d59cfec-47c8-444c-9599-e7d2536f6563
-# ╠═c9a21f0e-18e0-4cbb-8f1d-8201c0ddbf25
-# ╠═6356e382-3374-4925-9b3e-0892cd345fe5
-# ╠═74d21522-42dc-4e96-a80d-2e5ef6dae7d0
-# ╠═e82975de-28b8-4875-92ed-b62d1813fa4f
-# ╠═f74edb54-c206-4421-85e7-3e515b45e2d4
+# ╠═cb32a060-b048-11ed-340c-e798d815993a
+# ╠═8b7ec538-5fdb-45e4-bec4-7c1a804a43e1
+# ╠═edc26ecc-9d6d-49f5-b86e-d319862ba529
+# ╠═5805ab2b-b5ad-4986-a316-031511e01555
+# ╠═aa796522-9a4f-46f4-9843-fc0a391fcd0e
+# ╠═2f2e68a5-e2d4-41ca-9741-4a67c102c1b1
+# ╠═f283cfba-c529-4cd1-8793-df271198f980
+# ╠═366c8588-9245-477d-a321-150a4e8aa76b
+# ╠═c74e57d2-be7a-4809-8c48-8593e783f706
+# ╠═cb3fbe40-070e-44ff-bfef-636f7d15b2c4
+# ╠═d9ec3144-e218-4420-98b8-4fcd0fe87eb6
+# ╠═188f0af3-3bb3-4024-9e23-1beba7bec232
+# ╠═82014e87-8857-40c2-8b87-44aa755997a1
+# ╠═f9e0caa7-c132-4f31-bd66-c8d37e99b49e
+# ╠═6157d062-0aa4-4b30-836a-4bd852f5b74f
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
