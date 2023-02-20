@@ -335,8 +335,8 @@ begin
 	#l = 0.4
 	#σₑ = 0.00001
 	#numt = 48
-	σₒ = 0.1
-	l = 0.4
+	σₒ = 0.2
+	l = 0.5
 	σₑ = 0.00001
 	
 	σₙ = 0.000001
@@ -358,6 +358,9 @@ begin
 	FC_Si
 end
 
+# ╔═╡ 90836dc3-52fb-4d5b-be30-e6a6a1c2720f
+abs(sum(FC_Si))
+
 # ╔═╡ 3de688bf-e1eb-4912-8e60-425d94b8d045
 begin
 	heatmap(1:size(FC_Si,1),
@@ -368,11 +371,98 @@ begin
 	#savefig("Si_FC2_opt.png")
 end
 
-# ╔═╡ 93b9ebf3-68b5-4e87-b9f8-713ac87bfb7b
+# ╔═╡ e6368aac-d6f8-4a2d-b01f-0784c1813b89
+for i in 1:16
+	println(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"*string(i))
+	for j in 1:16
+		println("")
+		println("")
+		println("Pair Cluster:")
+		println(featureSi[3*i-2:3*i,1])
+		println(featureSi[3*j-2:3*j,1])
+		println("Distance:")
+		println(norm(featureSi[3*i-2:3*i,1]-featureSi[3*j-2:3*j,1]))
+		println("")
+		println("Force constant matrix:")
+		println("")
+		display(FC_Si[3*i-2:3*i, 3*j-2:3*j])
+	end
+end	
 
+# ╔═╡ bfa3a485-ef73-4622-83c5-ae292c4c12fb
+begin
+	P = zeros((48, 48, 9))
+	P[:,:,9] = FC_Si
+end
+
+# ╔═╡ 93b9ebf3-68b5-4e87-b9f8-713ac87bfb7b
+(
+	P[1:3,46:48,9] + P[4:6,43:45,9]+ P[7:9,40:42,9]+ P[10:12,37:39,9]+
+	P[13:15,34:36,9] + P[16:18,31:33,9]+ P[19:21,28:30,9]+ P[22:24,25:27,9]+
+	P[25:27,22:24,9] + P[28:30,19:21,9]+ P[31:33,16:18,9]+ P[34:36,13:15,9]+
+	P[37:39,10:12,9] + P[40:42,7:9,9]+ P[43:45,4:6,9]+ P[46:48,1:3,9]
+)/16
 
 # ╔═╡ 73061ba8-1bca-4924-ab53-33f2c59ccc94
+begin
+	numt1 = 40
+	σₒ1 = 0.2
+	l1 = 0.5
+	σₑ1 = 0.00001
+	equiSi1, featureSi1, energySi1, forceSi1, TargetSi1 = ASEFeatureTarget(
+				"opt_feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
+				"opt_energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
+				"opt_force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", numt1, DIM)
+	FC_Si1, K₀₀Si1, K₁₁Si1, KₘₘSi1, KₙₘSi1 = Posterior(featureSi1, equiSi1, TargetSi1, kₛₑ2, l1, σₑ, σₙ, order, model)
+	FC_Si1
+end
 
+# ╔═╡ 3461907f-ff7e-4efa-85d3-bce89a690ac0
+abs(sum(FC_Si1))
+
+# ╔═╡ eeeea749-787a-47e3-995c-d337b87ce9c6
+begin
+	P2 = zeros((48, 48, 10))
+	nd = [1,5,10,15,20,30,40,50,60,65]
+	SumRule2 = zeros((10))
+end
+
+# ╔═╡ 1953de47-f27c-4503-bc92-0d0571a0eebf
+for i in 1:10
+	numt = nd[i]
+	equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
+			"feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
+			"energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
+			"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", numt, DIM)
+	FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, l, σₑ, σₙ, order, model)
+	P2[:,:,i] = FC_Si
+	
+	SumRule2[i] = abs(sum(FC_Si))
+end 
+
+# ╔═╡ a11f0d1d-d205-4cc1-98d6-12ae6aaeaa61
+anim2 = @animate for i in 1:10
+	heatmap(1:size(P2[:,:,i],1),
+	    1:size(P2[:,:,i],2), P2[:,:,i],
+	    c=cgrad([:blue, :white, :red, :yellow]),
+	    xlabel="feature coord. (n x d)", ylabel="feature coord. (n x d)",
+	    title="FC2 (Traning Data = " *string(nd[i]) *")" )
+end
+
+# ╔═╡ d799874a-3fde-43d0-aaf3-367d3412b719
+gif(anim2, "Si_FC_n10_fps2_opt.gif", fps=2)
+
+# ╔═╡ 8066b334-f9d5-4579-87ff-3142c2a7695a
+begin
+	scatter(nd,SumRule2,
+		xlabel="Training points",
+		ylabel="Sum of FC2 elements",
+		title="Sum Rule relation")
+	#savefig("Si_FC2_sumrule_2_opt.png")
+end
+
+# ╔═╡ 2888a194-346c-41ea-b7f7-d22704c9d964
+SumRule2
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1551,8 +1641,18 @@ version = "1.4.1+0"
 # ╠═53ecc66a-48d3-48ef-9869-08a21cc545cb
 # ╠═3635e150-2400-4273-9f9c-7c23e2324f70
 # ╠═1dcb35b3-6689-4719-874b-271eefe61369
+# ╠═90836dc3-52fb-4d5b-be30-e6a6a1c2720f
 # ╠═3de688bf-e1eb-4912-8e60-425d94b8d045
+# ╠═e6368aac-d6f8-4a2d-b01f-0784c1813b89
+# ╠═bfa3a485-ef73-4622-83c5-ae292c4c12fb
 # ╠═93b9ebf3-68b5-4e87-b9f8-713ac87bfb7b
 # ╠═73061ba8-1bca-4924-ab53-33f2c59ccc94
+# ╠═3461907f-ff7e-4efa-85d3-bce89a690ac0
+# ╠═eeeea749-787a-47e3-995c-d337b87ce9c6
+# ╠═1953de47-f27c-4503-bc92-0d0571a0eebf
+# ╠═a11f0d1d-d205-4cc1-98d6-12ae6aaeaa61
+# ╠═d799874a-3fde-43d0-aaf3-367d3412b719
+# ╠═8066b334-f9d5-4579-87ff-3142c2a7695a
+# ╠═2888a194-346c-41ea-b7f7-d22704c9d964
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

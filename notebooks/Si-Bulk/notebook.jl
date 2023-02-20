@@ -358,17 +358,6 @@ begin
 	kₛₑ2 = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end
 
-# ╔═╡ 366c8588-9245-477d-a321-150a4e8aa76b
-begin
-	numt = 2
-	equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
-				"feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
-				"energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
-				"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", numt, DIM)
-	FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, l, σₑ, σₙ, order, model)
-	FC_Si
-end
-
 # ╔═╡ c74e57d2-be7a-4809-8c48-8593e783f706
 
 
@@ -393,13 +382,48 @@ for i in 1:10
 end 
 
 # ╔═╡ 188f0af3-3bb3-4024-9e23-1beba7bec232
+anim2 = @animate for i in 1:10
+	heatmap(1:size(P2[:,:,i],1),
+	    1:size(P2[:,:,i],2), P2[:,:,i],
+	    c=cgrad([:blue, :white, :red, :yellow]),
+	    xlabel="feature coord. (n x d)", ylabel="feature coord. (n x d)",
+	    title="FC2 (Traning Data = " *string(nd[i]) *")" )
+end
 
+# ╔═╡ e34e48c0-b88e-426a-bf3a-9cb95c7033dc
+gif(anim2, "Si_FC_n10_fps2.gif", fps=2)
 
 # ╔═╡ f9e0caa7-c132-4f31-bd66-c8d37e99b49e
 
 
 # ╔═╡ 6157d062-0aa4-4b30-836a-4bd852f5b74f
+begin
+	scatter(nd,SumRule2,
+		xlabel="Training points",
+		ylabel="Sum of FC2 elements",
+		title="Sum Rule relation")
+	#savefig("Si_FC2_sumrule_2.png")
+end
 
+# ╔═╡ aea9aeca-b946-43f0-826a-fd8e8a4d3175
+begin
+	P3 = zeros((48, 48, 48, 10))
+	SumRule3 = zeros((10))
+	order3 = 3
+end
+
+# ╔═╡ 6c99eaa6-1b0a-4eed-9c00-8da55c0eae47
+for i in 1:10
+	numt = nd[i]
+	equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
+			"feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
+			"energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
+			"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", numt, DIM)
+	FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, l, σₑ, σₙ, order3, model)
+	P3[:,:,i] = FC_Si
+	
+	SumRule3[i] = abs(sum(FC_Si))
+end 
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1572,13 +1596,15 @@ version = "1.4.1+0"
 # ╠═aa796522-9a4f-46f4-9843-fc0a391fcd0e
 # ╠═2f2e68a5-e2d4-41ca-9741-4a67c102c1b1
 # ╠═f283cfba-c529-4cd1-8793-df271198f980
-# ╠═366c8588-9245-477d-a321-150a4e8aa76b
 # ╠═c74e57d2-be7a-4809-8c48-8593e783f706
 # ╠═cb3fbe40-070e-44ff-bfef-636f7d15b2c4
 # ╠═d9ec3144-e218-4420-98b8-4fcd0fe87eb6
 # ╠═188f0af3-3bb3-4024-9e23-1beba7bec232
+# ╠═e34e48c0-b88e-426a-bf3a-9cb95c7033dc
 # ╠═82014e87-8857-40c2-8b87-44aa755997a1
 # ╠═f9e0caa7-c132-4f31-bd66-c8d37e99b49e
 # ╠═6157d062-0aa4-4b30-836a-4bd852f5b74f
+# ╠═aea9aeca-b946-43f0-826a-fd8e8a4d3175
+# ╠═6c99eaa6-1b0a-4eed-9c00-8da55c0eae47
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
