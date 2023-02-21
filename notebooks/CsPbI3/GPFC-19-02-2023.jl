@@ -349,7 +349,7 @@ end
 
 # ╔═╡ ecd9f3a1-bb4c-4f2b-8869-aff96abd862d
 begin
-	numt = 60
+	numt = 80
 	equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
 				"feature_CsPbI3_222spc_01__PW800_kpts9_e100_d1.csv",
 				"energy_CsPbI3_222spc_01__PW800_kpts9_e100_d1.csv", 
