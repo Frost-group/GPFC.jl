@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 55dfe63c-ae0a-11ed-32fd-9da6bf53534e
+# ╔═╡ fe142950-b169-11ed-0c87-0b6d1f449930
 begin
 	using KernelFunctions
 	using ForwardDiff
@@ -17,11 +17,8 @@ begin
 	using Distributed
 end
 
-# ╔═╡ 45fe0bd6-f4e6-428f-bb56-2bc52396a6e3
-nprocs()
-
-# ╔═╡ 4444efe7-0641-4906-be81-587f3a39fe2b
-function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt, dimA)
+# ╔═╡ 2890651b-630e-400c-8e00-d0940fdd90a0
+function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
 	a  = 4 - dimA
 	feature = (
 		CSV.File(
@@ -68,8 +65,8 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt, dimA)
 end
 
 
-# ╔═╡ f2e2cd6b-051d-4b79-bee1-9142932448af
-function kernel(k, xₜ, vₜ, grad)
+# ╔═╡ 0b43b5d5-0483-4f55-83b2-2f142ccef20d
+function kernel(k, xₜ::Vector{Float64}, vₜ::Vector{Float64}, grad::Vector{Int64})
 
 #order 0
 	if grad == [0,0]
@@ -147,8 +144,77 @@ function kernel(k, xₜ, vₜ, grad)
 	end
 end
 
-# ╔═╡ 3e1afc40-2a13-4758-9e5a-b88d3a122d62
-function Coveriant(X, xₒ, k, order)
+# ╔═╡ 0314455c-334c-4e09-b3ba-42f757dfa749
+function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64, model::Int64)
+	dim = size(X,1)
+	num = size(X,2)
+	KK = zeros(
+		(
+			(1+dim)*num, (1+dim)*num
+		)
+	)
+	K₀₀ = zeros(
+		(
+			(1)*num, (1)*num
+		)
+	)
+	K₁₁ = zeros(
+		(
+			(dim)*num, (dim)*num
+		)
+	)
+	
+	for i in 1:num 
+		for j in 1:num 
+			KK[i, j] = kernel(
+				k, X[:,i], X[:,j], [0,0]
+			)
+			
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernel(
+				k, X[:,i], X[:,j], [1,0]
+			)
+			
+			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = kernel(
+				k, X[:,i], X[:,j], [0,1]
+			)
+			
+			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,
+				(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = kernel(
+					k, X[:,i], X[:,j], [1,1]
+				)
+			
+			K₀₀[i, j] = KK[i, j]
+			K₁₁[(1)+((i-1)*dim):(1)+((i)*dim)-1,
+				(1)+((j-1)*dim):(1)+((j)*dim)-1] = KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1, (num+1)+((j-1)*dim):(num+1)+((j)*dim)-1]
+			
+		end
+	end
+	
+	if model == 1
+		Iee = σₑ^2 * Matrix(I, num, num)
+		Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
+		Ief = zeros(num, dim * num)
+		II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
+
+		Kₘₘ = KK + II
+		K₀₀ = K₀₀ + Iee 
+		K₁₁ = K₁₁ + Iff
+	else
+		Iee = σₑ^2 * Matrix(I, num, num)
+		Iff = σₙ^2 * Matrix(I, dim * num, dim * num)
+		Ief = zeros(num, dim * num)
+		II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
+
+		Kₘₘ = KK + II
+		K₀₀ = K₀₀ + Iee 
+		K₁₁ = K₁₁ + Iff
+	end
+	#Kₘₘ⁻¹ = inv(KK+II)
+	return K₀₀, K₁₁, Kₘₘ
+end
+
+# ╔═╡ b060d5a1-573d-4dab-a852-afe3e1ebd04c
+function Coveriant(X::Matrix{Float64}, xₒ::Vector{Float64}, k, order::Int64)
 	dim = size(X,1)
 	num = size(X,2)
 
@@ -237,98 +303,11 @@ function Coveriant(X, xₒ, k, order)
 	return Kₙₘ
 end
 
-# ╔═╡ 3933f342-f88e-4049-8bae-ae3d7d8b976e
-begin
-	#σₒ = 0.1
-	#l = 0.4
-	#σₑ = 0.00001
-	#numt = 48
-	σₒ = 0.1
-	l = 0.4
-	σₑ = 0.00001
-	
-	σₙ = 0.000001
-	DIM = 3
-	model = 1
-	order = 3
-	
-	kₛₑ2 = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
-end
-
-# ╔═╡ c0c01e80-773e-42d7-a57e-d764ee9b2305
-function Marginal(X, k, σₑ, σₙ; model = 1)
+# ╔═╡ cd71af49-546f-411e-9442-2236cc76ae99
+function PosteriorMean(X::Matrix{Float64}, xₒ::Vector{Float64}, Target::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64, order::Int64, model::Int64)
 	dim = size(X,1)
 	num = size(X,2)
-	KK = zeros(
-		(
-			(1+dim)*num, (1+dim)*num
-		)
-	)
-	K₀₀ = zeros(
-		(
-			(1)*num, (1)*num
-		)
-	)
-	K₁₁ = zeros(
-		(
-			(dim)*num, (dim)*num
-		)
-	)
-	
-	for i in 1:num 
-		for j in 1:num 
-			KK[i, j] = kernel(
-				k, X[:,i], X[:,j], [0,0]
-			)
-			
-			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernel(
-				k, X[:,i], X[:,j], [1,0]
-			)
-			
-			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = kernel(
-				k, X[:,i], X[:,j], [0,1]
-			)
-			
-			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,
-				(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = kernel(
-					k, X[:,i], X[:,j], [1,1]
-				)
-			
-			K₀₀[i, j] = KK[i, j]
-			K₁₁[(1)+((i-1)*dim):(1)+((i)*dim)-1,
-				(1)+((j-1)*dim):(1)+((j)*dim)-1] = KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1, (num+1)+((j-1)*dim):(num+1)+((j)*dim)-1]
-			
-		end
-	end
-	
-	if model == 1
-		Iee = σₑ^2 * Matrix(I, num, num)
-		Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
-		Ief = zeros(num, dim * num)
-		II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
-
-		Kₘₘ = KK + II
-		K₀₀ = K₀₀ + Iee 
-		K₁₁ = K₁₁ + Iff
-	else
-		Iee = σₑ^2 * Matrix(I, num, num)
-		Iff = σₙ^2 * Matrix(I, dim * num, dim * num)
-		Ief = zeros(num, dim * num)
-		II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
-
-		Kₘₘ = KK + II
-		K₀₀ = K₀₀ + Iee 
-		K₁₁ = K₁₁ + Iff
-	end
-	#Kₘₘ⁻¹ = inv(KK+II)
-	return K₀₀, K₁₁, Kₘₘ
-end
-
-# ╔═╡ 764cd372-c808-4b59-bb0b-2a2430956432
-function Posterior(X, xₒ, Target, k, σₑ, σₙ, order, model)
-	dim = size(X,1)
-	num = size(X,2)
-	K₀₀, K₁₁, Kₘₘ = Marginal(X, k, σₑ, σₙ; model )
+	K₀₀, K₁₁, Kₘₘ = Marginal(X, k, l, σₑ, σₙ, model )
 	Kₙₘ = Coveriant(X, xₒ, k, order)
 	Kₘₘ⁻¹ = inv(Kₘₘ)
 	
@@ -351,56 +330,33 @@ function Posterior(X, xₒ, Target, k, σₑ, σₙ, order, model)
 	return Meanₚ, K₀₀, K₁₁, Kₘₘ, Kₙₘ
 end
 
-# ╔═╡ b5bd8072-8721-4ea2-9750-8ea0405d1cb2
+# ╔═╡ d0f314b9-51d5-43e7-a8de-ab0f041b09dd
+begin
+	#σₒ = 0.1
+	#l = 0.4
+	#σₑ = 0.00001
+	#numt = 48
+	σₒ = 0.1
+	l = 0.4
+	σₑ = 0.00001
+	
+	σₙ = 0.000001
+	DIM = 3
+	model = 1
+	order = 3
+	
+	kₛₑ2 = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
+end
+
+# ╔═╡ 9860f962-dbbc-4c59-9278-3e0469565d6e
 begin
 	numt = 1
 	equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
 				"feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
 				"energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
 				"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", numt, DIM)
-	FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, σₑ, σₙ, order, model)
+	FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = PosteriorMean(featureSi, equiSi, TargetSi, kₛₑ2, l, σₑ, σₙ, order, model)
 end
-
-# ╔═╡ d13b6df3-9c66-473b-a4b5-65b776cc2a5c
-begin
-	P2 = zeros(( 48, 48, 10))
-	nd = [1,5,10,15,20,30,40,50,60,80]
-	SumRule2 = zeros((10))
-	order2 = 2
-end
-
-# ╔═╡ c819ea32-b1d6-4b39-9d73-4112480e0ad5
-for i in 1:10
-	numt1 = nd[i]
-	equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
-			"feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
-			"energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
-			"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", numt1, DIM)
-	FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, l, σₑ, σₙ, order2, model)
-	P2[:,:,:,i] = FC_Si
-	
-	SumRule2[i] = abs(sum(FC_Si))
-end 
-
-# ╔═╡ 2c02dbea-a7af-488b-84a8-07329f85497c
-begin
-	P3 = zeros((48, 48, 48, 10))
-	SumRule3 = zeros((10))
-	order3 = 3
-end
-
-# ╔═╡ 96924285-60a6-4bd9-be44-b26fa8289838
-for i in 1:10
-	numt1 = nd[i]
-	equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
-			"feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
-			"energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
-			"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", numt1, DIM)
-	FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, l, σₑ, σₙ, order3, model)
-	P3[:,:,:,i] = FC_Si
-	
-	SumRule3[i] = abs(sum(FC_Si))
-end 
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -432,14 +388,20 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 julia_version = "1.7.2"
 manifest_format = "2.0"
 
+[[deps.Adapt]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "0310e08cb19f5da31d08341c6120c047598f5b9c"
+uuid = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+version = "3.5.0"
+
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
 
-[[deps.ArrayInterfaceCore]]
-deps = ["LinearAlgebra", "SnoopPrecompile", "SparseArrays", "SuiteSparse"]
-git-tree-sha1 = "e5f08b5689b1aad068e01751889f2f615c7db36d"
-uuid = "30b0a656-2188-435a-8636-2ec0e6a096e2"
-version = "0.1.29"
+[[deps.ArrayInterface]]
+deps = ["Adapt", "LinearAlgebra", "Requires", "SnoopPrecompile", "SparseArrays", "SuiteSparse"]
+git-tree-sha1 = "4d9946e51e24f5e509779e3e2c06281a733914c2"
+uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
+version = "7.1.0"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -478,9 +440,9 @@ version = "1.15.7"
 
 [[deps.ChangesOfVariables]]
 deps = ["ChainRulesCore", "LinearAlgebra", "Test"]
-git-tree-sha1 = "844b061c104c408b24537482469400af6075aae4"
+git-tree-sha1 = "485193efd2176b88e6622a39a246f8c5b600e74e"
 uuid = "9e997f8a-9a97-42d5-a9f1-ce6bfc15e2c0"
-version = "0.1.5"
+version = "0.1.6"
 
 [[deps.CodecZlib]]
 deps = ["TranscodingStreams", "Zlib_jll"]
@@ -648,10 +610,10 @@ uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
 version = "0.13.7"
 
 [[deps.FiniteDiff]]
-deps = ["ArrayInterfaceCore", "LinearAlgebra", "Requires", "Setfield", "SparseArrays", "StaticArrays"]
-git-tree-sha1 = "04ed1f0029b6b3af88343e439b995141cb0d0b8d"
+deps = ["ArrayInterface", "LinearAlgebra", "Requires", "Setfield", "SparseArrays", "StaticArrays"]
+git-tree-sha1 = "ed1b56934a2f7a65035976985da71b6a65b4f2cf"
 uuid = "6a86dc24-6348-571c-b903-95158fe2bd41"
-version = "2.17.0"
+version = "2.18.0"
 
 [[deps.FixedPointNumbers]]
 deps = ["Statistics"]
@@ -691,9 +653,9 @@ version = "1.0.10+0"
 
 [[deps.Functors]]
 deps = ["LinearAlgebra"]
-git-tree-sha1 = "61fa9cf802d35fe1b5b8ea9fbaac4b8f020d19b1"
+git-tree-sha1 = "7ed0833a55979d3d2658a60b901469748a6b9a7c"
 uuid = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
-version = "0.4.2"
+version = "0.4.3"
 
 [[deps.Future]]
 deps = ["Random"]
@@ -807,10 +769,10 @@ uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 version = "0.21.3"
 
 [[deps.JpegTurbo_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "b53380851c6e6664204efb2e62cd24fa5c47e4ba"
+deps = ["Artifacts", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "6f2675ef130a300a112286de91973805fcc5ffbc"
 uuid = "aacddb02-875f-59d6-b918-886e6ef4fbf8"
-version = "2.1.2+0"
+version = "2.1.91+0"
 
 [[deps.KernelFunctions]]
 deps = ["ChainRulesCore", "Compat", "CompositionsBase", "Distances", "FillArrays", "Functors", "IrrationalConstants", "LinearAlgebra", "LogExpFunctions", "Random", "Requires", "SpecialFunctions", "Statistics", "StatsBase", "TensorCore", "Test", "ZygoteRules"]
@@ -926,9 +888,9 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[deps.LogExpFunctions]]
 deps = ["ChainRulesCore", "ChangesOfVariables", "DocStringExtensions", "InverseFunctions", "IrrationalConstants", "LinearAlgebra"]
-git-tree-sha1 = "680e733c3a0a9cea9e935c8c2184aea6a63fa0b5"
+git-tree-sha1 = "0a1b7c2863e44523180fdb3146534e265a91870b"
 uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
-version = "0.3.21"
+version = "0.3.23"
 
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
@@ -1222,9 +1184,9 @@ version = "2.1.7"
 
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "Random", "StaticArraysCore", "Statistics"]
-git-tree-sha1 = "67d3e75e8af8089ea34ce96974d5468d4a008ca6"
+git-tree-sha1 = "2d7d9e1ddadc8407ffd460e24218e37ef52dd9a3"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.5.15"
+version = "1.5.16"
 
 [[deps.StaticArraysCore]]
 git-tree-sha1 = "6b7ba252635a5eff6a0b0664a41ee140a1c9e72a"
@@ -1565,19 +1527,13 @@ version = "1.4.1+0"
 """
 
 # ╔═╡ Cell order:
-# ╠═55dfe63c-ae0a-11ed-32fd-9da6bf53534e
-# ╠═45fe0bd6-f4e6-428f-bb56-2bc52396a6e3
-# ╠═4444efe7-0641-4906-be81-587f3a39fe2b
-# ╠═f2e2cd6b-051d-4b79-bee1-9142932448af
-# ╠═c0c01e80-773e-42d7-a57e-d764ee9b2305
-# ╠═3e1afc40-2a13-4758-9e5a-b88d3a122d62
-# ╠═764cd372-c808-4b59-bb0b-2a2430956432
-# ╠═3933f342-f88e-4049-8bae-ae3d7d8b976e
-# ╠═c0f01351-2feb-419a-8d3e-c6759ebd4728
-# ╠═b5bd8072-8721-4ea2-9750-8ea0405d1cb2
-# ╠═d13b6df3-9c66-473b-a4b5-65b776cc2a5c
-# ╠═c819ea32-b1d6-4b39-9d73-4112480e0ad5
-# ╠═2c02dbea-a7af-488b-84a8-07329f85497c
-# ╠═96924285-60a6-4bd9-be44-b26fa8289838
+# ╠═fe142950-b169-11ed-0c87-0b6d1f449930
+# ╠═2890651b-630e-400c-8e00-d0940fdd90a0
+# ╠═0b43b5d5-0483-4f55-83b2-2f142ccef20d
+# ╠═0314455c-334c-4e09-b3ba-42f757dfa749
+# ╠═b060d5a1-573d-4dab-a852-afe3e1ebd04c
+# ╠═cd71af49-546f-411e-9442-2236cc76ae99
+# ╠═d0f314b9-51d5-43e7-a8de-ab0f041b09dd
+# ╠═9860f962-dbbc-4c59-9278-3e0469565d6e
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
