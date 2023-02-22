@@ -360,7 +360,7 @@ begin
 end
 
 # ╔═╡ c819ea32-b1d6-4b39-9d73-4112480e0ad5
-for i in 1:10
+@time for i in 1:10
 	numt1 = nd[i]
 	equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
 			"feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
