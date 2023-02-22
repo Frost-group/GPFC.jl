@@ -69,7 +69,7 @@ end
 
 
 # ╔═╡ f2e2cd6b-051d-4b79-bee1-9142932448af
-function kernel(k, xₜ::Vector{Float64}, vₜ::Vector{Float64}, grad::Vector{Int64})
+function kernel(k, xₜ, vₜ, grad)
 
 #order 0
 	if grad == [0,0]
@@ -147,77 +147,8 @@ function kernel(k, xₜ::Vector{Float64}, vₜ::Vector{Float64}, grad::Vector{In
 	end
 end
 
-# ╔═╡ c0c01e80-773e-42d7-a57e-d764ee9b2305
-function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64, model::Int64)
-	dim = size(X,1)
-	num = size(X,2)
-	KK = zeros(
-		(
-			(1+dim)*num, (1+dim)*num
-		)
-	)
-	K₀₀ = zeros(
-		(
-			(1)*num, (1)*num
-		)
-	)
-	K₁₁ = zeros(
-		(
-			(dim)*num, (dim)*num
-		)
-	)
-	
-	for i in 1:num 
-		for j in 1:num 
-			KK[i, j] = kernel(
-				k, X[:,i], X[:,j], [0,0]
-			)
-			
-			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernel(
-				k, X[:,i], X[:,j], [1,0]
-			)
-			
-			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = kernel(
-				k, X[:,i], X[:,j], [0,1]
-			)
-			
-			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,
-				(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = kernel(
-					k, X[:,i], X[:,j], [1,1]
-				)
-			
-			K₀₀[i, j] = KK[i, j]
-			K₁₁[(1)+((i-1)*dim):(1)+((i)*dim)-1,
-				(1)+((j-1)*dim):(1)+((j)*dim)-1] = KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1, (num+1)+((j-1)*dim):(num+1)+((j)*dim)-1]
-			
-		end
-	end
-	
-	if model == 1
-		Iee = σₑ^2 * Matrix(I, num, num)
-		Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
-		Ief = zeros(num, dim * num)
-		II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
-
-		Kₘₘ = KK + II
-		K₀₀ = K₀₀ + Iee 
-		K₁₁ = K₁₁ + Iff
-	else
-		Iee = σₑ^2 * Matrix(I, num, num)
-		Iff = σₙ^2 * Matrix(I, dim * num, dim * num)
-		Ief = zeros(num, dim * num)
-		II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
-
-		Kₘₘ = KK + II
-		K₀₀ = K₀₀ + Iee 
-		K₁₁ = K₁₁ + Iff
-	end
-	#Kₘₘ⁻¹ = inv(KK+II)
-	return K₀₀, K₁₁, Kₘₘ
-end
-
 # ╔═╡ 3e1afc40-2a13-4758-9e5a-b88d3a122d62
-function Coveriant(X::Matrix{Float64}, xₒ::Vector{Float64}, k, order::Int64)
+function Coveriant(X, xₒ, k, order)
 	dim = size(X,1)
 	num = size(X,2)
 
@@ -306,11 +237,98 @@ function Coveriant(X::Matrix{Float64}, xₒ::Vector{Float64}, k, order::Int64)
 	return Kₙₘ
 end
 
-# ╔═╡ 764cd372-c808-4b59-bb0b-2a2430956432
-function  Posterior(X::Matrix{Float64}, xₒ::Vector{Float64}, Target::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64, order::Int64, model::Int64)
+# ╔═╡ 3933f342-f88e-4049-8bae-ae3d7d8b976e
+begin
+	#σₒ = 0.1
+	#l = 0.4
+	#σₑ = 0.00001
+	#numt = 48
+	σₒ = 0.1
+	l = 0.4
+	σₑ = 0.00001
+	
+	σₙ = 0.000001
+	DIM = 3
+	model = 1
+	order = 3
+	
+	kₛₑ2 = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
+end
+
+# ╔═╡ c0c01e80-773e-42d7-a57e-d764ee9b2305
+function Marginal(X, k, σₑ, σₙ; model = 1)
 	dim = size(X,1)
 	num = size(X,2)
-	K₀₀, K₁₁, Kₘₘ = Marginal(X, k, l, σₑ, σₙ, model )
+	KK = zeros(
+		(
+			(1+dim)*num, (1+dim)*num
+		)
+	)
+	K₀₀ = zeros(
+		(
+			(1)*num, (1)*num
+		)
+	)
+	K₁₁ = zeros(
+		(
+			(dim)*num, (dim)*num
+		)
+	)
+	
+	for i in 1:num 
+		for j in 1:num 
+			KK[i, j] = kernel(
+				k, X[:,i], X[:,j], [0,0]
+			)
+			
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernel(
+				k, X[:,i], X[:,j], [1,0]
+			)
+			
+			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = kernel(
+				k, X[:,i], X[:,j], [0,1]
+			)
+			
+			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,
+				(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = kernel(
+					k, X[:,i], X[:,j], [1,1]
+				)
+			
+			K₀₀[i, j] = KK[i, j]
+			K₁₁[(1)+((i-1)*dim):(1)+((i)*dim)-1,
+				(1)+((j-1)*dim):(1)+((j)*dim)-1] = KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1, (num+1)+((j-1)*dim):(num+1)+((j)*dim)-1]
+			
+		end
+	end
+	
+	if model == 1
+		Iee = σₑ^2 * Matrix(I, num, num)
+		Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
+		Ief = zeros(num, dim * num)
+		II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
+
+		Kₘₘ = KK + II
+		K₀₀ = K₀₀ + Iee 
+		K₁₁ = K₁₁ + Iff
+	else
+		Iee = σₑ^2 * Matrix(I, num, num)
+		Iff = σₙ^2 * Matrix(I, dim * num, dim * num)
+		Ief = zeros(num, dim * num)
+		II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
+
+		Kₘₘ = KK + II
+		K₀₀ = K₀₀ + Iee 
+		K₁₁ = K₁₁ + Iff
+	end
+	#Kₘₘ⁻¹ = inv(KK+II)
+	return K₀₀, K₁₁, Kₘₘ
+end
+
+# ╔═╡ 764cd372-c808-4b59-bb0b-2a2430956432
+function Posterior(X, xₒ, Target, k, σₑ, σₙ, order, model)
+	dim = size(X,1)
+	num = size(X,2)
+	K₀₀, K₁₁, Kₘₘ = Marginal(X, k, σₑ, σₙ; model )
 	Kₙₘ = Coveriant(X, xₒ, k, order)
 	Kₘₘ⁻¹ = inv(Kₘₘ)
 	
@@ -331,24 +349,6 @@ function  Posterior(X::Matrix{Float64}, xₒ::Vector{Float64}, Target::Matrix{Fl
 	end
 	
 	return Meanₚ, K₀₀, K₁₁, Kₘₘ, Kₙₘ
-end
-
-# ╔═╡ 3933f342-f88e-4049-8bae-ae3d7d8b976e
-begin
-	#σₒ = 0.1
-	#l = 0.4
-	#σₑ = 0.00001
-	#numt = 48
-	σₒ = 0.1
-	l = 0.4
-	σₑ = 0.00001
-	
-	σₙ = 0.000001
-	DIM = 3
-	model = 1
-	order = 3
-	
-	kₛₑ2 = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end
 
 # ╔═╡ d13b6df3-9c66-473b-a4b5-65b776cc2a5c
@@ -373,54 +373,8 @@ for i in 1:10
 end 
 
 
-# ╔═╡ fb5bc0e0-ab66-4ec3-aeb9-333a73151032
-begin
-	numt = 6
-	equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
-				"feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
-				"energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
-				"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", numt, DIM)
-end
 
-# ╔═╡ 175fdfa8-9ee2-4930-8ede-bf57cd6ed57a
-@time FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, l, σₑ, σₙ, order2, model)
 
-# ╔═╡ ee972068-ed7b-4695-a94b-555a0e6de34a
-anim2 = @animate for i in 1:10
-	heatmap(1:size(P2[:,:,i],1),
-	    1:size(P2[:,:,i],2), P2[:,:,i],
-	    c=cgrad([:blue, :white, :red, :yellow]),
-	    xlabel="feature coord. (n x d)", ylabel="feature coord. (n x d)",
-	    title="FC2 (Traning Data = " *string(nd[i]) *")" , aspect_ratio=1, size=(650, 650))
-end
-
-# ╔═╡ fd31ff0e-1e3b-4cc0-a9ec-6a35ddef6bb7
-gif(anim2, "Si_FC2_fps_new.gif", fps=2)
-
-# ╔═╡ c84455d0-11c2-44c9-99ea-f5af75010849
-anim3 = @animate for i in 1:10
-	scatter(nd[1:i], SumRule2[1:i],
-		xlabel="Training points",
-		ylabel="Sum of FC2 element",
-		title="Sum Rule relation (Traning Data = " *string(nd[i]) *")")
-end
-
-# ╔═╡ 96cf0910-4122-4c23-b62a-157df7c97ca9
-gif(anim3, "Si_FC2_SR_new.gif", fps=2)
-
-# ╔═╡ 865c6e02-5d24-4caf-9e61-07ec7b8d947a
-anim4 = @animate for i in 1:10
-	scatter(nd[1:i], SumRule2[1:i],
-		xlabel="Training points",
-		ylabel="Sum of FC2 element",
-		xlim = (-1, 90), 
-		ylim = (-20.0, 700.0),
-		labels = "Learning points",
-		title="Sum Rule relation (Traning Data = " *string(nd[i]) *")")
-end
-
-# ╔═╡ c57d3249-2d82-4c9d-a2c1-c2a4331fddd9
-gif(anim4, "Si_FC2_SR2_new.gif", fps=2)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1593,15 +1547,10 @@ version = "1.4.1+0"
 # ╠═3e1afc40-2a13-4758-9e5a-b88d3a122d62
 # ╠═764cd372-c808-4b59-bb0b-2a2430956432
 # ╠═3933f342-f88e-4049-8bae-ae3d7d8b976e
+# ╠═b5bd8072-8721-4ea2-9750-8ea0405d1cb2
 # ╠═d13b6df3-9c66-473b-a4b5-65b776cc2a5c
 # ╠═c819ea32-b1d6-4b39-9d73-4112480e0ad5
-# ╠═fb5bc0e0-ab66-4ec3-aeb9-333a73151032
-# ╠═175fdfa8-9ee2-4930-8ede-bf57cd6ed57a
-# ╠═ee972068-ed7b-4695-a94b-555a0e6de34a
-# ╠═fd31ff0e-1e3b-4cc0-a9ec-6a35ddef6bb7
-# ╠═c84455d0-11c2-44c9-99ea-f5af75010849
-# ╠═96cf0910-4122-4c23-b62a-157df7c97ca9
-# ╠═865c6e02-5d24-4caf-9e61-07ec7b8d947a
-# ╠═c57d3249-2d82-4c9d-a2c1-c2a4331fddd9
+# ╠═2c02dbea-a7af-488b-84a8-07329f85497c
+# ╠═96924285-60a6-4bd9-be44-b26fa8289838
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

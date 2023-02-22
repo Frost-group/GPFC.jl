@@ -79,7 +79,7 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 end
 
 # ╔═╡ 55729b97-de8c-4d9d-9e42-815d531c4818
-function kernel(k, xₜ::Vector{Float64}, vₜ::Vector{Float64}, grad)
+function kernel(k, xₜ::Vector{Float64}, vₜ::Vector{Float64}, grad::Vector{Int64})
 
 #order 0
 	if grad == [0,0]
@@ -157,45 +157,28 @@ function kernel(k, xₜ::Vector{Float64}, vₜ::Vector{Float64}, grad)
 	end
 end
 
-# ╔═╡ 05ebd5f5-797e-44b1-9252-31b1e6640990
-function derivativeF(k, x₁, x₂)
-	function f1( x₁, x₂) 
-		return ForwardDiff.gradient( a -> k(a, x₂), x₁)
-	end	
-	function f2( x₁, x₂)
-		return ForwardDiff.jacobian( a -> f1(a, x₂), x₁)
-	end
-	function f3( x₁, x₂) 
-		return ForwardDiff.jacobian( a -> f2(a, x₂), x₁)
-	end 
-	function f4( x₁, x₂)
-		return ForwardDiff.jacobian( a -> f3(a, x₂), x₁)
-	end
-end
-
-# ╔═╡ 40acf168-5c86-4982-8fd2-dfd2425891ff
+# ╔═╡ 195bac58-8a31-4ed4-acb3-b6ee691ed06b
 begin
-	function f1(k, x₁, x₂) 
-		return ForwardDiff.gradient( a -> k(a, x₂), x₁)
-	end	
-	function f2(k, x₁, x₂)
-		return ForwardDiff.jacobian( a -> f1(a, x₂), x₁)
-	end
-	function f3(k, x₁, x₂) 
-		return ForwardDiff.jacobian( a -> f2(a, x₂), x₁)
-	end 
-	function f4(k, x₁, x₂)
-		return ForwardDiff.jacobian( a -> f3(a, x₂), x₁)
-	end
+	n = 10
+	x = rand(n)
+	xₒ = zeros(n)
+	@time f2nd( x, xₒ) 
 end
 
-# ╔═╡ 00b2cd1b-fa07-4822-a1a6-a81ff6df05f7
-function kernel(k, xₜ::Vector{Float64}, vₜ::Vector{Float64}, grad::Vector{Int64})
-	#order 0
-	if grad == [0,0]
-		return k(xₜ, vₜ)
-	end
-end
+# ╔═╡ 9eb8d4f2-249b-4ecb-a602-ff9feacaf67e
+equiSi1, featureSi1, energySi1, forceSi1, TargetSi1 = ASEFeatureTarget(
+			"feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
+			"energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
+			"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 10, 3)
+
+# ╔═╡ 324b2ec9-de4f-4e86-b13e-07595d91f429
+@time Marginal(featureSi1[:,:], kₛₑ2, l, σₑ, σₙ, model)
+
+# ╔═╡ 75fce348-2a88-4668-b0e5-3df12fc2d66e
+@time Marginal2(featureSi1, l, σₑ, σₙ, model)
+
+# ╔═╡ 863d13bc-ff54-4baf-9588-57e592cafd45
+@time inv(KK)
 
 # ╔═╡ 87598f64-d4d8-4528-ab0b-c3e6edbaa80c
 function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64, model::Int64)
@@ -357,7 +340,7 @@ function Coveriant(X::Matrix{Float64}, xₒ::Vector{Float64}, k, order::Int64)
 end
 
 # ╔═╡ a89a0a84-9c57-4ea6-b8b3-857520144375
-function Posterior(X::Matrix{Float64}, xₒ::Vector{Float64}, Target::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64, order::Int64, model::Int64)
+function PosteriorMean(X::Matrix{Float64}, xₒ::Vector{Float64}, Target::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64, order::Int64, model::Int64)
 	dim = size(X,1)
 	num = size(X,2)
 	K₀₀, K₁₁, Kₘₘ = Marginal(X, k, l, σₑ, σₙ; model )
@@ -401,15 +384,102 @@ begin
 	kₛₑ2 = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end
 
-# ╔═╡ 195bac58-8a31-4ed4-acb3-b6ee691ed06b
+# ╔═╡ 0d761cb5-c9f0-4e0e-966d-1af7cd918d1c
 begin
-	x = [0.1,0.2,0.3]
-	xₒ = zeros(3)
-	f1(kₛₑ2, x, xₒ) 
+	k = kₛₑ2
+	X = featureSi1
 end
 
-# ╔═╡ d822cac7-8478-4853-9f23-595eaeadcb96
-derivativeF(kₛₑ2, x, xₒ)
+# ╔═╡ 40acf168-5c86-4982-8fd2-dfd2425891ff
+begin
+	function f1st(x₁, x₂::Vector{Float64}) 
+		return ForwardDiff.gradient( a -> k(a, x₂), x₁)
+	end	
+	function f2nd(x₁, x₂::Vector{Float64})
+		return ForwardDiff.jacobian( a -> f1st(a, x₂), x₁)
+	end
+	function f3rd(x₁, x₂::Vector{Float64}) 
+		return ForwardDiff.jacobian( a -> f2nd(a, x₂), x₁)
+	end 
+	function f4th(x₁, x₂::Vector{Float64})
+		return ForwardDiff.jacobian( a -> f3rd(a, x₂), x₁)
+	end
+end
+
+# ╔═╡ 00b2cd1b-fa07-4822-a1a6-a81ff6df05f7
+function kernel2(k, xₜ::Vector{Float64}, vₜ::Vector{Float64}, grad::Vector{Int64})
+	#order 0
+	if grad == [0,0]
+		return k(xₜ, vₜ)
+		
+	elseif grad == [1,0]
+		return f1st( xₜ, vₜ)
+	end
+end
+
+# ╔═╡ 281f3307-15c0-488b-b574-e6b60e60d47d
+f1st(featureSi1[:,1], featureSi1[:,2])
+
+# ╔═╡ f3cdbf62-5bd7-4b70-a7c8-4d08afd1b82b
+function Marginal2(X::Matrix{Float64}, l::Float64, σₑ::Float64, σₙ::Float64, model::Int64)
+	dim = size(X,1)
+	num = size(X,2)
+	#building Marginal Likelihood containers
+	#For Energy + Force
+	KK = zeros(((1+dim)*num, (1+dim)*num))
+	#For Energy
+	K₀₀ = zeros(((1)*num, (1)*num))
+	#For Force
+	K₁₁ = zeros(((dim)*num, (dim)*num))
+	
+	for i in 1:num 
+		for j in 1:num 
+			
+		#Fillin convarian of Energy vs Energy
+			KK[i, j] = k(X[:,i], X[:,j])
+		#Fillin convarian of Force vs Energy
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = f1st(X[:,i], X[:,j])
+		#Fillin convarian of Energy vs Force	
+			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -f1st(X[:,i], X[:,j])
+		#Fillin convarian of Energy vs Force
+			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -f2nd(X[:,i], X[:,j])
+		#For traning on Energy and Force separately
+			K₀₀[i, j] = KK[i, j]
+			
+			K₁₁[(1)+((i-1)*dim):(1)+((i)*dim)-1,
+				(1)+((j-1)*dim):(1)+((j)*dim)-1] = KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1, (num+1)+((j-1)*dim):(num+1)+((j)*dim)-1]
+		end
+	end
+
+#Gaussian noise model
+	# First model the noise for Energy relating to the Force noise by l⁻² 
+	if model == 1
+		Iee = σₑ^2 * Matrix(I, num, num)
+		Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
+		Ief = zeros(num, dim * num)
+		II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
+
+		Kₘₘ = KK + II
+		K₀₀ = K₀₀ + Iee 
+		K₁₁ = K₁₁ + Iff
+		
+	# Second model the both noises are independent	
+	else
+		Iee = σₑ^2 * Matrix(I, num, num)
+		Iff = σₙ^2 * Matrix(I, dim * num, dim * num)
+		Ief = zeros(num, dim * num)
+		II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
+
+		Kₘₘ = KK + II
+		K₀₀ = K₀₀ + Iee 
+		K₁₁ = K₁₁ + Iff
+	end
+	
+	return K₀₀, K₁₁, Kₘₘ
+end
+
+# ╔═╡ ba3473ba-8cc2-4ce9-a17f-4783273e5675
+Marginal2(featureSi1, l, σₑ, σₙ, model)[3] == Marginal(featureSi1, kₛₑ2, l, σₑ, σₙ, model)[3]
 
 # ╔═╡ 3c48274e-0d7c-41aa-b15f-82824a425f11
 begin
@@ -425,7 +495,7 @@ for i in 1:10
 			"feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
 			"energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
 			"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", numt, DIM)
-	FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, l, σₑ, σₙ, order, model)
+	FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, σₑ, σₙ, order, model)
 	P[:,:,i] = FC_Si
 	
 	SumRule[i] = abs(sum(FC_Si))
@@ -438,7 +508,7 @@ begin
 				"feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
 				"energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
 				"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", numt, DIM)
-	FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, l, σₑ, σₙ, order, model)
+	KKₘₘ, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, l, σₑ, σₙ, order, model)
 end
 
 # ╔═╡ 7d655d8f-cbaf-4705-ab5c-c50b2375b6b3
@@ -482,7 +552,7 @@ end
 natom = Int64(size(FC_Si,1)/3)
 
 # ╔═╡ ac053182-bb10-4074-b21c-1b53d1936384
-anim2 = @animate for i in 1:9
+anim2 = @animate for i in 1:10
 	heatmap(1:size(P[:,:,i],1),
 	    1:size(P[:,:,i],2), P[:,:,i],
 	    c=cgrad([:blue, :white, :red, :yellow]),
@@ -1787,11 +1857,17 @@ version = "1.4.1+0"
 # ╠═deebe580-a292-11ed-0fe9-29d8796af820
 # ╠═e1a2b43c-3a00-4758-9cf7-f13ee8f4c171
 # ╠═55729b97-de8c-4d9d-9e42-815d531c4818
-# ╠═05ebd5f5-797e-44b1-9252-31b1e6640990
-# ╠═d822cac7-8478-4853-9f23-595eaeadcb96
+# ╠═00b2cd1b-fa07-4822-a1a6-a81ff6df05f7
 # ╠═40acf168-5c86-4982-8fd2-dfd2425891ff
 # ╠═195bac58-8a31-4ed4-acb3-b6ee691ed06b
-# ╠═00b2cd1b-fa07-4822-a1a6-a81ff6df05f7
+# ╠═281f3307-15c0-488b-b574-e6b60e60d47d
+# ╠═9eb8d4f2-249b-4ecb-a602-ff9feacaf67e
+# ╠═324b2ec9-de4f-4e86-b13e-07595d91f429
+# ╠═75fce348-2a88-4668-b0e5-3df12fc2d66e
+# ╠═ba3473ba-8cc2-4ce9-a17f-4783273e5675
+# ╠═863d13bc-ff54-4baf-9588-57e592cafd45
+# ╠═0d761cb5-c9f0-4e0e-966d-1af7cd918d1c
+# ╠═f3cdbf62-5bd7-4b70-a7c8-4d08afd1b82b
 # ╠═87598f64-d4d8-4528-ab0b-c3e6edbaa80c
 # ╠═dc8e6e59-e509-4636-ae26-7b8d2b8ab1b4
 # ╠═a89a0a84-9c57-4ea6-b8b3-857520144375

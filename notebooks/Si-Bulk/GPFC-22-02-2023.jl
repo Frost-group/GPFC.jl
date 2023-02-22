@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 55dfe63c-ae0a-11ed-32fd-9da6bf53534e
+# ╔═╡ f037c8c0-b257-11ed-28ff-956771e07931
 begin
 	using KernelFunctions
 	using ForwardDiff
@@ -13,15 +13,12 @@ begin
 	using Einsum
 	using CSV
 	using DataFrames
+	using DelimitedFiles
 	using Optim
-	using Distributed
 end
 
-# ╔═╡ 45fe0bd6-f4e6-428f-bb56-2bc52396a6e3
-nprocs()
-
-# ╔═╡ 4444efe7-0641-4906-be81-587f3a39fe2b
-function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt, dimA)
+# ╔═╡ 8bb013b7-ca45-4a31-88d8-2e4590317937
+function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
 	a  = 4 - dimA
 	feature = (
 		CSV.File(
@@ -67,132 +64,70 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt, dimA)
 	return equi, feature, energy, force, Target
 end
 
+# ╔═╡ d3babe70-1006-4178-a318-a14664109a54
+begin
+	σₒ = 0.1
+	l = 0.4
+	σₑ = 0.00001
+	σₙ = 0.000001
+	Num = 60
+	DIM = 3
+	model = 1
+	order = 3
+	
+	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
+end
 
-# ╔═╡ f2e2cd6b-051d-4b79-bee1-9142932448af
-function kernel(k, xₜ::Vector{Float64}, vₜ::Vector{Float64}, grad::Vector{Int64})
-
-#order 0
-	if grad == [0,0]
-		return k(xₜ, vₜ)
-
-#order 1
-	elseif grad == [1,0]
-		return   ForwardDiff.gradient(
-			x -> k(x, vₜ)
-			, xₜ)
-
-	elseif grad == [0,1]
-		return - ForwardDiff.gradient(
-			x -> k(x, vₜ)
-			, xₜ)
-
-#order 2		
-
-	elseif grad == [1,1]
-		return - ForwardDiff.jacobian(
-			x -> ForwardDiff.gradient(
-				x -> k(x, vₜ)
-				, x)
-			, xₜ)
-
-	elseif grad == [2,0] || grad == [0,2]
-		return   ForwardDiff.jacobian(
-			x -> ForwardDiff.gradient(
-				x -> k(x, vₜ)
-				, x)
-			, xₜ)
-
-#order 3		
-	elseif grad == [3,0] || grad == [1,2]
-		return   ForwardDiff.jacobian(
-		x -> ForwardDiff.jacobian(
-			x -> ForwardDiff.gradient(
-				x -> k(x, vₜ)
-				, x)
-			, x)
-		, xₜ)
-
-	elseif grad == [2,1] || grad == [0,3]
-		return - ForwardDiff.jacobian(
-		x -> ForwardDiff.jacobian(
-			x -> ForwardDiff.gradient(
-				x -> k(x, vₜ)
-				, x)
-			, x)
-		, xₜ)
-
-#order 4
-	elseif grad == [4,0] || grad == [2,2] || grad == [0,4]
-		return   ForwardDiff.jacobian(
-		x ->ForwardDiff.jacobian(
-			x -> ForwardDiff.jacobian(
-				x -> ForwardDiff.gradient(
-					x -> k(x, vₜ)
-					, x)
-				, x)
-			, x)
-		, xₜ)
-
-	elseif grad == [3,1] || grad == [1,3] 
-		return - ForwardDiff.jacobian(
-		x ->ForwardDiff.jacobian(
-			x -> ForwardDiff.jacobian(
-				x -> ForwardDiff.gradient(
-					x -> k(x, vₜ)
-					, x)
-				, x)
-			, x)
-		, xₜ)
-
+# ╔═╡ 522da4a9-dae5-4cd5-b578-01f01169db45
+#Need to Define kernel before hand (Look through KernelFunctions.jl documentaion)
+begin
+	function f1st(x₁, x₂::Vector{Float64}) 
+		return ForwardDiff.gradient( a -> kernel(a, x₂), x₁)
+	end	
+	function f2nd(x₁, x₂::Vector{Float64})
+		return ForwardDiff.jacobian( a -> f1st(a, x₂), x₁)
+	end
+	function f3rd(x₁, x₂::Vector{Float64}) 
+		return ForwardDiff.jacobian( a -> f2nd(a, x₂), x₁)
+	end 
+	function f4th(x₁, x₂::Vector{Float64})
+		return ForwardDiff.jacobian( a -> f3rd(a, x₂), x₁)
 	end
 end
 
-# ╔═╡ c0c01e80-773e-42d7-a57e-d764ee9b2305
-function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64, model::Int64)
+# ╔═╡ dbd26b4e-ff9c-4fa2-ba27-0434f5a160b1
+function Marginal(X::Matrix{Float64}, l::Float64, σₑ::Float64, σₙ::Float64, model::Int64)
 	dim = size(X,1)
 	num = size(X,2)
-	KK = zeros(
-		(
-			(1+dim)*num, (1+dim)*num
-		)
-	)
-	K₀₀ = zeros(
-		(
-			(1)*num, (1)*num
-		)
-	)
-	K₁₁ = zeros(
-		(
-			(dim)*num, (dim)*num
-		)
-	)
+	#building Marginal Likelihood containers
+	#For Energy + Force
+	KK = zeros(((1+dim)*num, (1+dim)*num))
+	#For Energy
+	K₀₀ = zeros(((1)*num, (1)*num))
+	#For Force
+	K₁₁ = zeros(((dim)*num, (dim)*num))
 	
 	for i in 1:num 
 		for j in 1:num 
-			KK[i, j] = kernel(
-				k, X[:,i], X[:,j], [0,0]
-			)
 			
-			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernel(
-				k, X[:,i], X[:,j], [1,0]
-			)
-			
-			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = kernel(
-				k, X[:,i], X[:,j], [0,1]
-			)
-			
-			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,
-				(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = kernel(
-					k, X[:,i], X[:,j], [1,1]
-				)
-			
+		#Fillin convarian of Energy vs Energy
+			KK[i, j] = kernel(X[:,i], X[:,j])
+		#Fillin convarian of Force vs Energy
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = f1st(X[:,i], X[:,j])
+		#Fillin convarian of Energy vs Force	
+			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -f1st(X[:,i], X[:,j])
+		#Fillin convarian of Energy vs Force
+			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -f2nd(X[:,i], X[:,j])
+		#For traning on Energy and Force separately
 			K₀₀[i, j] = KK[i, j]
+			
 			K₁₁[(1)+((i-1)*dim):(1)+((i)*dim)-1,
 				(1)+((j-1)*dim):(1)+((j)*dim)-1] = KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1, (num+1)+((j-1)*dim):(num+1)+((j)*dim)-1]
-			
 		end
 	end
-	
+
+#Gaussian noise model
+	# First model the noise for Energy relating to the Force noise by l⁻² 
 	if model == 1
 		Iee = σₑ^2 * Matrix(I, num, num)
 		Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
@@ -202,6 +137,8 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 		Kₘₘ = KK + II
 		K₀₀ = K₀₀ + Iee 
 		K₁₁ = K₁₁ + Iff
+		
+	# Second model the both noises are independent	
 	else
 		Iee = σₑ^2 * Matrix(I, num, num)
 		Iff = σₙ^2 * Matrix(I, dim * num, dim * num)
@@ -212,92 +149,89 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 		K₀₀ = K₀₀ + Iee 
 		K₁₁ = K₁₁ + Iff
 	end
-	#Kₘₘ⁻¹ = inv(KK+II)
+	
 	return K₀₀, K₁₁, Kₘₘ
 end
 
-# ╔═╡ 3e1afc40-2a13-4758-9e5a-b88d3a122d62
-function Coveriant(X::Matrix{Float64}, xₒ::Vector{Float64}, k, order::Int64)
+# ╔═╡ 0b615d6d-ba7b-4ff3-9b03-7f3170bb22c5
+function Coveriant(X::Matrix{Float64}, xₒ::Vector{Float64}, order::Int64)
 	dim = size(X,1)
 	num = size(X,2)
-
-	Kₙₘ= zeros(
-		(
-			(dim^order), (1+dim)*num
-		)
-	)
+	
+	
+	#Covariance matrix for Energy prediction
 	if order == 0
-		K₀ₙₘ= zeros(
-			((1+dim)*num)
-		)
-		for j in 1:num 
-			K₀ₙₘ[j] = 
-				kernel(
-					k, X[:,j], xₒ, [0,0]
-			)
-			K₀ₙₘ[(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = 
-				kernel(
-					k, X[:,j], xₒ, [1,0]
-				)
+		#building Covariance matrix containers
+		K₀ₙₘ= zeros(((1+dim)*num))
+		for j in 1:num
+			
+			#Fillin convarian of Energy vs Energy
+			K₀ₙₘ[j] = kernel(X[:,j], xₒ)
+			#Fillin convarian of Force vs Energy
+			K₀ₙₘ[(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = f1st( X[:,j], xₒ  )
 		end
 		Kₙₘ = K₀ₙₘ
 		
+	#Covariance matrix for Force prediction	
 	elseif order == 1
-		K₁ₙₘ= zeros(
-			(dim, (1+dim)*num)
-		)
-		for j in 1:num 
+		#building Covariance matrix containers
+		K₁ₙₘ= zeros((dim, (1+dim)*num))
+		
+		for j in 1:num
+			
+			#Fillin convarian of Energy vs Force
 			K₁ₙₘ[:,j] = 
 				reshape(
-					kernel(
-						k, X[:,j], xₒ, [0,1]
-					), (dim)
-				)
-			K₁ₙₘ[:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = 
+					- f1st( X[:,j], xₒ )
+				, (dim)
+			)
+			#Fillin convarian of Force vs Force
+			K₁ₙₘ[:, (num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = 
 				reshape(
-					kernel(
-						k, X[:,j], xₒ, [1,1]
-					), (dim, dim)
+					- f2nd( X[:,j], xₒ )
+					, (dim, dim)
 				)
 		end
 		Kₙₘ = K₁ₙₘ  
-	
+		
+	#Covariance matrix for FC2 prediction
 	elseif order == 2
-		K₂ₙₘ= zeros(
-			(dim, dim, (1+dim)*num)
-		)
-		for j in 1:num 
+		
+		K₂ₙₘ= zeros((dim, dim, (1+dim)*num))
+		
+		for j in 1:num
+			#Fillin convarian of Energy vs FC2
 			K₂ₙₘ[:,:,j] = 
 				reshape(
-					kernel(
-						k, X[:,j], xₒ, [0,2]
-					), (dim, dim)
+					f2nd( X[:,j], xₒ )
+					, (dim, dim)
 				)
+			#Fillin convarian of Force vs FC2
 			K₂ₙₘ[:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = 
 				reshape(
-					kernel(
-						k, X[:,j], xₒ, [1,2]
-					), (dim, dim, dim)
+					f3rd( X[:,j], xₒ )
+					, (dim, dim, dim)
 				)
 		end
 		Kₙₘ = K₂ₙₘ
-
+		
+	#Covariance matrix for FC3 prediction
 	elseif order == 3
-		K₃ₙₘ= zeros(
-			(dim, dim, dim, (1+dim)*num)
-		) 
-		for j in 1:num 
+		#building Covariance matrix containers
+		K₃ₙₘ= zeros((dim, dim, dim, (1+dim)*num))
+		
+		for j in 1:num
+			#Fillin convarian of Energy vs FC3
 			K₃ₙₘ[:,:,:,j] = 
 				reshape(
-					kernel(
-						k, X[:,j], xₒ, [0,3]
-					), (dim, dim, dim)
+					- f3rd( X[:,j], xₒ )
+					, (dim, dim, dim)
 				)
+			#Fillin convarian of Force vs FC3
 			K₃ₙₘ[:,:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = 
 				reshape(
-					kernel(
-						k, X[:,j], xₒ, [1,3]
-					), (dim, dim, dim, dim)
+					- f4th( X[:,j], xₒ )
+					, (dim, dim, dim, dim)
 				)
 		end
 		Kₙₘ = K₃ₙₘ
@@ -306,12 +240,12 @@ function Coveriant(X::Matrix{Float64}, xₒ::Vector{Float64}, k, order::Int64)
 	return Kₙₘ
 end
 
-# ╔═╡ 764cd372-c808-4b59-bb0b-2a2430956432
-function  Posterior(X::Matrix{Float64}, xₒ::Vector{Float64}, Target::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64, order::Int64, model::Int64)
+# ╔═╡ e25239d4-825b-4a5d-aa4c-fc94b1607c6a
+function PosteriorMean(X::Matrix{Float64}, xₒ::Vector{Float64}, Target::Matrix{Float64}, l::Float64, σₑ::Float64, σₙ::Float64, order::Int64, model::Int64)
 	dim = size(X,1)
 	num = size(X,2)
-	K₀₀, K₁₁, Kₘₘ = Marginal(X, k, l, σₑ, σₙ, model )
-	Kₙₘ = Coveriant(X, xₒ, k, order)
+	K₀₀, K₁₁, Kₘₘ = Marginal(X, l, σₑ, σₙ, model )
+	Kₙₘ = Coveriant(X, xₒ, order)
 	Kₘₘ⁻¹ = inv(Kₘₘ)
 	
 	if order == 0
@@ -333,101 +267,27 @@ function  Posterior(X::Matrix{Float64}, xₒ::Vector{Float64}, Target::Matrix{Fl
 	return Meanₚ, K₀₀, K₁₁, Kₘₘ, Kₙₘ
 end
 
-# ╔═╡ 3933f342-f88e-4049-8bae-ae3d7d8b976e
-begin
-	#σₒ = 0.1
-	#l = 0.4
-	#σₑ = 0.00001
-	#numt = 48
-	σₒ = 0.1
-	l = 0.4
-	σₑ = 0.00001
-	
-	σₙ = 0.000001
-	DIM = 3
-	model = 1
-	order = 3
-	
-	kₛₑ2 = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
-end
-
-# ╔═╡ d13b6df3-9c66-473b-a4b5-65b776cc2a5c
-begin
-	P2 = zeros(( 48, 48, 10))
-	nd = [1,5,10,15,20,30,40,50,60,80]
-	SumRule2 = zeros((10))
-	order2 = 2
-end
-
-# ╔═╡ c819ea32-b1d6-4b39-9d73-4112480e0ad5
-for i in 1:10
-	numt1 = nd[i]
-	equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
+# ╔═╡ e421d4ee-12be-4e66-a3c7-f8654950c06f
+equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
 			"feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
 			"energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
-			"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", numt1, DIM)
-	FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, l, σₑ, σₙ, order2, model)
-	P2[:,:,i] = FC_Si
-	
-	SumRule2[i] = abs(sum(FC_Si))
-end 
+			"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", Num, DIM)
+
+# ╔═╡ d6c71c84-0e1a-4fce-b3bb-accedd2badf2
 
 
-# ╔═╡ fb5bc0e0-ab66-4ec3-aeb9-333a73151032
-begin
-	numt = 6
-	equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
-				"feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv",
-				"energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", 
-				"force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv", numt, DIM)
-end
+# ╔═╡ 97fc247a-3edb-4cff-b7c5-eda07655bcea
+@time FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = PosteriorMean(featureSi, equiSi, TargetSi, l, σₑ, σₙ, order, model)
 
-# ╔═╡ 175fdfa8-9ee2-4930-8ede-bf57cd6ed57a
-@time FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = Posterior(featureSi, equiSi, TargetSi, kₛₑ2, l, σₑ, σₙ, order2, model)
+# ╔═╡ 72796650-a3e4-4881-8f9a-d469ad76b56e
 
-# ╔═╡ ee972068-ed7b-4695-a94b-555a0e6de34a
-anim2 = @animate for i in 1:10
-	heatmap(1:size(P2[:,:,i],1),
-	    1:size(P2[:,:,i],2), P2[:,:,i],
-	    c=cgrad([:blue, :white, :red, :yellow]),
-	    xlabel="feature coord. (n x d)", ylabel="feature coord. (n x d)",
-	    title="FC2 (Traning Data = " *string(nd[i]) *")" , aspect_ratio=1, size=(650, 650))
-end
-
-# ╔═╡ fd31ff0e-1e3b-4cc0-a9ec-6a35ddef6bb7
-gif(anim2, "Si_FC2_fps_new.gif", fps=2)
-
-# ╔═╡ c84455d0-11c2-44c9-99ea-f5af75010849
-anim3 = @animate for i in 1:10
-	scatter(nd[1:i], SumRule2[1:i],
-		xlabel="Training points",
-		ylabel="Sum of FC2 element",
-		title="Sum Rule relation (Traning Data = " *string(nd[i]) *")")
-end
-
-# ╔═╡ 96cf0910-4122-4c23-b62a-157df7c97ca9
-gif(anim3, "Si_FC2_SR_new.gif", fps=2)
-
-# ╔═╡ 865c6e02-5d24-4caf-9e61-07ec7b8d947a
-anim4 = @animate for i in 1:10
-	scatter(nd[1:i], SumRule2[1:i],
-		xlabel="Training points",
-		ylabel="Sum of FC2 element",
-		xlim = (-1, 90), 
-		ylim = (-20.0, 700.0),
-		labels = "Learning points",
-		title="Sum Rule relation (Traning Data = " *string(nd[i]) *")")
-end
-
-# ╔═╡ c57d3249-2d82-4c9d-a2c1-c2a4331fddd9
-gif(anim4, "Si_FC2_SR2_new.gif", fps=2)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
+DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Einsum = "b7d42ee7-0b51-5a75-98ca-779d3107e4c0"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 KernelFunctions = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
@@ -452,14 +312,20 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 julia_version = "1.7.2"
 manifest_format = "2.0"
 
+[[deps.Adapt]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "0310e08cb19f5da31d08341c6120c047598f5b9c"
+uuid = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+version = "3.5.0"
+
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
 
-[[deps.ArrayInterfaceCore]]
-deps = ["LinearAlgebra", "SnoopPrecompile", "SparseArrays", "SuiteSparse"]
-git-tree-sha1 = "e5f08b5689b1aad068e01751889f2f615c7db36d"
-uuid = "30b0a656-2188-435a-8636-2ec0e6a096e2"
-version = "0.1.29"
+[[deps.ArrayInterface]]
+deps = ["Adapt", "LinearAlgebra", "Requires", "SnoopPrecompile", "SparseArrays", "SuiteSparse"]
+git-tree-sha1 = "4d9946e51e24f5e509779e3e2c06281a733914c2"
+uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
+version = "7.1.0"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -498,9 +364,9 @@ version = "1.15.7"
 
 [[deps.ChangesOfVariables]]
 deps = ["ChainRulesCore", "LinearAlgebra", "Test"]
-git-tree-sha1 = "844b061c104c408b24537482469400af6075aae4"
+git-tree-sha1 = "485193efd2176b88e6622a39a246f8c5b600e74e"
 uuid = "9e997f8a-9a97-42d5-a9f1-ce6bfc15e2c0"
-version = "0.1.5"
+version = "0.1.6"
 
 [[deps.CodecZlib]]
 deps = ["TranscodingStreams", "Zlib_jll"]
@@ -668,10 +534,10 @@ uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
 version = "0.13.7"
 
 [[deps.FiniteDiff]]
-deps = ["ArrayInterfaceCore", "LinearAlgebra", "Requires", "Setfield", "SparseArrays", "StaticArrays"]
-git-tree-sha1 = "04ed1f0029b6b3af88343e439b995141cb0d0b8d"
+deps = ["ArrayInterface", "LinearAlgebra", "Requires", "Setfield", "SparseArrays", "StaticArrays"]
+git-tree-sha1 = "ed1b56934a2f7a65035976985da71b6a65b4f2cf"
 uuid = "6a86dc24-6348-571c-b903-95158fe2bd41"
-version = "2.17.0"
+version = "2.18.0"
 
 [[deps.FixedPointNumbers]]
 deps = ["Statistics"]
@@ -711,9 +577,9 @@ version = "1.0.10+0"
 
 [[deps.Functors]]
 deps = ["LinearAlgebra"]
-git-tree-sha1 = "61fa9cf802d35fe1b5b8ea9fbaac4b8f020d19b1"
+git-tree-sha1 = "7ed0833a55979d3d2658a60b901469748a6b9a7c"
 uuid = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
-version = "0.4.2"
+version = "0.4.3"
 
 [[deps.Future]]
 deps = ["Random"]
@@ -827,10 +693,10 @@ uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 version = "0.21.3"
 
 [[deps.JpegTurbo_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "b53380851c6e6664204efb2e62cd24fa5c47e4ba"
+deps = ["Artifacts", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "6f2675ef130a300a112286de91973805fcc5ffbc"
 uuid = "aacddb02-875f-59d6-b918-886e6ef4fbf8"
-version = "2.1.2+0"
+version = "2.1.91+0"
 
 [[deps.KernelFunctions]]
 deps = ["ChainRulesCore", "Compat", "CompositionsBase", "Distances", "FillArrays", "Functors", "IrrationalConstants", "LinearAlgebra", "LogExpFunctions", "Random", "Requires", "SpecialFunctions", "Statistics", "StatsBase", "TensorCore", "Test", "ZygoteRules"]
@@ -946,9 +812,9 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[deps.LogExpFunctions]]
 deps = ["ChainRulesCore", "ChangesOfVariables", "DocStringExtensions", "InverseFunctions", "IrrationalConstants", "LinearAlgebra"]
-git-tree-sha1 = "680e733c3a0a9cea9e935c8c2184aea6a63fa0b5"
+git-tree-sha1 = "0a1b7c2863e44523180fdb3146534e265a91870b"
 uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
-version = "0.3.21"
+version = "0.3.23"
 
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
@@ -1191,9 +1057,9 @@ version = "1.1.1"
 
 [[deps.SentinelArrays]]
 deps = ["Dates", "Random"]
-git-tree-sha1 = "c02bd3c9c3fc8463d3591a62a378f90d2d8ab0f3"
+git-tree-sha1 = "77d3c4726515dca71f6d80fbb5e251088defe305"
 uuid = "91c51154-3ec4-41a3-a24f-3f23e20d615c"
-version = "1.3.17"
+version = "1.3.18"
 
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
@@ -1242,9 +1108,9 @@ version = "2.1.7"
 
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "Random", "StaticArraysCore", "Statistics"]
-git-tree-sha1 = "67d3e75e8af8089ea34ce96974d5468d4a008ca6"
+git-tree-sha1 = "2d7d9e1ddadc8407ffd460e24218e37ef52dd9a3"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.5.15"
+version = "1.5.16"
 
 [[deps.StaticArraysCore]]
 git-tree-sha1 = "6b7ba252635a5eff6a0b0664a41ee140a1c9e72a"
@@ -1585,23 +1451,16 @@ version = "1.4.1+0"
 """
 
 # ╔═╡ Cell order:
-# ╠═55dfe63c-ae0a-11ed-32fd-9da6bf53534e
-# ╠═45fe0bd6-f4e6-428f-bb56-2bc52396a6e3
-# ╠═4444efe7-0641-4906-be81-587f3a39fe2b
-# ╠═f2e2cd6b-051d-4b79-bee1-9142932448af
-# ╠═c0c01e80-773e-42d7-a57e-d764ee9b2305
-# ╠═3e1afc40-2a13-4758-9e5a-b88d3a122d62
-# ╠═764cd372-c808-4b59-bb0b-2a2430956432
-# ╠═3933f342-f88e-4049-8bae-ae3d7d8b976e
-# ╠═d13b6df3-9c66-473b-a4b5-65b776cc2a5c
-# ╠═c819ea32-b1d6-4b39-9d73-4112480e0ad5
-# ╠═fb5bc0e0-ab66-4ec3-aeb9-333a73151032
-# ╠═175fdfa8-9ee2-4930-8ede-bf57cd6ed57a
-# ╠═ee972068-ed7b-4695-a94b-555a0e6de34a
-# ╠═fd31ff0e-1e3b-4cc0-a9ec-6a35ddef6bb7
-# ╠═c84455d0-11c2-44c9-99ea-f5af75010849
-# ╠═96cf0910-4122-4c23-b62a-157df7c97ca9
-# ╠═865c6e02-5d24-4caf-9e61-07ec7b8d947a
-# ╠═c57d3249-2d82-4c9d-a2c1-c2a4331fddd9
+# ╠═f037c8c0-b257-11ed-28ff-956771e07931
+# ╠═8bb013b7-ca45-4a31-88d8-2e4590317937
+# ╠═522da4a9-dae5-4cd5-b578-01f01169db45
+# ╠═dbd26b4e-ff9c-4fa2-ba27-0434f5a160b1
+# ╠═0b615d6d-ba7b-4ff3-9b03-7f3170bb22c5
+# ╠═e25239d4-825b-4a5d-aa4c-fc94b1607c6a
+# ╠═d3babe70-1006-4178-a318-a14664109a54
+# ╠═e421d4ee-12be-4e66-a3c7-f8654950c06f
+# ╠═d6c71c84-0e1a-4fce-b3bb-accedd2badf2
+# ╠═97fc247a-3edb-4cff-b7c5-eda07655bcea
+# ╠═72796650-a3e4-4881-8f9a-d469ad76b56e
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
