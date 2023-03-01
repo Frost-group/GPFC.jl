@@ -1,5 +1,5 @@
 function f1st(x₁, x₂::Vector{Float64}) 
-		return ForwardDiff.gradient( a -> kernel(a, x₂), x₁)
+		return ForwardDiff.gradient( a -> k(a, x₂), x₁) #kernel not defined?
 	end	
 function f2nd(x₁, x₂::Vector{Float64})
 		return ForwardDiff.jacobian( a -> f1st(a, x₂), x₁)
@@ -11,7 +11,8 @@ function f4th(x₁, x₂::Vector{Float64})
 		return ForwardDiff.jacobian( a -> f3rd(a, x₂), x₁)
 	end
 
-function Marginal(X::Matrix{Float64}, l::Float64, σₑ::Float64, σₙ::Float64, model::Int64)
+
+function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64, model::Int64)
 	dim = size(X,1)
 	num = size(X,2)
 	#building Marginal Likelihood containers
@@ -26,11 +27,11 @@ function Marginal(X::Matrix{Float64}, l::Float64, σₑ::Float64, σₙ::Float64
 		for j in 1:num 
 			
 		#Fillin convarian of Energy vs Energy
-			KK[i, j] = kernel(X[:,i], X[:,j])
+			KK[i, j] = k(X[:,i], X[:,j])         #kernel not defined?
 		#Fillin convarian of Force vs Energy
-			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = f1st(X[:,i], X[:,j])
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = f1st( X[:,i], X[:,j])
 		#Fillin convarian of Energy vs Force	
-			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -f1st(X[:,i], X[:,j])
+			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -f1st( X[:,i], X[:,j])
 		#Fillin convarian of Energy vs Force
 			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -f2nd(X[:,i], X[:,j])
 		#For traning on Energy and Force separately
@@ -68,7 +69,7 @@ function Marginal(X::Matrix{Float64}, l::Float64, σₑ::Float64, σₙ::Float64
 	return K₀₀, K₁₁, Kₘₘ
 end
 
-function Coveriant(X::Matrix{Float64}, xₒ::Vector{Float64}, order::Int64)
+function Coveriant(X::Matrix{Float64}, xₒ::Vector{Float64}, k, order::Int64)
 	dim = size(X,1)
 	num = size(X,2)
 	
@@ -155,11 +156,11 @@ function Coveriant(X::Matrix{Float64}, xₒ::Vector{Float64}, order::Int64)
 end
 
 
-function PosteriorMean(X::Matrix{Float64}, xₒ::Vector{Float64}, Target::Matrix{Float64}, l::Float64, σₑ::Float64, σₙ::Float64, order::Int64, model::Int64)
+function PosteriorMean(X::Matrix{Float64}, xₒ::Vector{Float64}, Target::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64, order::Int64, model::Int64)
 	dim = size(X,1)
 	num = size(X,2)
-	K₀₀, K₁₁, Kₘₘ = Marginal(X, l, σₑ, σₙ, model )
-	Kₙₘ = Coveriant(X, xₒ, order)
+	K₀₀, K₁₁, Kₘₘ = Marginal(X, k, l, σₑ, σₙ, model )
+	Kₙₘ = Coveriant(X, xₒ, k, order)
 	Kₘₘ⁻¹ = inv(Kₘₘ)
 	
 	if order == 0
