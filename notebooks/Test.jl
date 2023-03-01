@@ -12,7 +12,7 @@ l = 0.4                     # Length Scale
 σₑ = 1e-5                   # Energy Gaussian noise
 σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
 	
-Num = 60                    # Number of training points
+Num = 20                    # Number of training points
 DIM = 3                     # Dimension of Materials
 model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
 order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
