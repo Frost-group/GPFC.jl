@@ -16,12 +16,16 @@ using HDF5
 include("ASEreading.jl")
 export ASEFeatureTarget
 
-include("DerivativeKernel.jl")
-export kernel
+#include("DerivativeKernel.jl")
+#export kernel
 
 include("Posterior.jl")
-export MarginalLike
-export CovariantMatrix
+export f1st
+export f2nd
+export f3rd
+export f4th
+export Marginal
+export Covariant
 export PosteriorMean
 
 end

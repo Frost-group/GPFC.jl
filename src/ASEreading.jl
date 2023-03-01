@@ -1,4 +1,4 @@
-function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt, dimA)
+function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
 	a  = 4 - dimA
 	feature = (
 		CSV.File(
