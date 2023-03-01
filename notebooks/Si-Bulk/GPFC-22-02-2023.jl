@@ -70,12 +70,13 @@ begin
 	l = 0.4
 	σₑ = 0.00001
 	σₙ = 0.000001
-	Num = 60
+	Num = 21
 	DIM = 3
 	model = 1
-	order = 3
+	order = 1
 	
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
+	k = kernel
 end
 
 # ╔═╡ 522da4a9-dae5-4cd5-b578-01f01169db45
@@ -279,8 +280,211 @@ equiSi, featureSi, energySi, forceSi, TargetSi = ASEFeatureTarget(
 # ╔═╡ 97fc247a-3edb-4cff-b7c5-eda07655bcea
 @time FC_Si, K₀₀Si, K₁₁Si, KₘₘSi, KₙₘSi = PosteriorMean(featureSi, equiSi, TargetSi, l, σₑ, σₙ, order, model)
 
+# ╔═╡ b35cd56f-3c8a-4c74-8aaf-8b2850495775
+function kernelfunction(k, x₁, x₂::Vector{Float64}, grad::Int64)
+	function f1st(x₁, x₂::Vector{Float64}) 
+		ForwardDiff.gradient( a -> k(a, x₂), x₁)
+	end	
+	function f2nd(x₁, x₂::Vector{Float64})
+		ForwardDiff.jacobian( a -> f1st(a, x₂), x₁)
+	end
+	function f3rd(x₁, x₂::Vector{Float64}) 
+		ForwardDiff.jacobian( a -> f2nd(a, x₂), x₁)
+	end 
+	function f4th(x₁, x₂::Vector{Float64})
+		ForwardDiff.jacobian( a -> f3rd(a, x₂), x₁)
+	end
+
+	if grad == 0
+		return k(x₁, x₂)
+	elseif grad == 1
+		return f1st(x₁, x₂)
+	elseif grad == 2
+		return f2nd(x₁, x₂)	
+	elseif grad == 3
+		return f3rd(x₁, x₂)
+	elseif grad == 4
+		return f4th(x₁, x₂)
+	else
+		println("Grad in btw [0, 4]")
+	end
+end 
+
 # ╔═╡ 72796650-a3e4-4881-8f9a-d469ad76b56e
 
+function Marginal2(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64, model::Int64)
+	dim = size(X,1)
+	num = size(X,2)
+	#building Marginal Likelihood containers
+	#For Energy + Force
+	KK = zeros(((1+dim)*num, (1+dim)*num))
+	#For Energy
+	K₀₀ = zeros(((1)*num, (1)*num))
+	#For Force
+	K₁₁ = zeros(((dim)*num, (dim)*num))
+	
+	for i in 1:num 
+		for j in 1:num 
+			
+		#Fillin convarian of Energy vs Energy
+			KK[i, j] = kernelfunction(k, X[:,i], X[:,j], 0)
+		#Fillin convarian of Force vs Energy
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction(k, X[:,i], X[:,j], 1)
+		#Fillin convarian of Energy vs Force	
+			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -kernelfunction(k, X[:,i], X[:,j], 1)
+		#Fillin convarian of Energy vs Force
+			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -kernelfunction(k, X[:,i], X[:,j], 2)
+		#For traning on Energy and Force separately
+			K₀₀[i, j] = KK[i, j]
+			
+			K₁₁[(1)+((i-1)*dim):(1)+((i)*dim)-1,
+				(1)+((j-1)*dim):(1)+((j)*dim)-1] = KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1, (num+1)+((j-1)*dim):(num+1)+((j)*dim)-1]
+		end
+	end
+
+#Gaussian noise model
+	# First model the noise for Energy relating to the Force noise by l⁻² 
+	if model == 1
+		Iee = σₑ^2 * Matrix(I, num, num)
+		Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
+		Ief = zeros(num, dim * num)
+		II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
+
+		Kₘₘ = KK + II
+		K₀₀ = K₀₀ + Iee 
+		K₁₁ = K₁₁ + Iff
+		
+	# Second model the both noises are independent	
+	else
+		Iee = σₑ^2 * Matrix(I, num, num)
+		Iff = σₙ^2 * Matrix(I, dim * num, dim * num)
+		Ief = zeros(num, dim * num)
+		II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
+
+		Kₘₘ = KK + II
+		K₀₀ = K₀₀ + Iee 
+		K₁₁ = K₁₁ + Iff
+	end
+	
+	return K₀₀, K₁₁, Kₘₘ
+end
+
+# ╔═╡ bdfea5c2-2556-42b9-baf5-c793d8d80571
+function Coveriant2(X::Matrix{Float64}, xₒ::Vector{Float64}, k, order::Int64)
+	dim = size(X,1)
+	num = size(X,2)
+	
+	
+	#Covariance matrix for Energy prediction
+	if order == 0
+		#building Covariance matrix containers
+		K₀ₙₘ= zeros(((1+dim)*num))
+		for j in 1:num
+			
+			#Fillin convarian of Energy vs Energy
+			K₀ₙₘ[j] = kernelfunction(k, X[:,j], xₒ, 0)
+			#Fillin convarian of Force vs Energy
+			K₀ₙₘ[(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] =  kernelfunction(k, X[:,j], xₒ, 1)
+		end
+		Kₙₘ = K₀ₙₘ
+		
+	#Covariance matrix for Force prediction	
+	elseif order == 1
+		#building Covariance matrix containers
+		K₁ₙₘ= zeros((dim, (1+dim)*num))
+		
+		for j in 1:num
+			
+			#Fillin convarian of Energy vs Force
+			K₁ₙₘ[:,j] = 
+				reshape(
+					-  kernelfunction(k, X[:,j], xₒ, 1)
+				, (dim)
+			)
+			#Fillin convarian of Force vs Force
+			K₁ₙₘ[:, (num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = 
+				reshape(
+					-  kernelfunction(k, X[:,j], xₒ, 2)
+					, (dim, dim)
+				)
+		end
+		Kₙₘ = K₁ₙₘ  
+		
+	#Covariance matrix for FC2 prediction
+	elseif order == 2
+		
+		K₂ₙₘ= zeros((dim, dim, (1+dim)*num))
+		
+		for j in 1:num
+			#Fillin convarian of Energy vs FC2
+			K₂ₙₘ[:,:,j] = 
+				reshape(
+					 kernelfunction(k, X[:,j], xₒ, 2)
+					, (dim, dim)
+				)
+			#Fillin convarian of Force vs FC2
+			K₂ₙₘ[:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = 
+				reshape(
+					 kernelfunction(k, X[:,j], xₒ, 3)
+					, (dim, dim, dim)
+				)
+		end
+		Kₙₘ = K₂ₙₘ
+		
+	#Covariance matrix for FC3 prediction
+	elseif order == 3
+		#building Covariance matrix containers
+		K₃ₙₘ= zeros((dim, dim, dim, (1+dim)*num))
+		
+		for j in 1:num
+			#Fillin convarian of Energy vs FC3
+			K₃ₙₘ[:,:,:,j] = 
+				reshape(
+					-  kernelfunction(k, X[:,j], xₒ, 3)
+					, (dim, dim, dim)
+				)
+			#Fillin convarian of Force vs FC3
+			K₃ₙₘ[:,:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = 
+				reshape(
+					-  kernelfunction(k, X[:,j], xₒ, 4)
+					, (dim, dim, dim, dim)
+				)
+		end
+		Kₙₘ = K₃ₙₘ
+	end
+
+	return Kₙₘ
+end
+
+# ╔═╡ 3008abb2-f982-435e-8728-42024ca70685
+function PosteriorMean2(X::Matrix{Float64}, xₒ::Vector{Float64}, Target::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64, order::Int64, model::Int64)
+	dim = size(X,1)
+	num = size(X,2)
+	K₀₀, K₁₁, Kₘₘ = Marginal2(X, k, l, σₑ, σₙ, model )
+	Kₙₘ = Coveriant2(X, xₒ, k, order)
+	Kₘₘ⁻¹ = inv(Kₘₘ)
+	
+	if order == 0
+		Meanₚ = Kₙₘ' * Kₘₘ⁻¹ * Target
+		
+	elseif order == 1
+		Meanₚ = ones(dim)
+		@einsum Meanₚ[i] = Kₙₘ[i, m] * Kₘₘ⁻¹[m, n] * Target[n]
+	
+	elseif order == 2
+		Meanₚ = ones(dim, dim)
+		@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * Kₘₘ⁻¹[m, n] * Target[n]
+
+	elseif order == 3
+		Meanₚ = ones(dim, dim, dim)
+		@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * Kₘₘ⁻¹[m, n] * Target[n]
+	end
+	
+	return Meanₚ, K₀₀, K₁₁, Kₘₘ, Kₙₘ
+end
+
+# ╔═╡ d1696896-886f-4525-8221-e6830304b75f
+@time FC_Si2, K₀₀Si2, K₁₁Si2, KₘₘSi2, KₙₘSi2 = PosteriorMean2(featureSi, equiSi, TargetSi, k, l, σₑ, σₙ, order, model)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -309,8 +513,9 @@ Plots = "~1.38.5"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.7.2"
+julia_version = "1.8.5"
 manifest_format = "2.0"
+project_hash = "d19989ab09f5a6ff8d0bea6248998d225da02f7e"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra"]
@@ -320,12 +525,13 @@ version = "3.5.0"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
+version = "1.1.1"
 
 [[deps.ArrayInterface]]
 deps = ["Adapt", "LinearAlgebra", "Requires", "SnoopPrecompile", "SparseArrays", "SuiteSparse"]
-git-tree-sha1 = "4d9946e51e24f5e509779e3e2c06281a733914c2"
+git-tree-sha1 = "1da9f7b4f41abece283e0fbeb7ed406e7905dcdd"
 uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
-version = "7.1.0"
+version = "7.0.0"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -413,6 +619,7 @@ version = "4.6.0"
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
+version = "1.0.1+0"
 
 [[deps.CompositionsBase]]
 git-tree-sha1 = "455419f7e328a1a2493cabc6428d79e951349769"
@@ -494,8 +701,9 @@ uuid = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 version = "0.9.3"
 
 [[deps.Downloads]]
-deps = ["ArgTools", "LibCURL", "NetworkOptions"]
+deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
+version = "1.6.0"
 
 [[deps.Einsum]]
 deps = ["Compat"]
@@ -526,6 +734,9 @@ deps = ["Compat", "Dates", "Mmap", "Printf", "Test", "UUIDs"]
 git-tree-sha1 = "e27c4ebe80e8699540f2d6c805cc12203b614f12"
 uuid = "48062228-2e41-5def-b9a4-89aafe57970f"
 version = "0.9.20"
+
+[[deps.FileWatching]]
+uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
 
 [[deps.FillArrays]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "Statistics"]
@@ -736,10 +947,12 @@ version = "0.15.18"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
+version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
+version = "7.84.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -748,6 +961,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
+version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -812,9 +1026,9 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[deps.LogExpFunctions]]
 deps = ["ChainRulesCore", "ChangesOfVariables", "DocStringExtensions", "InverseFunctions", "IrrationalConstants", "LinearAlgebra"]
-git-tree-sha1 = "0a1b7c2863e44523180fdb3146534e265a91870b"
+git-tree-sha1 = "071602a0be5af779066df0d7ef4e14945a010818"
 uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
-version = "0.3.23"
+version = "0.3.22"
 
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
@@ -844,6 +1058,7 @@ version = "1.1.7"
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
+version = "2.28.0+0"
 
 [[deps.Measures]]
 git-tree-sha1 = "c13304c81eec1ed3af7fc20e75fb6b26092a1102"
@@ -861,6 +1076,7 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
+version = "2022.2.1"
 
 [[deps.NLSolversBase]]
 deps = ["DiffResults", "Distributed", "FiniteDiff", "ForwardDiff"]
@@ -876,6 +1092,7 @@ version = "1.0.2"
 
 [[deps.NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
+version = "1.2.0"
 
 [[deps.Ogg_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -886,10 +1103,12 @@ version = "1.3.5+1"
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
+version = "0.3.20+0"
 
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
+version = "0.8.1+0"
 
 [[deps.OpenSSL]]
 deps = ["BitFlags", "Dates", "MozillaCACerts_jll", "OpenSSL_jll", "Sockets"]
@@ -929,6 +1148,7 @@ version = "1.4.1"
 [[deps.PCRE2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
+version = "10.40.0+0"
 
 [[deps.Parameters]]
 deps = ["OrderedCollections", "UnPack"]
@@ -956,6 +1176,7 @@ version = "0.40.1+0"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+version = "1.8.0"
 
 [[deps.PlotThemes]]
 deps = ["PlotUtils", "Statistics"]
@@ -1048,6 +1269,7 @@ version = "1.3.0"
 
 [[deps.SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
+version = "0.7.0"
 
 [[deps.Scratch]]
 deps = ["Dates"]
@@ -1057,9 +1279,9 @@ version = "1.1.1"
 
 [[deps.SentinelArrays]]
 deps = ["Dates", "Random"]
-git-tree-sha1 = "77d3c4726515dca71f6d80fbb5e251088defe305"
+git-tree-sha1 = "c02bd3c9c3fc8463d3591a62a378f90d2d8ab0f3"
 uuid = "91c51154-3ec4-41a3-a24f-3f23e20d615c"
-version = "1.3.18"
+version = "1.3.17"
 
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
@@ -1145,6 +1367,7 @@ uuid = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 [[deps.TOML]]
 deps = ["Dates"]
 uuid = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+version = "1.0.0"
 
 [[deps.TableTraits]]
 deps = ["IteratorInterfaceExtensions"]
@@ -1161,6 +1384,7 @@ version = "1.10.0"
 [[deps.Tar]]
 deps = ["ArgTools", "SHA"]
 uuid = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
+version = "1.10.1"
 
 [[deps.TensorCore]]
 deps = ["LinearAlgebra"]
@@ -1370,6 +1594,7 @@ version = "1.4.0+3"
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
 uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
+version = "1.2.12+3"
 
 [[deps.Zstd_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1404,6 +1629,7 @@ version = "0.15.1+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl", "OpenBLAS_jll"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
+version = "5.1.1+0"
 
 [[deps.libfdk_aac_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1426,10 +1652,12 @@ version = "1.3.7+1"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
+version = "1.48.0+0"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
+version = "17.4.0+0"
 
 [[deps.x264_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1461,6 +1689,10 @@ version = "1.4.1+0"
 # ╠═e421d4ee-12be-4e66-a3c7-f8654950c06f
 # ╠═d6c71c84-0e1a-4fce-b3bb-accedd2badf2
 # ╠═97fc247a-3edb-4cff-b7c5-eda07655bcea
+# ╠═b35cd56f-3c8a-4c74-8aaf-8b2850495775
 # ╠═72796650-a3e4-4881-8f9a-d469ad76b56e
+# ╠═bdfea5c2-2556-42b9-baf5-c793d8d80571
+# ╠═3008abb2-f982-435e-8728-42024ca70685
+# ╠═d1696896-886f-4525-8221-e6830304b75f
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

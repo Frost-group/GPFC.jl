@@ -28,5 +28,10 @@ export Marginal
 export Covariant
 export PosteriorMean
 
+include("Posterior2.jl")
+export kernelfunction
+export Marginal2
+export Covariant2
+export PosteriorMean2
 end
 

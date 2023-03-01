@@ -19,15 +19,15 @@ order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2,
 kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 
 #set file name
-Featurefile = "C:/Users/Keerati/Documents/GitHub/GPFC.jl/Dataset/Si-Bulk/n100/Si_feature_222spc_01_n100_PW800_kpts10_e100_d1.csv"
-Energyfile = "C:/Users/Keerati/Documents/GitHub/GPFC.jl/Dataset/Si-Bulk/n100/Si_energy_222spc_01_n100_PW800_kpts9_e100_d1.csv"
-Forcefile = "C:/Users/Keerati/Documents/GitHub/GPFC.jl/Dataset/Si-Bulk/n100/Si_forces_222spc_01_n100_PW800_kpts9_e100_d1.csv"
-
+Featurefile = "Dataset/Si-Bulk/n100/Si_feature_222spc_01_n100_PW800_kpts10_e100_d1.csv"
+Energyfile = "Dataset/Si-Bulk/n100/Si_energy_222spc_01_n100_PW800_kpts9_e100_d1.csv"
+Forcefile = "Dataset/Si-Bulk/n100/Si_forces_222spc_01_n100_PW800_kpts9_e100_d1.csv"
+#Users/paintokk/Documents/GitHub/GPFC.jl/
 #Reading file from CSV
 equi, feature, energy, force, Target = ASEFeatureTarget(
     Featurefile, Energyfile, Forcefile, Num, DIM)
 
 #Calculation   
 FC, K₀₀, K₁₁, Kₘₘ, Kₙₘ = PosteriorMean(
-    feature, equi, Target,
+    feature, equi, Target, k,
     l, σₑ, σₙ, order, model)
