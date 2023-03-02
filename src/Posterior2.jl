@@ -1,9 +1,9 @@
 function kernelfunction(k, x₁, x₂::Vector{Float64}, grad::Int64)
 	function f1st(x₁, x₂::Vector{Float64}) 
-		ForwardDiff.gradient( a -> k(a, x₂), x₁)
+		Zygote.gradient( a -> k(a, x₂), x₁)[1]
 	end	
 	function f2nd(x₁, x₂::Vector{Float64})
-		ForwardDiff.jacobian( a -> f1st(a, x₂), x₁)
+		Zygote.hessian(a -> k(a, x₂), x₁)
 	end
 	function f3rd(x₁, x₂::Vector{Float64}) 
 		ForwardDiff.jacobian( a -> f2nd(a, x₂), x₁)

@@ -2,13 +2,12 @@
 module GPFC
 
 
-using KernelFunctions
-using ForwardDiff
-using LinearAlgebra
-using Einsum
-using CSV
+using KernelFunctions, ForwardDiff
+using Einsum, LinearAlgebra
+using CSV, Table
 using DataFrames
 using Optim
+using Zygote
 using Distributed
 using HDF5
 
