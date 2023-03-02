@@ -4,7 +4,7 @@ module GPFC
 
 using KernelFunctions, ForwardDiff
 using Einsum, LinearAlgebra
-using CSV, Table
+using CSV
 using DataFrames
 using Optim
 using Zygote
