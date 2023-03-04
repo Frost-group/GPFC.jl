@@ -16,6 +16,7 @@ Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
+Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
 YAML = "0.4"

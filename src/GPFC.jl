@@ -1,15 +1,19 @@
 
 module GPFC
 
-
+# Kernel Functions
 using KernelFunctions
-using ForwardDiff
-using LinearAlgebra
-using Einsum
-using CSV
-using DataFrames
+# Automatic differentiation
+using ForwardDiff, Zygote
+# Linear algebra and Tensor contraction
+using LinearAlgebra, Einsum
+# Get Dataset
+using CSV, DataFrames
+# Optimization 
 using Optim
+
 using Distributed
+# Writing FC2 + FC3 for phononpy
 using HDF5
 
 
@@ -28,5 +32,10 @@ export Marginal
 export Covariant
 export PosteriorMean
 
+include("Posterior2.jl")
+export kernelfunction
+export Marginal2
+export Covariant2
+export PosteriorMean2
 end
 
