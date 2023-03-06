@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.22
+# v0.19.12
 
 using Markdown
 using InteractiveUtils
@@ -190,7 +190,7 @@ begin
 end
 
 # ╔═╡ 2571547f-86f2-47c9-90f2-9bfb2127eed8
-n = 1; x = rand(n); y = rand(n); Order = 3;
+n = 80; x = rand(n); y = rand(n); Order = 3;
 
 # ╔═╡ 766284ca-7cd2-4bb1-9afc-bb23c9e0fa4d
 @time a = kernelfunction(k, x, y, Order);
@@ -209,45 +209,7 @@ heatmap(1:n,
 	    1:n, a-c,
 	    c=cgrad([:blue, :white, :red, :yellow]),
 	    xlabel="feature coord. (n x d)", ylabel="feature coord. (n x d)",
-	    title="Different");
-
-# ╔═╡ d495e308-b727-4381-bc9d-1be9167c583b
-begin
-	diml = [3, 24, 80]
-	M1 = [2.525081, 232.887003, 358.691602]
-	M2 = [3.108129, 10.917174, 10.241902]
-	M3 = [2.419431, 8.033947, 8.343060]
-	M4 = [2.713819, 8.500714 , 8.528998]
-end
-
-# ╔═╡ 10c153c0-afe7-4c08-97b0-34db5417196e
-begin
-	number = [1, 2, 3, 10, 24, 36, 60]
-	N1 = [0.388169, 0.851913, 1.862031, 19.134467, 138.705521, 328.509579, 1028.802162];
-	N2 = [0.250122, 0.672889, 1.818056, 18.717461, 135.088657, 295.042298, 971.302092];
-end
-
-# ╔═╡ d5fbc777-b6f1-491e-b846-53db78b848a3
-begin
-	Mem1 = [0.155, 0.478, 0.970, 9.115, 77.004, 187.424, 552.097];
-	Mem2 = [0.097, 0.360, 0.788, 8.434, 75.003, 183.951, 544.738];
-end
-
-# ╔═╡ 9e22c728-c9bb-4e4d-87e8-4aa10f3a0030
-begin
-	plot(number, [N1, N2], label=["Pure ForwardDiff.jl" "Mixing Zygote.jl"], linewidth=3)
-	title!("Performance (Time)")
-	xlabel!("Datapoints")
-	ylabel!("Time (sec)")
-end
-
-# ╔═╡ 2a485acb-2e7e-4430-8d27-4c8abca152c7
-begin
-	plot(number, [Mem1, Mem2], label=["Pure ForwardDiff.jl" "Mixing Zygote.jl"], linewidth=3)
-	title!("Performance ()")
-	xlabel!("Datapoints")
-	ylabel!("Memories (GiB)")
-end
+	    title="Different")
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -276,7 +238,7 @@ Zygote = "~0.6.55"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.8.5"
+julia_version = "1.8.1"
 manifest_format = "2.0"
 project_hash = "7913e0cb64383fafd618bbae6a2dce1bcd76267d"
 
@@ -393,7 +355,7 @@ version = "4.6.0"
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.1+0"
+version = "0.5.2+0"
 
 [[deps.CompositionsBase]]
 git-tree-sha1 = "455419f7e328a1a2493cabc6428d79e951349769"
@@ -930,9 +892,9 @@ version = "10.40.0+0"
 
 [[deps.Parsers]]
 deps = ["Dates", "SnoopPrecompile"]
-git-tree-sha1 = "478ac6c952fddd4399e71d4779797c538d0ff2bf"
+git-tree-sha1 = "6f4fbcd1ad45905a5dee3f4256fabb49aa2110c6"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "2.5.8"
+version = "2.5.7"
 
 [[deps.Pipe]]
 git-tree-sha1 = "6842804e7867b115ca9de748a0cf6b364523c16d"
@@ -1152,7 +1114,7 @@ version = "1.10.0"
 [[deps.Tar]]
 deps = ["ArgTools", "SHA"]
 uuid = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
-version = "1.10.1"
+version = "1.10.0"
 
 [[deps.TensorCore]]
 deps = ["LinearAlgebra"]
@@ -1463,10 +1425,9 @@ version = "1.4.1+0"
 # ╠═dbd4f116-387e-401a-b5ee-b7a179c3f62b
 # ╠═64ef7761-733e-454a-a36a-4f2cec7976d9
 # ╠═b491775e-5837-4af9-9e26-b806a4c53d80
-# ╠═d495e308-b727-4381-bc9d-1be9167c583b
-# ╠═10c153c0-afe7-4c08-97b0-34db5417196e
-# ╠═d5fbc777-b6f1-491e-b846-53db78b848a3
-# ╠═9e22c728-c9bb-4e4d-87e8-4aa10f3a0030
-# ╠═2a485acb-2e7e-4430-8d27-4c8abca152c7
 # ╟─00000000-0000-0000-0000-000000000001
+<<<<<<< HEAD
 # ╟─00000000-0000-0000-0000-000000000002
+=======
+# ╟─00000000-0000-0000-0000-000000000002
+>>>>>>> c8895da47bb2758f8d880527221306c496057723

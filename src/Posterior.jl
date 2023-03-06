@@ -1,3 +1,32 @@
+function kernel(k, x₁, x₂::Vector{Float64}, grad::Int64)
+	function f1st(x₁, x₂::Vector{Float64}) 
+		ForwardDiff.gradient( a -> k(a, x₂), x₁)
+	end	
+	function f2nd(x₁, x₂::Vector{Float64})
+		ForwardDiff.jacobian(a -> f1st(a, x₂), x₁)
+	end
+	function f3rd(x₁, x₂::Vector{Float64}) 
+		ForwardDiff.jacobian( a -> f2nd(a, x₂), x₁)
+	end 
+	function f4th(x₁, x₂::Vector{Float64})
+		ForwardDiff.jacobian( a -> f3rd(a, x₂), x₁)
+	end
+
+	if grad == 0
+		return k(x₁, x₂)
+	elseif grad == 1
+		return f1st(x₁, x₂)
+	elseif grad == 2
+		return f2nd(x₁, x₂)	
+	elseif grad == 3
+		return f3rd(x₁, x₂)
+	elseif grad == 4
+		return f4th(x₁, x₂)
+	else
+		println("Grad in btw [0, 4]")
+	end
+end 
+
 function f1st(x₁, x₂::Vector{Float64}) 
 		return ForwardDiff.gradient( a -> k(a, x₂), x₁) #kernel not defined?
 	end	
@@ -27,14 +56,14 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 		for j in 1:num 
 			
 		#Fillin convarian of Energy vs Energy
-			KK[i, j] = k(X[:,i], X[:,j])         #kernel not defined?
+			KK[i, j] = kernel(k, X[:,i], X[:,j], 0)         #kernel not defined?
 		#Fillin convarian of Force vs Energy
-			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = f1st( X[:,i], X[:,j])
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernel(k, X[:,i], X[:,j], 1)
 		#Fillin convarian of Energy vs Force	
-			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -f1st( X[:,i], X[:,j])
+			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -kernel(k, X[:,i], X[:,j], 1)
 		#Fillin convarian of Energy vs Force
-			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -f2nd(X[:,i], X[:,j])
-		#For traning on Energy and Force separately
+			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -kernel(k, X[:,i], X[:,j], 2)
+			
 			K₀₀[i, j] = KK[i, j]
 			
 			K₁₁[(1)+((i-1)*dim):(1)+((i)*dim)-1,
@@ -81,9 +110,9 @@ function Coveriant(X::Matrix{Float64}, xₒ::Vector{Float64}, k, order::Int64)
 		for j in 1:num
 			
 			#Fillin convarian of Energy vs Energy
-			K₀ₙₘ[j] = kernel(X[:,j], xₒ)
+			K₀ₙₘ[j] = kernel(k, X[:,j], xₒ, 0)
 			#Fillin convarian of Force vs Energy
-			K₀ₙₘ[(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = f1st( X[:,j], xₒ  )
+			K₀ₙₘ[(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = kernel(k, X[:,j], xₒ, 1)
 		end
 		Kₙₘ = K₀ₙₘ
 		
@@ -97,13 +126,13 @@ function Coveriant(X::Matrix{Float64}, xₒ::Vector{Float64}, k, order::Int64)
 			#Fillin convarian of Energy vs Force
 			K₁ₙₘ[:,j] = 
 				reshape(
-					- f1st( X[:,j], xₒ )
+					- kernel(k, X[:,j], xₒ, 1)
 				, (dim)
 			)
 			#Fillin convarian of Force vs Force
 			K₁ₙₘ[:, (num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = 
 				reshape(
-					- f2nd( X[:,j], xₒ )
+					- kernel(k, X[:,j], xₒ, 2)
 					, (dim, dim)
 				)
 		end
@@ -118,13 +147,13 @@ function Coveriant(X::Matrix{Float64}, xₒ::Vector{Float64}, k, order::Int64)
 			#Fillin convarian of Energy vs FC2
 			K₂ₙₘ[:,:,j] = 
 				reshape(
-					f2nd( X[:,j], xₒ )
+					kernel(k, X[:,j], xₒ, 2)
 					, (dim, dim)
 				)
 			#Fillin convarian of Force vs FC2
 			K₂ₙₘ[:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = 
 				reshape(
-					f3rd( X[:,j], xₒ )
+					kernel(k, X[:,j], xₒ, 3)
 					, (dim, dim, dim)
 				)
 		end
@@ -139,13 +168,13 @@ function Coveriant(X::Matrix{Float64}, xₒ::Vector{Float64}, k, order::Int64)
 			#Fillin convarian of Energy vs FC3
 			K₃ₙₘ[:,:,:,j] = 
 				reshape(
-					- f3rd( X[:,j], xₒ )
+					- kernel(k, X[:,j], xₒ, 3)
 					, (dim, dim, dim)
 				)
 			#Fillin convarian of Force vs FC3
 			K₃ₙₘ[:,:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = 
 				reshape(
-					- f4th( X[:,j], xₒ )
+					- kernel(k, X[:,j], xₒ, 4)
 					, (dim, dim, dim, dim)
 				)
 		end
