@@ -31,15 +31,37 @@ equi, feature, energy, force, Target = ASEFeatureTarget(Featurefile, Energyfile,
 #Obtain DOF of the problem
 diml = size(feature, 1)
 
-#Testing posterior FC2 size and Time for its Calculation! 
-@time Kmm = Marginal(feature, kernel, l, σₑ);
-@time K2nm = Coveriance_fc2(feature, equi, kernel);
-@time pMean_fc2 = Posterior(Kmm, K2nm, Target)
 
-@testset "FC2" begin
-    @test size(Kmm) == ( (diml+1)*Num, (diml+1)*Num )
-    @test size(K2nm) == ( diml, diml, (diml+1)*Num)
-    @test size(pMean_fc2) == (diml, diml)
+@testset verbose = true "GPFC" begin
+    @testset "Energy" begin
+        @test size(Marginal(feature, kernel, l, σₑ)) == ( (diml+1)*Num, (diml+1)*Num )
+        Kmm = Marginal(feature, kernel, l, σₑ) 
+        @test size(Coveriance_energy(feature, equi, kernel)) == ((diml+1)*Num,)
+        K0nm = Coveriance_energy(feature, equi, kernel)
+        @test size(K0nm' * inv(Kmm) *Target) == (1,1)
+    end
+
+    @testset "Force" begin
+        @test size(Marginal(feature, kernel, l, σₑ)) == ( (diml+1)*Num, (diml+1)*Num )
+        Kmm = Marginal(feature, kernel, l, σₑ) 
+        @test size(Coveriance_force(feature, equi, kernel)) == ( diml, (diml+1)*Num)
+        K1nm = Coveriance_force(feature, equi, kernel)
+        @test size(Posterior(Kmm, K1nm, Target)) == (diml,)
+    end
+
+    @testset "FC2" begin
+        @test size(Marginal(feature, kernel, l, σₑ)) == ( (diml+1)*Num, (diml+1)*Num )
+        Kmm = Marginal(feature, kernel, l, σₑ) 
+        @test size(Coveriance_fc2(feature, equi, kernel)) == ( diml, diml, (diml+1)*Num)
+        K2nm = Coveriance_fc2(feature, equi, kernel)
+        @test size(Posterior(Kmm, K2nm, Target)) == (diml, diml)
+    end
+
+    @testset "FC3" begin
+        @test size(Marginal(feature, kernel, l, σₑ)) == ( (diml+1)*Num, (diml+1)*Num )
+        Kmm = Marginal(feature, kernel, l, σₑ) 
+        @test size(Coveriance_fc3(feature, equi, kernel)) == ( diml, diml, diml, (diml+1)*Num)
+        K3nm = Coveriance_fc3(feature, equi, kernel)
+        @test size(Posterior(Kmm, K3nm, Target)) == ( diml, diml, diml)
+    end
 end
-
-
