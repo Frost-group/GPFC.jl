@@ -27,7 +27,7 @@ begin
 	σₑ = 1e-5                   # Energy Gaussian noise
 	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
 		
-	Num = 80                   # Number of training points
+	Num = 20                   # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
 	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
@@ -134,10 +134,10 @@ end
 @time Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
 
 # ╔═╡ ee16716c-c0fd-4c73-bbe2-0f73d4740185
-@profile Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
+
 
 # ╔═╡ 4ff14ea7-7112-4fae-bdb9-38b015bb28cf
-ProfileView.view()
+
 
 # ╔═╡ 93263ddb-3877-4800-8490-89f35909d0cb
 function Coveriance_energy(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
@@ -277,6 +277,12 @@ end
 
 # ╔═╡ 469c03b9-29ae-4f6e-b85b-89f9745d2e49
 @time Posterior(Kₘₘ, K₃ₙₘ, Target)
+
+# ╔═╡ e79c4109-2a9b-4a13-a4cd-435528fbeee7
+@profile Posterior(Kₘₘ, K₃ₙₘ, Target)
+
+# ╔═╡ 4a6d0d29-3346-4a90-bfd4-50cf0ecbbbdb
+ProfileView.view()
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1679,5 +1685,7 @@ version = "1.4.1+0"
 # ╠═b1169aef-8521-41ba-8bbf-b3079ba79adb
 # ╠═07a93b95-6c7a-4978-90c7-7af3db83a110
 # ╠═469c03b9-29ae-4f6e-b85b-89f9745d2e49
+# ╠═e79c4109-2a9b-4a13-a4cd-435528fbeee7
+# ╠═4a6d0d29-3346-4a90-bfd4-50cf0ecbbbdb
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
