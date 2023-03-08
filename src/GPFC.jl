@@ -20,22 +20,29 @@ using HDF5
 include("ASEreading.jl")
 export ASEFeatureTarget
 
-#include("DerivativeKernel.jl")
-#export kernel
+#include("Posterior.jl")
+#export f1st
+#export f2nd
+#export f3rd
+#export f4th
+#export Marginal
+#export Covariant
+#export PosteriorMean
 
-include("Posterior.jl")
-export f1st
-export f2nd
-export f3rd
-export f4th
+#include("Posterior2.jl")
+#export kernelfunction
+#export Marginal2
+#export Covariant2
+#export PosteriorMean2
+
+include("Posterior3.jl")
+export kernelfunctionasdd
 export Marginal
-export Covariant
-export PosteriorMean
+export Coveriance_energy
+export Coveriance_force
+export Coveriance_fc2
+export Coveriance_fc3
+export Posterior
 
-include("Posterior2.jl")
-export kernelfunction
-export Marginal2
-export Covariant2
-export PosteriorMean2
 end
 
