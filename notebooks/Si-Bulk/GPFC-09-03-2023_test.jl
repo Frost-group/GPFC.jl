@@ -229,8 +229,8 @@ ProfileView.view()
 # ╔═╡ ea3d495e-1669-47ca-8023-eec46ba951fa
 begin
 	k1 = 0.1^2 * SqExponentialKernel() ∘ ScaleTransform(0.4)
-	k2 = 1^2 * Matern32Kernel() ∘ ScaleTransform(0.1)
-	kcomp = k2
+	k2 = 0.7^2 * Matern32Kernel() ∘ ScaleTransform(1.2)
+	kcomp = k2 +k1
 end
 
 # ╔═╡ e538438c-7032-4b86-9910-75dd1d0670f3
