@@ -1,4 +1,6 @@
-#
+#### This kernelfunction() is used to calculate the derivative of kernel functions which is defined before hand.
+# It will turn a standard (or compositing) kernel function and two different atomistic reppresentation vectors to
+# the derivative of the kernel of those two vectors where the derivative order can be specified by variable grad. 
 
 function kernelfunction(k, x₁, x₂::Vector{Float64}, grad::Int64)
 	function f1st(x₁, x₂::Vector{Float64}) 
@@ -28,6 +30,8 @@ function kernelfunction(k, x₁, x₂::Vector{Float64}, grad::Int64)
 		println("Grad in btw [0, 4]")
 	end
 end 
+
+#### Marginal()  
 
 function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64)
 	dim = size(X,1)
@@ -63,6 +67,9 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64)
 	return Kₘₘ
 end
 
+#### Covariance class
+### Coveriance_energy()
+
 function Coveriance_energy(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	dim = size(X,1)
 	num = size(X,2)
@@ -78,6 +85,8 @@ function Coveriance_energy(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	end
 	return K₀ₙₘ
 end
+
+### Coveriance_force()
 
 function Coveriance_force(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	dim = size(X,1)
@@ -100,6 +109,8 @@ function Coveriance_force(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	end
 	return K₁ₙₘ  
 end
+
+### Coveriance_fc2()
 
 function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	dim = size(X,1)
@@ -124,6 +135,8 @@ function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	return K₂ₙₘ
 end
 
+### Coveriance_fc3()
+
 function Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	dim = size(X,1)
 	num = size(X,2)
@@ -145,26 +158,32 @@ function Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	return K₃ₙₘ
 end
 
+
+#### Posterior()
+
 function Posterior(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
 	dimₜ = size(Marginal, 1)
 	Kₘₘ⁻¹ = inv(Marginal)
 	Kₙₘ = Covariance
 	
-	if size(Kₙₘ) == (dimₜ)
-		Meanₚ = Kₙₘ' * Kₘₘ⁻¹ * Target
+	MarginalTar = zeros(dimₜ)
+	@einsum MarginalTar[m] = Kₘₘ⁻¹[m, n] * Target[n]
+
+	if size(Kₙₘ) == (dimₜ,)
+		Meanₚ = Kₙₘ'  * MarginalTar
 		
 	elseif size(Kₙₘ) == (dimₚ, dimₜ)
 		Meanₚ = zeros(dimₚ)
-		@einsum Meanₚ[i] = Kₙₘ[i, m] * Kₘₘ⁻¹[m, n] * Target[n]
+		@einsum Meanₚ[i] = Kₙₘ[i, m] * MarginalTar[m]
 	
 	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₜ)
 		Meanₚ = zeros(dimₚ, dimₚ)
-		@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * Kₘₘ⁻¹[m, n] * Target[n]
+		@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * MarginalTar[m]
 
 	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₚ, dimₜ)
 		Meanₚ = zeros(dimₚ, dimₚ, dimₚ)
-		@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * Kₘₘ⁻¹[m, n] * Target[n]
+		@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * MarginalTar[m]
 	end
 
 	return Meanₚ 
