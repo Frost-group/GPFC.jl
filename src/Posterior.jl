@@ -158,8 +158,8 @@ function Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	return K₃ₙₘ
 end
 
+#### Posterior() is a function to determine posterior means
 
-#### Posterior()
 
 function Posterior(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
