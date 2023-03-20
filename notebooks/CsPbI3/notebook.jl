@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 3612f2e0-be86-11ed-0285-41ba4c7993e9
+# ╔═╡ 57360c50-c6ba-11ed-2caf-45013a891371
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum
@@ -14,20 +14,20 @@ begin
 	using Plots
 end
 
-# ╔═╡ fc76ddb7-eaa7-426a-a491-85f5b8b254bb
+# ╔═╡ 42e0ba92-c8cd-4a02-b557-dc163d768d31
 begin
 	using Profile
 	using ProfileView
 end
 
-# ╔═╡ 4d441983-27b6-41e3-8fa9-5701f216a958
+# ╔═╡ 2b6a4d5a-3d17-408c-8cf1-6c49b28acd0b
 begin
-	σₒ = 0.1                   # Kernel Scale
+	σₒ = 1.0 	                # Kernel Scale
 	l = 0.4                     # Length Scale
-	σₑ = 1e-5                   # Energy Gaussian noise
+	σₑ = 1e-3                   # Energy Gaussian noise
 	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
 		
-	Num = 100                   # Number of training points
+	Num = 76                    # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
 	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
@@ -35,14 +35,14 @@ begin
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
 
-# ╔═╡ 5cbae5f4-a5a0-4b1b-9657-8215b75f5a1c
+# ╔═╡ 9a7e7f77-47ee-4ea1-b6fd-d2f519792951
 begin
-	Featurefile = "feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv"
-	Energyfile = "energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv"
-	Forcefile = "force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv"
+	Featurefile = "CsPbI3_feature_222spc_01_n76_PW800_kpts9_e100_d1.csv"
+	Energyfile = "CsPbI3_energy_222spc_01_n76_PW800_kpts9_e100_d1.csv"
+	Forcefile = "CsPbI3_forces_222spc_01_n76_PW800_kpts9_e100_d1.csv"
 end;
 
-# ╔═╡ fba92446-f344-4b43-a956-7ed91ec93690
+# ╔═╡ 1c24ca2a-b533-4034-aa31-9d5d1de7502c
 function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
 	a  = 4 - dimA
 	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
@@ -61,11 +61,11 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 	return equi, feature, energy, force, Target
 end
 
-# ╔═╡ 03d70c6d-2dcd-4d17-91be-58f53a6ed0e8
+# ╔═╡ a06bf76e-d0b7-44ba-bf11-92f41a82d53c
 equi, feature, energy, force, Target = ASEFeatureTarget(
     Featurefile, Energyfile, Forcefile, Num, DIM);
 
-# ╔═╡ 4ecf427d-df24-4348-9140-da0017b6965d
+# ╔═╡ 8e593519-62ed-4925-af67-2b8d22651916
 function kernelfunction(k, x₁, x₂::Vector{Float64}, grad::Int64)
 	function f1st(x₁, x₂::Vector{Float64}) 
 		Zygote.gradient( a -> k(a, x₂), x₁)[1]
@@ -95,7 +95,7 @@ function kernelfunction(k, x₁, x₂::Vector{Float64}, grad::Int64)
 	end
 end
 
-# ╔═╡ 4db9b881-8c8a-4551-a67d-505c2211c797
+# ╔═╡ 295cb42f-8565-4775-9abd-367b466bbd6e
 function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
 	num = size(X,2)
@@ -130,7 +130,7 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 	return Kₘₘ
 end
 
-# ╔═╡ 10c27a5e-87e0-4e44-87cd-fd34c95851fa
+# ╔═╡ d274ac8c-1671-4c5d-be52-ed952a77fe4e
 function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	dim = size(X,1)
 	num = size(X,2)
@@ -154,29 +154,7 @@ function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	return K₂ₙₘ
 end
 
-# ╔═╡ fd1163bc-eeb7-42dc-a65b-918deb8e0d47
-function Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
-	dim = size(X,1)
-	num = size(X,2)
-	
-	#building Covariance matrix containers
-	K₃ₙₘ= zeros((dim, dim, dim, (1+dim)*num))
-	for j in 1:num
-		#Fillin convarian of Energy vs FC3
-		K₃ₙₘ[:,:,:,j] = reshape(
-					-  kernelfunction(k, X[:,j], xₒ, 3)
-					, (dim, dim, dim)
-				)
-		#Fillin convarian of Force vs FC3
-		K₃ₙₘ[:,:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
-					-  kernelfunction(k, X[:,j], xₒ, 4)
-					, (dim, dim, dim, dim)
-				)
-	end
-	return K₃ₙₘ
-end
-
-# ╔═╡ a9a49c89-6fe7-4080-ac68-e3816670b04b
+# ╔═╡ 75f8b89c-c61e-4d8b-ae3a-4026cec10196
 function Posterior(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
 	dimₜ = size(Marginal, 1)
@@ -205,57 +183,77 @@ function Posterior(Marginal, Covariance, Target)
 	return Meanₚ 
 end
 
-# ╔═╡ ee0b592a-a373-4916-8dca-fd34953ea68f
+# ╔═╡ 3ee0b725-1a27-41da-88c3-ad3b755aa0bc
 @time Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
 
-# ╔═╡ 64ba3cb3-9c13-4a2b-b327-1232d2f3b02f
-@time K₃ₙₘ = Coveriance_fc3(feature, equi, kernel);
+# ╔═╡ 78b4a5a0-5883-4e69-a43b-c731c3117271
+@time K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
 
-# ╔═╡ 2c10d44b-cf4b-4eb0-82e5-6f735240f374
-@time Mp = Posterior(Kₘₘ, K₃ₙₘ, Target);
+# ╔═╡ 2d0b0cb5-7a89-4f38-9f6f-c450cc5e3528
+@time Mp = Posterior(Kₘₘ, K₂ₙₘ, Target);
 
-# ╔═╡ 40e1c730-0db9-4d5e-8176-d72beac43fe4
-@profile Posterior(Kₘₘ, K₃ₙₘ, Target)
-
-# ╔═╡ 8df8989d-2980-40f4-9721-11b6dd83ad7e
+# ╔═╡ 1b0c7bd1-ff3b-4384-a646-f96dda708cfe
 begin
-	s = 16
-	heatmap(1:size(Mp[s,:,:],1),
-		    1:size(Mp[s,:,:],2), Mp[:,:,s],
+	heatmap(1:size(Mp,1),
+		    1:size(Mp,2), Mp,
 		    c=cgrad([:blue, :white, :red, :yellow]),
 		    xlabel="feature coord. (n x d)", ylabel="feature coord. (n x d)",
 		    title="FC2")
-	#savefig("Si_FC2_opt.png")
+	#savefig("CsPbI3_FC2_opt.png")
 end
 
-# ╔═╡ ddfb8115-cad3-49ba-8aad-a3aa18739e8f
-ProfileView.view()
+# ╔═╡ 011456dd-8982-4c57-a038-e3a4d19e690c
+abs(sum(Mp))
 
-# ╔═╡ f17ce8be-9430-4e4d-86a8-7d92b54d4328
-@time K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
-
-# ╔═╡ af38ff06-adc9-427d-b174-d69dc7c919e3
-@time Posterior(Kₘₘ, K₂ₙₘ, Target)
-
-# ╔═╡ ea3d495e-1669-47ca-8023-eec46ba951fa
+# ╔═╡ d5424eba-2f10-4803-80fb-779f5194fe89
 begin
-	k1 = 0.1^2 * SqExponentialKernel() ∘ ScaleTransform(0.4)
-	k2 = 0.1^2 * SqExponentialKernel() ∘ ScaleTransform(0.4)
-	k3 = 1^2 * SqExponentialKernel() ∘ ScaleTransform(0.2)
-	kcomp = k3 *( k2 + k1 )
+	P2 = zeros(( 120, 120, 9))
+	nd = [1,5,10,17,26,36,48,60,76]
+	SumRule2 = zeros((9))
+	order2 = 2
 end
 
-# ╔═╡ e538438c-7032-4b86-9910-75dd1d0670f3
-@time Kₘₘcomp = Marginal(feature, kcomp, l, σₑ, σₙ);
+# ╔═╡ cd70f518-6456-42f3-bd8d-8d50f5309f01
+@time for i in 1:9
+	numt1 = nd[i]
+	
+	equi, feature, energy, force, Target = ASEFeatureTarget(
+    Featurefile, Energyfile, Forcefile, numt1, DIM);
 
-# ╔═╡ 025e4a48-067e-4d06-89d4-f61ea6a155e5
-@time K₂comp = Coveriance_fc2(feature, equi, kcomp);
+	Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
+	K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
+	Mp = Posterior(Kₘₘ, K₂ₙₘ, Target);
+	
+	P2[:,:,i] = Mp
+	
+	SumRule2[i] = abs(sum(Mp))
+end 
 
-# ╔═╡ 256f86b4-12ea-46db-abd8-cc59bca5038a
-@time Posterior(Kₘₘcomp, K₂comp, Target)
+# ╔═╡ 54e8e6fd-a9f4-4b43-8c10-e0c98eee3bbf
+anim2 = @animate for i in 1:9
+	heatmap(1:size(P2[:,:,i],1),
+	    1:size(P2[:,:,i],2), P2[:,:,i],
+	    c=cgrad([:blue, :white, :red, :yellow]),
+	    xlabel="feature coord. (n x d)", ylabel="feature coord. (n x d)",
+	    title="FC2 (Traning Data = " *string(nd[i]) *")" , aspect_ratio=1, size=(650, 650))
+end
 
-# ╔═╡ d9776baf-4c81-4085-a051-04f07afd0f35
-isposdef(Kₘₘcomp)
+# ╔═╡ 323bbcef-5abb-442d-9bf3-8b158a5efbad
+gif(anim2, "CsPbI3_FC2_fps_new.gif", fps=2)
+
+# ╔═╡ b9da6b87-037e-421b-a83d-a6b5b0c011b2
+anim4 = @animate for i in 1:9
+	scatter(nd[1:i], SumRule2[1:i],
+		xlabel="Training points",
+		ylabel="Sum of FC2 element",
+		xlim = (-1, 80), 
+		ylim = (0.0, 2500.0),
+		labels = "Learning points",
+		title="Sum Rule relation (Traning Data = " *string(nd[i]) *")")
+end
+
+# ╔═╡ 80bc7439-3a68-4fc9-86be-0dabeed184ef
+gif(anim4, "CsPbI3_FC2_SR2_new.gif", fps=2)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -278,9 +276,9 @@ DataFrames = "~1.5.0"
 Einsum = "~0.4.1"
 ForwardDiff = "~0.10.35"
 KernelFunctions = "~0.10.52"
-Plots = "~1.38.6"
+Plots = "~1.38.8"
 ProfileView = "~1.7.0"
-Zygote = "~0.6.56"
+Zygote = "~0.6.59"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -289,7 +287,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.5"
 manifest_format = "2.0"
-project_hash = "ffd430d359817abcbb5108cff07945581fd6849d"
+project_hash = "c181b9f9985991195d097bcb6862200bb72d2e5d"
 
 [[deps.ATK_jll]]
 deps = ["Artifacts", "Glib_jll", "JLLWrappers", "Libdl", "Pkg"]
@@ -548,9 +546,9 @@ uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
 
 [[deps.FillArrays]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "Statistics"]
-git-tree-sha1 = "d3ba08ab64bdfd27234d3f61956c966266757fe6"
+git-tree-sha1 = "3b245d1e50466ca0c9529e2033a3c92387c59c2f"
 uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
-version = "0.13.7"
+version = "0.13.9"
 
 [[deps.FixedPointNumbers]]
 deps = ["Statistics"]
@@ -612,9 +610,9 @@ version = "3.3.8+0"
 
 [[deps.GPUArrays]]
 deps = ["Adapt", "GPUArraysCore", "LLVM", "LinearAlgebra", "Printf", "Random", "Reexport", "Serialization", "Statistics"]
-git-tree-sha1 = "a28f752ffab0ccd6660fc7af5ad1c9ad176f45f7"
+git-tree-sha1 = "28231bc5bee6672747be0313dc349c08f42942f6"
 uuid = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
-version = "8.6.3"
+version = "8.6.4"
 
 [[deps.GPUArraysCore]]
 deps = ["Adapt"]
@@ -624,15 +622,15 @@ version = "0.1.4"
 
 [[deps.GR]]
 deps = ["Artifacts", "Base64", "DelimitedFiles", "Downloads", "GR_jll", "HTTP", "JSON", "Libdl", "LinearAlgebra", "Pkg", "Preferences", "Printf", "Random", "Serialization", "Sockets", "TOML", "Tar", "Test", "UUIDs", "p7zip_jll"]
-git-tree-sha1 = "660b2ea2ec2b010bb02823c6d0ff6afd9bdc5c16"
+git-tree-sha1 = "4423d87dc2d3201f3f1768a29e807ddc8cc867ef"
 uuid = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
-version = "0.71.7"
+version = "0.71.8"
 
 [[deps.GR_jll]]
 deps = ["Artifacts", "Bzip2_jll", "Cairo_jll", "FFMPEG_jll", "Fontconfig_jll", "GLFW_jll", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "Pixman_jll", "Qt5Base_jll", "Zlib_jll", "libpng_jll"]
-git-tree-sha1 = "d5e1fd17ac7f3aa4c5287a61ee28d4f8b8e98873"
+git-tree-sha1 = "3657eb348d44575cc5560c80d7e55b812ff6ffe1"
 uuid = "d2c73de3-f751-5644-a686-071e5b155ba9"
-version = "0.71.7+0"
+version = "0.71.8+0"
 
 [[deps.GTK3_jll]]
 deps = ["ATK_jll", "Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "FriBidi_jll", "Glib_jll", "HarfBuzz_jll", "JLLWrappers", "Libdl", "Libepoxy_jll", "Pango_jll", "Pkg", "Wayland_jll", "Xorg_libX11_jll", "Xorg_libXcomposite_jll", "Xorg_libXcursor_jll", "Xorg_libXdamage_jll", "Xorg_libXext_jll", "Xorg_libXfixes_jll", "Xorg_libXi_jll", "Xorg_libXinerama_jll", "Xorg_libXrandr_jll", "Xorg_libXrender_jll", "at_spi2_atk_jll", "gdk_pixbuf_jll", "iso_codes_jll", "xkbcommon_jll"]
@@ -677,9 +675,9 @@ version = "1.3.0"
 
 [[deps.GtkObservables]]
 deps = ["Cairo", "Colors", "Dates", "FixedPointNumbers", "Graphics", "Gtk", "IntervalSets", "LinearAlgebra", "Observables", "Reexport", "RoundingIntegers", "SnoopPrecompile"]
-git-tree-sha1 = "f882030a8f8e8995fd0c5df32a1ec1da913d1be6"
+git-tree-sha1 = "db8d97857ec6aa819fd424355aad26a121e4a783"
 uuid = "8710efd8-4ad6-11eb-33ea-2d5ceb25a41c"
-version = "1.2.7"
+version = "1.2.8"
 
 [[deps.HTTP]]
 deps = ["Base64", "CodecZlib", "Dates", "IniFile", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
@@ -732,9 +730,9 @@ uuid = "3587e190-3f89-42d0-90ee-14403ec27112"
 version = "0.1.8"
 
 [[deps.InvertedIndices]]
-git-tree-sha1 = "82aec7a3dd64f4d9584659dc0b62ef7db2ef3e19"
+git-tree-sha1 = "0dc7b50b8d436461be01300fd8cd45aa0274b038"
 uuid = "41ab1584-1d38-5bbf-9106-f11c6c58b48f"
-version = "1.2.0"
+version = "1.3.0"
 
 [[deps.IrrationalConstants]]
 git-tree-sha1 = "630b497eafcc20001bba38a4651b327dcfc491d2"
@@ -1080,9 +1078,9 @@ version = "1.3.4"
 
 [[deps.Plots]]
 deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers", "GR", "JLFzf", "JSON", "LaTeXStrings", "Latexify", "LinearAlgebra", "Measures", "NaNMath", "Pkg", "PlotThemes", "PlotUtils", "Preferences", "Printf", "REPL", "Random", "RecipesBase", "RecipesPipeline", "Reexport", "RelocatableFolders", "Requires", "Scratch", "Showoff", "SnoopPrecompile", "SparseArrays", "Statistics", "StatsBase", "UUIDs", "UnicodeFun", "Unzip"]
-git-tree-sha1 = "da1d3fb7183e38603fcdd2061c47979d91202c97"
+git-tree-sha1 = "f49a45a239e13333b8b936120fe6d793fe58a972"
 uuid = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-version = "1.38.6"
+version = "1.38.8"
 
 [[deps.PooledArrays]]
 deps = ["DataAPI", "Future"]
@@ -1098,9 +1096,9 @@ version = "1.3.0"
 
 [[deps.PrettyTables]]
 deps = ["Crayons", "Formatting", "LaTeXStrings", "Markdown", "Reexport", "StringManipulation", "Tables"]
-git-tree-sha1 = "96f6db03ab535bdb901300f88335257b0018689d"
+git-tree-sha1 = "548793c7859e28ef026dba514752275ee871169f"
 uuid = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
-version = "2.2.2"
+version = "2.2.3"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -1227,9 +1225,9 @@ version = "2.2.0"
 
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "Random", "StaticArraysCore", "Statistics"]
-git-tree-sha1 = "2d7d9e1ddadc8407ffd460e24218e37ef52dd9a3"
+git-tree-sha1 = "6aa098ef1012364f2ede6b17bf358c7f1fbe90d4"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.5.16"
+version = "1.5.17"
 
 [[deps.StaticArraysCore]]
 git-tree-sha1 = "6b7ba252635a5eff6a0b0664a41ee140a1c9e72a"
@@ -1259,9 +1257,9 @@ version = "0.3.0"
 
 [[deps.StructArrays]]
 deps = ["Adapt", "DataAPI", "GPUArraysCore", "StaticArraysCore", "Tables"]
-git-tree-sha1 = "b03a3b745aa49b566f128977a7dd1be8711c5e71"
+git-tree-sha1 = "521a0e828e98bb69042fec1809c1b5a680eb7389"
 uuid = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
-version = "0.6.14"
+version = "0.6.15"
 
 [[deps.TOML]]
 deps = ["Dates"]
@@ -1276,9 +1274,9 @@ version = "1.0.1"
 
 [[deps.Tables]]
 deps = ["DataAPI", "DataValueInterfaces", "IteratorInterfaceExtensions", "LinearAlgebra", "OrderedCollections", "TableTraits", "Test"]
-git-tree-sha1 = "c79322d36826aa2f4fd8ecfa96ddb47b174ac78d"
+git-tree-sha1 = "1544b926975372da01227b382066ab70e574a3ec"
 uuid = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
-version = "1.10.0"
+version = "1.10.1"
 
 [[deps.Tar]]
 deps = ["ArgTools", "SHA"]
@@ -1516,9 +1514,9 @@ version = "1.5.4+0"
 
 [[deps.Zygote]]
 deps = ["AbstractFFTs", "ChainRules", "ChainRulesCore", "DiffRules", "Distributed", "FillArrays", "ForwardDiff", "GPUArrays", "GPUArraysCore", "IRTools", "InteractiveUtils", "LinearAlgebra", "LogExpFunctions", "MacroTools", "NaNMath", "Random", "Requires", "SnoopPrecompile", "SparseArrays", "SpecialFunctions", "Statistics", "ZygoteRules"]
-git-tree-sha1 = "5eb05dfdc66e6e7eeb5f390b3a3e7eb6e10c6b62"
+git-tree-sha1 = "4df8f470806a45a8630ac8f597304821dc8e8838"
 uuid = "e88e6eb3-aa80-5325-afca-941959d7151f"
-version = "0.6.56"
+version = "0.6.59"
 
 [[deps.ZygoteRules]]
 deps = ["MacroTools"]
@@ -1633,29 +1631,26 @@ version = "1.4.1+0"
 """
 
 # ╔═╡ Cell order:
-# ╠═3612f2e0-be86-11ed-0285-41ba4c7993e9
-# ╠═fc76ddb7-eaa7-426a-a491-85f5b8b254bb
-# ╠═4d441983-27b6-41e3-8fa9-5701f216a958
-# ╠═5cbae5f4-a5a0-4b1b-9657-8215b75f5a1c
-# ╠═fba92446-f344-4b43-a956-7ed91ec93690
-# ╠═03d70c6d-2dcd-4d17-91be-58f53a6ed0e8
-# ╠═4ecf427d-df24-4348-9140-da0017b6965d
-# ╠═4db9b881-8c8a-4551-a67d-505c2211c797
-# ╠═10c27a5e-87e0-4e44-87cd-fd34c95851fa
-# ╠═fd1163bc-eeb7-42dc-a65b-918deb8e0d47
-# ╠═a9a49c89-6fe7-4080-ac68-e3816670b04b
-# ╠═ee0b592a-a373-4916-8dca-fd34953ea68f
-# ╠═64ba3cb3-9c13-4a2b-b327-1232d2f3b02f
-# ╠═2c10d44b-cf4b-4eb0-82e5-6f735240f374
-# ╠═40e1c730-0db9-4d5e-8176-d72beac43fe4
-# ╠═8df8989d-2980-40f4-9721-11b6dd83ad7e
-# ╠═ddfb8115-cad3-49ba-8aad-a3aa18739e8f
-# ╠═f17ce8be-9430-4e4d-86a8-7d92b54d4328
-# ╠═af38ff06-adc9-427d-b174-d69dc7c919e3
-# ╠═ea3d495e-1669-47ca-8023-eec46ba951fa
-# ╠═e538438c-7032-4b86-9910-75dd1d0670f3
-# ╠═025e4a48-067e-4d06-89d4-f61ea6a155e5
-# ╠═256f86b4-12ea-46db-abd8-cc59bca5038a
-# ╠═d9776baf-4c81-4085-a051-04f07afd0f35
+# ╠═57360c50-c6ba-11ed-2caf-45013a891371
+# ╠═42e0ba92-c8cd-4a02-b557-dc163d768d31
+# ╠═9a7e7f77-47ee-4ea1-b6fd-d2f519792951
+# ╠═1c24ca2a-b533-4034-aa31-9d5d1de7502c
+# ╠═a06bf76e-d0b7-44ba-bf11-92f41a82d53c
+# ╠═8e593519-62ed-4925-af67-2b8d22651916
+# ╠═295cb42f-8565-4775-9abd-367b466bbd6e
+# ╠═d274ac8c-1671-4c5d-be52-ed952a77fe4e
+# ╠═75f8b89c-c61e-4d8b-ae3a-4026cec10196
+# ╠═2b6a4d5a-3d17-408c-8cf1-6c49b28acd0b
+# ╠═3ee0b725-1a27-41da-88c3-ad3b755aa0bc
+# ╠═78b4a5a0-5883-4e69-a43b-c731c3117271
+# ╠═2d0b0cb5-7a89-4f38-9f6f-c450cc5e3528
+# ╠═1b0c7bd1-ff3b-4384-a646-f96dda708cfe
+# ╠═011456dd-8982-4c57-a038-e3a4d19e690c
+# ╠═d5424eba-2f10-4803-80fb-779f5194fe89
+# ╠═cd70f518-6456-42f3-bd8d-8d50f5309f01
+# ╠═54e8e6fd-a9f4-4b43-8c10-e0c98eee3bbf
+# ╠═323bbcef-5abb-442d-9bf3-8b158a5efbad
+# ╠═b9da6b87-037e-421b-a83d-a6b5b0c011b2
+# ╠═80bc7439-3a68-4fc9-86be-0dabeed184ef
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
