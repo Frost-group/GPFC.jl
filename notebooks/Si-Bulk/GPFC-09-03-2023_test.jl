@@ -208,14 +208,11 @@ end
 # ╔═╡ ee0b592a-a373-4916-8dca-fd34953ea68f
 @time Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
 
-# ╔═╡ 64ba3cb3-9c13-4a2b-b327-1232d2f3b02f
-@time K₃ₙₘ = Coveriance_fc3(feature, equi, kernel);
+# ╔═╡ f17ce8be-9430-4e4d-86a8-7d92b54d4328
+@time K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
 
 # ╔═╡ 2c10d44b-cf4b-4eb0-82e5-6f735240f374
-@time Mp = Posterior(Kₘₘ, K₃ₙₘ, Target);
-
-# ╔═╡ 40e1c730-0db9-4d5e-8176-d72beac43fe4
-@profile Posterior(Kₘₘ, K₃ₙₘ, Target)
+@time Mp = Posterior(Kₘₘ, K₂ₙₘ, Target);
 
 # ╔═╡ 8df8989d-2980-40f4-9721-11b6dd83ad7e
 begin
@@ -228,11 +225,8 @@ begin
 	#savefig("Si_FC2_opt.png")
 end
 
-# ╔═╡ ddfb8115-cad3-49ba-8aad-a3aa18739e8f
-ProfileView.view()
-
-# ╔═╡ f17ce8be-9430-4e4d-86a8-7d92b54d4328
-@time K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
+# ╔═╡ 40e1c730-0db9-4d5e-8176-d72beac43fe4
+@profile Posterior(Kₘₘ, K₂ₙₘ, Target)
 
 # ╔═╡ af38ff06-adc9-427d-b174-d69dc7c919e3
 @time Posterior(Kₘₘ, K₂ₙₘ, Target)
@@ -256,6 +250,67 @@ end
 
 # ╔═╡ d9776baf-4c81-4085-a051-04f07afd0f35
 isposdef(Kₘₘcomp)
+
+# ╔═╡ 3bc0a784-8fe0-44c5-ab24-720272983ba0
+begin
+	P2 = zeros(( 48, 48, 10))
+	nd = [1,5,10,15,20,30,40,50,60,80]
+	SumRule2 = zeros((10))
+end
+
+# ╔═╡ 00b01e3d-c240-453f-8cd5-c689e2136568
+@time for i in 1:10
+	numt1 = nd[i]
+	equi, feature, energy, force, Target = ASEFeatureTarget(
+    Featurefile, Energyfile, Forcefile, numt1, DIM);
+
+	Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
+	K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
+	Mp = Posterior(Kₘₘ, K₂ₙₘ, Target);
+	
+	P2[:,:,i] = Mp 
+	
+	SumRule2[i] = abs(sum(Mp))
+end 
+
+# ╔═╡ 750c635d-737a-4a1a-bc50-c600e60d99f9
+SumRule2
+
+# ╔═╡ 3ed49ed9-cbfb-484c-b65a-bd88386492af
+SumRule1 = [523.12, 223.24, 125.33, 80.23, 23.2, 15.233, 1.0444, 0.59823, 0.3332, 0.31268]
+
+# ╔═╡ 3dd7a431-9b24-4d75-97f8-30a0e84cee86
+anim3 = @animate for i in 1:10
+	plot(nd[1:i], [SumRule1[1:i], SumRule2[1:i]],
+		xlabel="Training points",
+		ylabel="Sum of FC2 element",
+		xlim = (-1, 90), 
+		ylim = (-20.0, 700.0),
+		labels = ["Symmetry" "without"],
+		linewidth=3,
+		title="Sum Rule relation (Traning Data = " *string(nd[i]) *")"
+	)
+end
+
+# ╔═╡ 840edf28-2caa-4a6d-a181-6a848b00e2da
+gif(anim3, "Si_FC2_SR_symmetry.gif", fps=2)
+
+# ╔═╡ 46f75667-894a-464a-ad4e-68e9ee608c93
+begin
+	plot(nd, [SumRule1, SumRule2],
+			xlabel="Training points",
+			ylabel="Sum of FC2 element",
+			xlim = (-1, 90), 
+			ylim = (-20.0, 700.0),
+			labels = ["w/ Symmetry" "w/o"],
+			linewidth=3,
+			title="Sum Rule relation (Traning Data = " * "80"*")"
+		)
+	savefig("Si_FC2_SR_symmetry.png")
+end
+
+# ╔═╡ 653094ea-5062-44cf-9472-1db0f3c9ee91
+
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1645,11 +1700,9 @@ version = "1.4.1+0"
 # ╠═fd1163bc-eeb7-42dc-a65b-918deb8e0d47
 # ╠═a9a49c89-6fe7-4080-ac68-e3816670b04b
 # ╠═ee0b592a-a373-4916-8dca-fd34953ea68f
-# ╠═64ba3cb3-9c13-4a2b-b327-1232d2f3b02f
 # ╠═2c10d44b-cf4b-4eb0-82e5-6f735240f374
 # ╠═40e1c730-0db9-4d5e-8176-d72beac43fe4
 # ╠═8df8989d-2980-40f4-9721-11b6dd83ad7e
-# ╠═ddfb8115-cad3-49ba-8aad-a3aa18739e8f
 # ╠═f17ce8be-9430-4e4d-86a8-7d92b54d4328
 # ╠═af38ff06-adc9-427d-b174-d69dc7c919e3
 # ╠═ea3d495e-1669-47ca-8023-eec46ba951fa
@@ -1657,5 +1710,13 @@ version = "1.4.1+0"
 # ╠═025e4a48-067e-4d06-89d4-f61ea6a155e5
 # ╠═256f86b4-12ea-46db-abd8-cc59bca5038a
 # ╠═d9776baf-4c81-4085-a051-04f07afd0f35
+# ╠═3bc0a784-8fe0-44c5-ab24-720272983ba0
+# ╠═00b01e3d-c240-453f-8cd5-c689e2136568
+# ╠═750c635d-737a-4a1a-bc50-c600e60d99f9
+# ╠═3ed49ed9-cbfb-484c-b65a-bd88386492af
+# ╠═3dd7a431-9b24-4d75-97f8-30a0e84cee86
+# ╠═840edf28-2caa-4a6d-a181-6a848b00e2da
+# ╠═46f75667-894a-464a-ad4e-68e9ee608c93
+# ╠═653094ea-5062-44cf-9472-1db0f3c9ee91
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
