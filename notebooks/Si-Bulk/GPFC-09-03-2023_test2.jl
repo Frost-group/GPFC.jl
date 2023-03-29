@@ -225,7 +225,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.5"
 manifest_format = "2.0"
-project_hash = "c181b9f9985991195d097bcb6862200bb72d2e5d"
+project_hash = "ffd430d359817abcbb5108cff07945581fd6849d"
 
 [[deps.ATK_jll]]
 deps = ["Artifacts", "Glib_jll", "JLLWrappers", "Libdl", "Pkg"]
