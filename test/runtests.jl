@@ -8,6 +8,7 @@ using LinearAlgebra, Einsum
 #Pulling Dataset from CSV
 using CSV, DataFrames, DelimitedFiles
 
+println("GPFC integration tests. Running against bulk Silicon dataset, and checking that the dimensions of the force-constants returned are correct."
 @testset verbose = true "GPFC" begin
     @testset verbose = true "$i Datapoints" for i in 1:10
     #Defining all parameters    
@@ -63,4 +64,5 @@ using CSV, DataFrames, DelimitedFiles
             @test size(Posterior(Kmm, K3nm, Target)) == ( diml, diml, diml)
         end
     end 
-end;
+end
+
