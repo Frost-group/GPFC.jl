@@ -1,7 +1,11 @@
-#### This kernelfunction() is used to calculate the derivative of kernel functions which is defined before hand.
-# It will turn a standard (or compositing) kernel function and two different atomistic reppresentation vectors to
-# the derivative of the kernel of those two vectors where the derivative order can be specified by variable grad. 
+"""
+    kernelfunction(k, x₁, x₂::Vector{Float64}, grad::Int64)
 
+Calculate the derivative of kernel function 'k'.
+This will turn a standard (or compositing) kernel function and two different atomistic
+representation vectors to the derivative of the kernel of those two vectors where the
+derivative order can be specified by variable grad. 
+"""
 function kernelfunction(k, x₁, x₂::Vector{Float64}, grad::Int64)
 	function f1st(x₁, x₂::Vector{Float64}) 
 		Zygote.gradient( a -> k(a, x₂), x₁)[1]
@@ -16,6 +20,7 @@ function kernelfunction(k, x₁, x₂::Vector{Float64}, grad::Int64)
 		ForwardDiff.jacobian( a -> f3rd(a, x₂), x₁)
 	end
 
+    # JMF: ToDo - should be able to rewrite this as some kind of multiple dispatch
 	if grad == 0
 		return k(x₁, x₂)
 	elseif grad == 1
@@ -161,6 +166,13 @@ end
 #### Posterior() is a function to determine posterior means
 
 
+"""
+    Posterior(Marginal, Covariance, Target)
+
+Calculates posterior mean. 
+Currenly rewritten to do individual tensor contractions with @einsum, as for some reason
+directly contracting across two dimensions was ~10x slower. 
+"""
 function Posterior(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
 	dimₜ = size(Marginal, 1)
