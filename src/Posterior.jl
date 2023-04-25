@@ -2,8 +2,9 @@
     kernelfunction(k, x₁, x₂::Vector{Float64}, grad::Int64)
 
 Calculate the derivative of kernel function 'k'.
-This will turn a standard (or compositing) kernel function and two different atomistic
-representation vectors to the derivative of the kernel of those two vectors where the
+A standard (or compositing) kernel function requires to be defined by using KernelFunctions.jl.
+This will turn the defined kernel function and two different atomistic
+representation vectors (features) to the derivative of the kernel of those two vectors where the
 derivative order can be specified by variable grad. 
 """
 function kernelfunction(k, x₁, x₂::Vector{Float64}, grad::Int64)
@@ -36,7 +37,15 @@ function kernelfunction(k, x₁, x₂::Vector{Float64}, grad::Int64)
 	end
 end 
 
-#### Marginal()  
+"""
+	Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64)
+
+Construct Marginal likelihood matrix of a traning feature 'X' (an atomistic
+representation vector of target potential energy surfaces and corresponding force fields) 
+through a standard (or compositing) kernel function 'k'.
+Marginal() function alsom require l (model length scale) and σₑ (scaling factor) used to evalua
+ate a model Gaussian noise.
+"""
 
 function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64)
 	dim = size(X,1)
@@ -72,8 +81,18 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64)
 	return Kₘₘ
 end
 
-#### Covariance class
-### Coveriance_energy()
+"""
+Covariance class
+"""
+"""
+	Coveriance_energy(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
+
+Contruct Covariance matrix (based on a kernel function 'k') between a traning feature 'X' (an atomistic
+representation vector of target potential energy surfaces and corresponding force fields) 
+and xₒ, the atomistic equilibrium structure vector.
+
+This will be used to evaluate the potential energy surface at the equilibrium point.
+"""
 
 function Coveriance_energy(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	dim = size(X,1)
@@ -91,7 +110,15 @@ function Coveriance_energy(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	return K₀ₙₘ
 end
 
-### Coveriance_force()
+"""
+	Coveriance_force(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
+
+Contruct Covariance matrix (based on a kernel function 'k') between a traning feature 'X' (an atomistic
+representation vector of target potential energy surfaces and corresponding force fields) 
+and xₒ, the atomistic equilibrium structure vector.
+
+This will be used to evaluate the force fields (which should be zeros) at the equilibrium point.
+"""
 
 function Coveriance_force(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	dim = size(X,1)
@@ -115,7 +142,15 @@ function Coveriance_force(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	return K₁ₙₘ  
 end
 
-### Coveriance_fc2()
+"""
+	Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
+
+Contruct Covariance matrix (based on a kernel function 'k') between a traning feature 'X' (an atomistic
+representation vector of target potential energy surfaces and corresponding force fields) 
+and xₒ, the atomistic equilibrium structure vector.
+
+This will be used to evaluate the second order (or harmonic) force constant at the equilibrium point.
+"""
 
 function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	dim = size(X,1)
@@ -140,7 +175,15 @@ function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	return K₂ₙₘ
 end
 
-### Coveriance_fc3()
+"""
+	Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
+
+Contruct Covariance matrix (based on a kernel function 'k') between a traning feature 'X' (an atomistic
+representation vector of target potential energy surfaces and corresponding force fields) 
+and xₒ, the atomistic equilibrium structure vector.
+
+This will be used to evaluate the third order (or cubic anharmonic) force constant at the equilibrium point.
+"""
 
 function Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	dim = size(X,1)
@@ -163,13 +206,14 @@ function Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	return K₃ₙₘ
 end
 
-#### Posterior() is a function to determine posterior means
-
-
 """
     Posterior(Marginal, Covariance, Target)
 
-Calculates posterior mean. 
+Calculates a posterior mean. 
+The inputs are a marginal likelihood matrix 'Marginal', a covarince variance matrix 'Covarince' 
+and a target dataset (including potential energy surfaces and force fields).
+
+SPEEDING UP
 Currenly rewritten to do individual tensor contractions with @einsum, as for some reason
 directly contracting across two dimensions was ~10x slower. 
 """

@@ -43,3 +43,5 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 
 	return equi, feature, energy, force, Target
 end
+
+
