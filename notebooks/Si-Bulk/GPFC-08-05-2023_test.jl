@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 3612f2e0-be86-11ed-0285-41ba4c7993e9
+# ╔═╡ 268526b0-edb4-11ed-1b0d-019d077829e3
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum
@@ -14,13 +14,7 @@ begin
 	using Plots
 end
 
-# ╔═╡ fc76ddb7-eaa7-426a-a491-85f5b8b254bb
-begin
-	using Profile
-	using ProfileView
-end
-
-# ╔═╡ 4d441983-27b6-41e3-8fa9-5701f216a958
+# ╔═╡ 2ab9340a-7199-4902-bb76-bc21b32c0446
 begin
 	σₒ = 0.1                   # Kernel Scale
 	l = 0.4                     # Length Scale
@@ -35,14 +29,14 @@ begin
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
 
-# ╔═╡ 5cbae5f4-a5a0-4b1b-9657-8215b75f5a1c
+# ╔═╡ d370be0e-2e7e-4a4b-a8e9-6a85799311af
 begin
 	Featurefile = "feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv"
 	Energyfile = "energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv"
 	Forcefile = "force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv"
 end;
 
-# ╔═╡ fba92446-f344-4b43-a956-7ed91ec93690
+# ╔═╡ eca15439-bdb7-44b5-8be0-9f203e8e4ac1
 function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
 	a  = 4 - dimA
 	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
@@ -61,11 +55,11 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 	return equi, feature, energy, force, Target
 end
 
-# ╔═╡ 03d70c6d-2dcd-4d17-91be-58f53a6ed0e8
+# ╔═╡ 087f643c-a690-4f23-b6b1-1d813a307918
 equi, feature, energy, force, Target = ASEFeatureTarget(
     Featurefile, Energyfile, Forcefile, Num, DIM);
 
-# ╔═╡ 4ecf427d-df24-4348-9140-da0017b6965d
+# ╔═╡ 7e70d5a5-cde4-4403-93c7-d17fd9795277
 function kernelfunction(k, x₁, x₂::Vector{Float64}, grad::Int64)
 	function f1st(x₁, x₂::Vector{Float64}) 
 		Zygote.gradient( a -> k(a, x₂), x₁)[1]
@@ -95,7 +89,7 @@ function kernelfunction(k, x₁, x₂::Vector{Float64}, grad::Int64)
 	end
 end
 
-# ╔═╡ 4db9b881-8c8a-4551-a67d-505c2211c797
+# ╔═╡ c02005bf-bbb5-4f88-9807-c7773a1b6c6c
 function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
 	num = size(X,2)
@@ -130,53 +124,77 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 	return Kₘₘ
 end
 
-# ╔═╡ 10c27a5e-87e0-4e44-87cd-fd34c95851fa
-function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
-	dim = size(X,1)
-	num = size(X,2)
+# ╔═╡ 46aca555-1cc0-4f09-89c3-8ef12fded60c
+
+
+# ╔═╡ 3fb83791-c632-4d13-94c9-d100de4dd70c
+function S2(M)
+	n = size(M, 1)/3
+	S2 = zeros((3*n, 3*n))
 	
-	#Covariance matrix for FC2 prediction
-	#building Covariance matrix containers	
-	K₂ₙₘ= zeros((dim, dim, (1+dim)*num))
-		
-	for j in 1:num
-		#Fillin convarian of Energy vs FC2
-		K₂ₙₘ[:,:,j] = reshape(
-					 kernelfunction(k, X[:,j], xₒ, 2)
-					, (dim, dim)
-				)
-		#Fillin convarian of Force vs FC2
-		K₂ₙₘ[:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
-					 kernelfunction(k, X[:,j], xₒ, 3)
-					, (dim, dim, dim)
-				)
-	end
-	return K₂ₙₘ
+	for i in 1:n
+		for j in 1:n
+			M₁₁ = 1
+			M₁₂ = 1
+			M₁₃ = 1
+			M₂₁ = 1
+			M₂₂ = 1
+			M₂₃ = 1	
+			M₃₃ = 1
+			M₃₃ = 1
+			M₃₃ = 1
+		end
+	end	
 end
 
-# ╔═╡ fd1163bc-eeb7-42dc-a65b-918deb8e0d47
-function Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
+# ╔═╡ 8b9b506e-9de3-4a28-b57c-f87a41e58d30
+function Coveriance_energy(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	dim = size(X,1)
 	num = size(X,2)
 	
+	#Covariance matrix for Energy prediction
 	#building Covariance matrix containers
-	K₃ₙₘ= zeros((dim, dim, dim, (1+dim)*num))
+	K₀ₙₘ= zeros(((1+dim)*num))
 	for j in 1:num
-		#Fillin convarian of Energy vs FC3
-		K₃ₙₘ[:,:,:,j] = reshape(
-					-  kernelfunction(k, X[:,j], xₒ, 3)
-					, (dim, dim, dim)
-				)
-		#Fillin convarian of Force vs FC3
-		K₃ₙₘ[:,:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
-					-  kernelfunction(k, X[:,j], xₒ, 4)
-					, (dim, dim, dim, dim)
-				)
+		#Fillin convarian of Energy vs Energy
+		K₀ₙₘ[j] = kernelfunction(k, X[:,j], xₒ, 0)
+		#Fillin convarian of Force vs Energy
+		K₀ₙₘ[(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] =  kernelfunction(k, X[:,j], xₒ, 1)
 	end
-	return K₃ₙₘ
+	return K₀ₙₘ
 end
 
-# ╔═╡ a9a49c89-6fe7-4080-ac68-e3816670b04b
+# ╔═╡ 44272fe8-d67e-45b0-8cd4-1d5d8afca5d4
+@time Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
+
+# ╔═╡ ad0d0e01-1e88-4202-8f0a-b5b2ac7503f1
+ @time K₀ₙₘ = Coveriance_energy(feature, equi, kernel);
+
+# ╔═╡ 3392f98b-49e7-418b-8d8d-ee831bc1dcae
+Target[1]
+
+# ╔═╡ aab2a038-7682-4ac0-bfb0-af041e2c1596
+begin
+	P0 = zeros((100))
+	nd = Array((1:100))
+	Error = zeros((100))
+end
+
+# ╔═╡ f8da7620-1eda-4cbe-8762-a82f733df829
+nd
+
+# ╔═╡ 222622fb-a866-4fc6-8eac-a5ebb171d7a5
+begin
+	i = 2
+	feature2 = feature[:, 2:i]
+	force2 = force[49:48*i]
+	energy2 = energy[2:i]
+	Target2 = zeros(((48+1)*(i-1),1))
+	Target2[1:i-1,:] = energy2
+	Target2[i:(i-1)*(1+48),:] = force2
+end
+
+# ╔═╡ d473fa07-92c1-4e63-92e1-6226e807df5e
 function Posterior(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
 	dimₜ = size(Marginal, 1)
@@ -205,112 +223,47 @@ function Posterior(Marginal, Covariance, Target)
 	return Meanₚ 
 end
 
-# ╔═╡ ee0b592a-a373-4916-8dca-fd34953ea68f
-@time Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
+# ╔═╡ a9fa131f-978e-4290-b1da-5c619e0f51cb
+@time Posterior(Kₘₘ, K₀ₙₘ, Target)
 
-# ╔═╡ f17ce8be-9430-4e4d-86a8-7d92b54d4328
-@time K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
-
-# ╔═╡ 2c10d44b-cf4b-4eb0-82e5-6f735240f374
-@time Mp = Posterior(Kₘₘ, K₂ₙₘ, Target);
-
-# ╔═╡ 8df8989d-2980-40f4-9721-11b6dd83ad7e
-begin
-	s = 16
-	heatmap(1:size(Mp[s,:,:],1),
-		    1:size(Mp[s,:,:],2), Mp[:,:,s],
-		    c=cgrad([:blue, :white, :red, :yellow]),
-		    xlabel="feature coord. (n x d)", ylabel="feature coord. (n x d)",
-		    title="FC2")
-	#savefig("Si_FC2_opt.png")
-end
-
-# ╔═╡ 40e1c730-0db9-4d5e-8176-d72beac43fe4
-@profile Posterior(Kₘₘ, K₂ₙₘ, Target)
-
-# ╔═╡ af38ff06-adc9-427d-b174-d69dc7c919e3
-@time Posterior(Kₘₘ, K₂ₙₘ, Target)
-
-# ╔═╡ ea3d495e-1669-47ca-8023-eec46ba951fa
-begin
-	k1 = 0.1^2 * SqExponentialKernel() ∘ ScaleTransform(0.4)
-	k2 = 0.1^2 * SqExponentialKernel() ∘ ScaleTransform(0.4)
-	k3 = 1^2 * SqExponentialKernel() ∘ ScaleTransform(0.2)
-	kcomp = k3 *( k2 + k1 )
-end
-
-# ╔═╡ e538438c-7032-4b86-9910-75dd1d0670f3
-@time Kₘₘcomp = Marginal(feature, kcomp, l, σₑ, σₙ);
-
-# ╔═╡ 025e4a48-067e-4d06-89d4-f61ea6a155e5
-@time K₂comp = Coveriance_fc2(feature, equi, kcomp);
-
-# ╔═╡ 256f86b4-12ea-46db-abd8-cc59bca5038a
-@time Posterior(Kₘₘcomp, K₂comp, Target)
-
-# ╔═╡ d9776baf-4c81-4085-a051-04f07afd0f35
-isposdef(Kₘₘcomp)
-
-# ╔═╡ 3bc0a784-8fe0-44c5-ab24-720272983ba0
-begin
-	P2 = zeros(( 48, 48, 10))
-	nd = [1,5,10,15,20,30,40,50,60,80]
-	SumRule2 = zeros((10))
-end
-
-# ╔═╡ 00b01e3d-c240-453f-8cd5-c689e2136568
-@time for i in 1:10
+# ╔═╡ 435ae0c4-3e36-407f-9b33-fd635edfae10
+@time for i in 2:100
 	numt1 = nd[i]
 	equi, feature, energy, force, Target = ASEFeatureTarget(
     Featurefile, Energyfile, Forcefile, numt1, DIM);
 
-	Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
-	K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
-	Mp = Posterior(Kₘₘ, K₂ₙₘ, Target);
+	feature2 = feature[:, 2:i]
+	force2 = force[49:48*i]
+	energy2 = energy[2:i]
+	Target2 = zeros(((48+1)*(i-1),1))
+	Target2[1:i-1,:] = energy2
+	Target2[i:(i-1)*(1+48),:] = force2
 	
-	P2[:,:,i] = Mp 
+	Kₘₘ = Marginal(feature2, kernel, l, σₑ, σₙ);
+	K₀ₙₘ = Coveriance_energy(feature2, equi, kernel);
+	Mp = Posterior(Kₘₘ, K₀ₙₘ, Target2);
 	
-	SumRule2[i] = abs(sum(Mp))
+	Error[i] = abs(Mp-Target[1])
 end 
 
-# ╔═╡ 750c635d-737a-4a1a-bc50-c600e60d99f9
-SumRule2
+# ╔═╡ 211d8aae-52cc-4820-bdb5-f114b57f8af4
+ErrorWOS = Error
 
-# ╔═╡ 3ed49ed9-cbfb-484c-b65a-bd88386492af
-SumRule1 = [523.12, 223.24, 125.33, 80.23, 23.2, 15.233, 1.0444, 0.59823, 0.3332, 0.31268]
-
-# ╔═╡ 3dd7a431-9b24-4d75-97f8-30a0e84cee86
-anim3 = @animate for i in 1:10
-	plot(nd[1:i], [SumRule1[1:i], SumRule2[1:i]],
+# ╔═╡ fd1bcab7-e018-4e97-b3d9-f0f6545615d5
+anim = @animate for i in 2:100
+	plot(nd[2:i], [Error[2:i], ErrorWOS[2:i]],
 		xlabel="Training points",
-		ylabel="Sum of FC2 element",
-		xlim = (-1, 90), 
-		ylim = (-20.0, 700.0),
-		labels = ["Symmetry" "without"],
+		ylabel="Error",
+		xlim = (0, 100), 
+		ylim = (-1e-5, 200e-5),
+		labels = ["Symmetry" "without Symmetry"],
 		linewidth=3,
-		title="Sum Rule relation (Traning Data = " *string(nd[i]) *")"
+		title="PES at Equilibrium (Traning Data = " * string(nd[i]) *")"
 	)
 end
 
-# ╔═╡ 840edf28-2caa-4a6d-a181-6a848b00e2da
-gif(anim3, "Si_FC2_SR_symmetry.gif", fps=2)
-
-# ╔═╡ 46f75667-894a-464a-ad4e-68e9ee608c93
-begin
-	plot(nd, [SumRule1, SumRule2],
-			xlabel="Training points",
-			ylabel="Sum of FC2 element",
-			xlim = (-1, 90), 
-			ylim = (-20.0, 700.0),
-			labels = ["w/ Symmetry" "w/o"],
-			linewidth=3,
-			title="Sum Rule relation (Traning Data = " * "80"*")"
-		)
-	savefig("Si_FC2_SR_symmetry.png")
-end
-
-# ╔═╡ 653094ea-5062-44cf-9472-1db0f3c9ee91
-
+# ╔═╡ 2e32171a-0715-418e-b9fb-39a78f5548c4
+gif(anim, "Si_FC2_SR_symmetry.gif", fps=10)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -323,19 +276,17 @@ ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 KernelFunctions = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-Profile = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
-ProfileView = "c46f51b8-102a-5cf2-8d2c-8597cb0e0da7"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
 CSV = "~0.10.9"
 DataFrames = "~1.5.0"
+DelimitedFiles = "~1.9.1"
 Einsum = "~0.4.1"
 ForwardDiff = "~0.10.35"
-KernelFunctions = "~0.10.52"
-Plots = "~1.38.6"
-ProfileView = "~1.7.0"
-Zygote = "~0.6.56"
+KernelFunctions = "~0.10.55"
+Plots = "~1.38.11"
+Zygote = "~0.6.60"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -344,13 +295,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.0-beta4"
 manifest_format = "2.0"
-project_hash = "ffd430d359817abcbb5108cff07945581fd6849d"
-
-[[deps.ATK_jll]]
-deps = ["Artifacts", "Glib_jll", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "a2ecb68d240333fe63bea1965b71884e98c2d0f0"
-uuid = "7b86fcea-f67b-53e1-809c-8f1719c154e8"
-version = "2.38.0+0"
+project_hash = "f56709a28f7e20854653aaf7327522e7236e7c18"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -361,11 +306,6 @@ weakdeps = ["ChainRulesCore"]
 
     [deps.AbstractFFTs.extensions]
     AbstractFFTsChainRulesCoreExt = "ChainRulesCore"
-
-[[deps.AbstractTrees]]
-git-tree-sha1 = "faa260e4cb5aba097a73fab382dd4b5819d8ec8c"
-uuid = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
-version = "0.4.4"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra", "Requires"]
@@ -410,12 +350,6 @@ deps = ["CodecZlib", "Dates", "FilePathsBase", "InlineStrings", "Mmap", "Parsers
 git-tree-sha1 = "c700cce799b51c9045473de751e9319bdd1c6e94"
 uuid = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 version = "0.10.9"
-
-[[deps.Cairo]]
-deps = ["Cairo_jll", "Colors", "Glib_jll", "Graphics", "Libdl", "Pango_jll"]
-git-tree-sha1 = "d0b3f8b4ad16cb0a2988c6788646a5e6a17b6b1b"
-uuid = "159f3aea-2a34-519c-b102-8c37f9878175"
-version = "1.0.5"
 
 [[deps.Cairo_jll]]
 deps = ["Artifacts", "Bzip2_jll", "CompilerSupportLibraries_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "JLLWrappers", "LZO_jll", "Libdl", "Pixman_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Zlib_jll", "libpng_jll"]
@@ -533,12 +467,6 @@ version = "1.0.0"
 deps = ["Printf"]
 uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
 
-[[deps.Dbus_jll]]
-deps = ["Artifacts", "Expat_jll", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "97f1325c10bd02b1cc1882e9c2bf6407ba630ace"
-uuid = "ee1fde0b-3d02-5ea6-8484-8dfef6360eab"
-version = "1.12.16+3"
-
 [[deps.DelimitedFiles]]
 deps = ["Mmap"]
 git-tree-sha1 = "9e2f36d3c96a820c678f2f1f1782582fcf685bae"
@@ -602,12 +530,6 @@ git-tree-sha1 = "74faea50c1d007c85837327f6775bea60b5492dd"
 uuid = "b22a6f82-2f65-5046-a5b2-351ab43fb4e5"
 version = "4.4.2+2"
 
-[[deps.FileIO]]
-deps = ["Pkg", "Requires", "UUIDs"]
-git-tree-sha1 = "299dc33549f68299137e51e6d49a13b5b1da9673"
-uuid = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
-version = "1.16.1"
-
 [[deps.FilePathsBase]]
 deps = ["Compat", "Dates", "Mmap", "Printf", "Test", "UUIDs"]
 git-tree-sha1 = "e27c4ebe80e8699540f2d6c805cc12203b614f12"
@@ -628,12 +550,6 @@ deps = ["Statistics"]
 git-tree-sha1 = "335bfdceacc84c5cdf16aadc768aa5ddfc5383cc"
 uuid = "53c48c17-4a7d-5ca2-90c5-79b7896eea93"
 version = "0.8.4"
-
-[[deps.FlameGraphs]]
-deps = ["AbstractTrees", "Colors", "FileIO", "FixedPointNumbers", "IndirectArrays", "LeftChildRightSiblingTrees", "Profile"]
-git-tree-sha1 = "bd1aaf448be998ea427b1c7213b8acf2e278498b"
-uuid = "08572546-2f56-4bcf-ba4e-bab62c3a3f89"
-version = "1.0.0"
 
 [[deps.Fontconfig_jll]]
 deps = ["Artifacts", "Bzip2_jll", "Expat_jll", "FreeType2_jll", "JLLWrappers", "Libdl", "Libuuid_jll", "Pkg", "Zlib_jll"]
@@ -711,12 +627,6 @@ git-tree-sha1 = "4486ff47de4c18cb511a0da420efebb314556316"
 uuid = "d2c73de3-f751-5644-a686-071e5b155ba9"
 version = "0.72.4+0"
 
-[[deps.GTK3_jll]]
-deps = ["ATK_jll", "Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "FriBidi_jll", "Glib_jll", "HarfBuzz_jll", "JLLWrappers", "Libdl", "Libepoxy_jll", "Pango_jll", "Pkg", "Wayland_jll", "Xorg_libX11_jll", "Xorg_libXcomposite_jll", "Xorg_libXcursor_jll", "Xorg_libXdamage_jll", "Xorg_libXext_jll", "Xorg_libXfixes_jll", "Xorg_libXi_jll", "Xorg_libXinerama_jll", "Xorg_libXrandr_jll", "Xorg_libXrender_jll", "at_spi2_atk_jll", "gdk_pixbuf_jll", "iso_codes_jll", "xkbcommon_jll"]
-git-tree-sha1 = "b080a592525632d287aee4637a62682576b7f5e4"
-uuid = "77ec8976-b24b-556a-a1bf-49a033a670a6"
-version = "3.24.31+0"
-
 [[deps.Gettext_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Libiconv_jll", "Pkg", "XML2_jll"]
 git-tree-sha1 = "9b02998aba7bf074d14de89f9d37ca24a1a0b046"
@@ -729,12 +639,6 @@ git-tree-sha1 = "d3b3624125c1474292d0d8ed0f65554ac37ddb23"
 uuid = "7746bdde-850d-59dc-9ae8-88ece973131d"
 version = "2.74.0+2"
 
-[[deps.Graphics]]
-deps = ["Colors", "LinearAlgebra", "NaNMath"]
-git-tree-sha1 = "d61890399bc535850c4bf08e4e0d3a7ad0f21cbd"
-uuid = "a2bd30eb-e257-5431-a919-1863eab51364"
-version = "1.1.2"
-
 [[deps.Graphite2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "344bf40dcab1073aca04aa0df4fb092f920e4011"
@@ -745,18 +649,6 @@ version = "1.3.14+0"
 git-tree-sha1 = "53bb909d1151e57e2484c3d1b53e19552b887fb2"
 uuid = "42e2da0e-8278-4e71-bc24-59509adca0fe"
 version = "1.0.2"
-
-[[deps.Gtk]]
-deps = ["Cairo", "Cairo_jll", "Dates", "GTK3_jll", "Glib_jll", "Graphics", "JLLWrappers", "Libdl", "Librsvg_jll", "Pkg", "Reexport", "Scratch", "Serialization", "Test", "Xorg_xkeyboard_config_jll", "adwaita_icon_theme_jll", "gdk_pixbuf_jll", "hicolor_icon_theme_jll"]
-git-tree-sha1 = "b502c9f626930385658f818edc62218956204fb4"
-uuid = "4c0ca9eb-093a-5379-98c5-f87ac0bbbf44"
-version = "1.3.0"
-
-[[deps.GtkObservables]]
-deps = ["Cairo", "Colors", "Dates", "FixedPointNumbers", "Graphics", "Gtk", "IntervalSets", "LinearAlgebra", "Observables", "PrecompileTools", "Reexport", "RoundingIntegers"]
-git-tree-sha1 = "7abc9367c964ed75a51ee85f8d65fad47af1ae77"
-uuid = "8710efd8-4ad6-11eb-33ea-2d5ceb25a41c"
-version = "1.2.9"
 
 [[deps.HTTP]]
 deps = ["Base64", "CodecZlib", "ConcurrentUtilities", "Dates", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
@@ -776,11 +668,6 @@ git-tree-sha1 = "0ade27f0c49cebd8db2523c4eeccf779407cf12c"
 uuid = "7869d1d1-7146-5819-86e3-90919afe41df"
 version = "0.4.9"
 
-[[deps.IndirectArrays]]
-git-tree-sha1 = "012e604e1c7458645cb8b436f8fba789a51b257f"
-uuid = "9b13fd28-a010-5f03-acff-a1bbcff69959"
-version = "1.0.0"
-
 [[deps.InlineStrings]]
 deps = ["Parsers"]
 git-tree-sha1 = "9cc2baf75c6d09f9da536ddf58eb2f29dedaf461"
@@ -790,12 +677,6 @@ version = "1.4.0"
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
-
-[[deps.IntervalSets]]
-deps = ["Dates", "Random", "Statistics"]
-git-tree-sha1 = "16c0cc91853084cb5f58a78bd209513900206ce6"
-uuid = "8197267c-284f-5f27-9208-e0e47529a953"
-version = "0.7.4"
 
 [[deps.InvertedIndices]]
 git-tree-sha1 = "0dc7b50b8d436461be01300fd8cd45aa0274b038"
@@ -895,12 +776,6 @@ version = "0.16.0"
 deps = ["Artifacts", "Pkg"]
 uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 
-[[deps.LeftChildRightSiblingTrees]]
-deps = ["AbstractTrees"]
-git-tree-sha1 = "fb6803dafae4a5d62ea5cab204b1e657d9737e7f"
-uuid = "1d6d02ad-be62-4b6b-8a6d-2f90e265016e"
-version = "0.2.0"
-
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
@@ -922,12 +797,6 @@ version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
-
-[[deps.Libepoxy_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Libglvnd_jll", "Pkg", "Xorg_libX11_jll"]
-git-tree-sha1 = "7a0158b71f8be5c771e7a273183b2d0ac35278c5"
-uuid = "42c93a91-0102-5b3f-8f9d-e41de60ac950"
-version = "1.5.10+0"
 
 [[deps.Libffi_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -964,12 +833,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "9c30530bf0effd46e15e0fdcf2b8636e78cbbd73"
 uuid = "4b2f31a3-9ecc-558c-b454-b3730dcb73e9"
 version = "2.35.0+0"
-
-[[deps.Librsvg_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pango_jll", "Pkg", "gdk_pixbuf_jll"]
-git-tree-sha1 = "ae0923dab7324e6bc980834f709c4cd83dd797ed"
-uuid = "925c91fb-5dd6-59dd-8e8c-345e74382d89"
-version = "2.54.5+0"
 
 [[deps.Libtiff_jll]]
 deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "LERC_jll", "Libdl", "Pkg", "Zlib_jll", "Zstd_jll"]
@@ -1038,12 +901,6 @@ git-tree-sha1 = "c13304c81eec1ed3af7fc20e75fb6b26092a1102"
 uuid = "442fdcdd-2543-5da2-b0f3-8c86c306513e"
 version = "0.3.2"
 
-[[deps.MethodAnalysis]]
-deps = ["AbstractTrees"]
-git-tree-sha1 = "c2ee9b8f036c951f9ed0a47503a7f7dc0905b256"
-uuid = "85b6ec6f-f7df-4429-9514-a64bcd9ee824"
-version = "0.4.13"
-
 [[deps.Missings]]
 deps = ["DataAPI"]
 git-tree-sha1 = "f66bdc5de519e8f8ae43bdc598782d35a25b1272"
@@ -1066,11 +923,6 @@ version = "1.0.2"
 [[deps.NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 version = "1.2.0"
-
-[[deps.Observables]]
-git-tree-sha1 = "6862738f9796b3edc1c09d0890afce4eca9e7e93"
-uuid = "510215fc-4207-5dde-b226-833fc4488ee2"
-version = "0.5.4"
 
 [[deps.Ogg_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1121,12 +973,6 @@ version = "1.6.0"
 deps = ["Artifacts", "Libdl"]
 uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
 version = "10.42.0+0"
-
-[[deps.Pango_jll]]
-deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "FriBidi_jll", "Glib_jll", "HarfBuzz_jll", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "84a314e3926ba9ec66ac097e3635e270986b0f10"
-uuid = "36c8627f-9965-5494-a995-c6b170f724f3"
-version = "1.50.9+0"
 
 [[deps.Parsers]]
 deps = ["Dates", "SnoopPrecompile"]
@@ -1210,16 +1056,6 @@ version = "2.2.4"
 deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
-[[deps.Profile]]
-deps = ["Printf"]
-uuid = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
-
-[[deps.ProfileView]]
-deps = ["Cairo", "Colors", "Dates", "FileIO", "FlameGraphs", "Graphics", "Gtk", "GtkObservables", "InteractiveUtils", "IntervalSets", "MethodAnalysis", "Preferences", "Profile", "Requires", "SnoopPrecompile", "UUIDs"]
-git-tree-sha1 = "7bd6f8d174c29f270e5a5a44a2e3d4659093365c"
-uuid = "c46f51b8-102a-5cf2-8d2c-8597cb0e0da7"
-version = "1.7.1"
-
 [[deps.Qt5Base_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "xkbcommon_jll"]
 git-tree-sha1 = "0c03844e2231e12fda4d0086fd7cbe4098ee8dc5"
@@ -1268,11 +1104,6 @@ deps = ["UUIDs"]
 git-tree-sha1 = "838a3a4188e2ded87a4f9f184b4b0d78a1e91cb7"
 uuid = "ae029012-a4dd-5104-9daa-d747884805df"
 version = "1.3.0"
-
-[[deps.RoundingIntegers]]
-git-tree-sha1 = "99acd97f396ea71a5be06ba6de5c9defe188a778"
-uuid = "d5f540fe-1c90-5db3-b776-2e2f362d9394"
-version = "1.1.0"
 
 [[deps.SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
@@ -1479,23 +1310,11 @@ git-tree-sha1 = "4e490d5c960c314f33885790ed410ff3a94ce67e"
 uuid = "0c0b7dd1-d40b-584c-a123-a41640f87eec"
 version = "1.0.9+4"
 
-[[deps.Xorg_libXcomposite_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libXfixes_jll"]
-git-tree-sha1 = "7c688ca9c957837539bbe1c53629bb871025e423"
-uuid = "3c9796d7-64a0-5134-86ad-79f8eb684845"
-version = "0.4.5+4"
-
 [[deps.Xorg_libXcursor_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libXfixes_jll", "Xorg_libXrender_jll"]
 git-tree-sha1 = "12e0eb3bc634fa2080c1c37fccf56f7c22989afd"
 uuid = "935fb764-8cf2-53bf-bb30-45bb1f8bf724"
 version = "1.2.0+4"
-
-[[deps.Xorg_libXdamage_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libXfixes_jll"]
-git-tree-sha1 = "fe4ffb2024ba3eddc862c6e1d70e2b070cd1c2bf"
-uuid = "0aeada51-83db-5f97-b67e-184615cfc6f6"
-version = "1.1.5+4"
 
 [[deps.Xorg_libXdmcp_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1538,12 +1357,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libX11_jll"]
 git-tree-sha1 = "19560f30fd49f4d4efbe7002a1037f8c43d43b96"
 uuid = "ea2f1a96-1ddc-540d-b46f-429655e07cfa"
 version = "0.9.10+4"
-
-[[deps.Xorg_libXtst_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libXext_jll", "Xorg_libXfixes_jll", "Xorg_libXi_jll"]
-git-tree-sha1 = "0c0a60851f44add2a64069ddf213e941c30ed93c"
-uuid = "b6f176f1-7aea-5357-ad67-1d3e565ea1c6"
-version = "1.2.3+4"
 
 [[deps.Xorg_libpthread_stubs_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1644,47 +1457,11 @@ git-tree-sha1 = "977aed5d006b840e2e40c0b48984f7463109046d"
 uuid = "700de1a5-db45-46bc-99cf-38207098b444"
 version = "0.2.3"
 
-[[deps.adwaita_icon_theme_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "hicolor_icon_theme_jll"]
-git-tree-sha1 = "37c9a36ccb876e02876c8a654f1b2e8c1b443a78"
-uuid = "b437f822-2cd6-5e08-a15c-8bac984d38ee"
-version = "3.33.92+5"
-
-[[deps.at_spi2_atk_jll]]
-deps = ["ATK_jll", "Artifacts", "JLLWrappers", "Libdl", "Pkg", "XML2_jll", "Xorg_libX11_jll", "at_spi2_core_jll"]
-git-tree-sha1 = "f16ae690aca4761f33d2cb338ee9899e541f5eae"
-uuid = "de012916-1e3f-58c2-8f29-df3ef51d412d"
-version = "2.34.1+4"
-
-[[deps.at_spi2_core_jll]]
-deps = ["Artifacts", "Dbus_jll", "Glib_jll", "JLLWrappers", "Libdl", "Pkg", "Xorg_libXtst_jll"]
-git-tree-sha1 = "d2d540cd145f2b2933614649c029d222fe125188"
-uuid = "0fc3237b-ac94-5853-b45c-d43d59a06200"
-version = "2.34.0+4"
-
 [[deps.fzf_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "868e669ccb12ba16eaf50cb2957ee2ff61261c56"
 uuid = "214eeab7-80f7-51ab-84ad-2988db7cef09"
 version = "0.29.0+0"
-
-[[deps.gdk_pixbuf_jll]]
-deps = ["Artifacts", "Glib_jll", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "Pkg", "Xorg_libX11_jll", "libpng_jll"]
-git-tree-sha1 = "e9190f9fb03f9c3b15b9fb0c380b0d57a3c8ea39"
-uuid = "da03df04-f53b-5353-a52f-6a8b0620ced0"
-version = "2.42.8+0"
-
-[[deps.hicolor_icon_theme_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "b458a6f6fc2b1a8ca74ed63852e4eaf43fb9f5ea"
-uuid = "059c91fe-1bad-52ad-bddd-f7b78713c282"
-version = "0.17.0+3"
-
-[[deps.iso_codes_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "51559b9071db7e363047a34f658d495843ccd35c"
-uuid = "bf975903-5238-5d20-8243-bc370bc1e7e5"
-version = "4.11.0+0"
 
 [[deps.libaom_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1751,35 +1528,27 @@ version = "1.4.1+0"
 """
 
 # ╔═╡ Cell order:
-# ╠═3612f2e0-be86-11ed-0285-41ba4c7993e9
-# ╠═fc76ddb7-eaa7-426a-a491-85f5b8b254bb
-# ╠═4d441983-27b6-41e3-8fa9-5701f216a958
-# ╠═5cbae5f4-a5a0-4b1b-9657-8215b75f5a1c
-# ╠═fba92446-f344-4b43-a956-7ed91ec93690
-# ╠═03d70c6d-2dcd-4d17-91be-58f53a6ed0e8
-# ╠═4ecf427d-df24-4348-9140-da0017b6965d
-# ╠═4db9b881-8c8a-4551-a67d-505c2211c797
-# ╠═10c27a5e-87e0-4e44-87cd-fd34c95851fa
-# ╠═fd1163bc-eeb7-42dc-a65b-918deb8e0d47
-# ╠═a9a49c89-6fe7-4080-ac68-e3816670b04b
-# ╠═ee0b592a-a373-4916-8dca-fd34953ea68f
-# ╠═2c10d44b-cf4b-4eb0-82e5-6f735240f374
-# ╠═40e1c730-0db9-4d5e-8176-d72beac43fe4
-# ╠═8df8989d-2980-40f4-9721-11b6dd83ad7e
-# ╠═f17ce8be-9430-4e4d-86a8-7d92b54d4328
-# ╠═af38ff06-adc9-427d-b174-d69dc7c919e3
-# ╠═ea3d495e-1669-47ca-8023-eec46ba951fa
-# ╠═e538438c-7032-4b86-9910-75dd1d0670f3
-# ╠═025e4a48-067e-4d06-89d4-f61ea6a155e5
-# ╠═256f86b4-12ea-46db-abd8-cc59bca5038a
-# ╠═d9776baf-4c81-4085-a051-04f07afd0f35
-# ╠═3bc0a784-8fe0-44c5-ab24-720272983ba0
-# ╠═00b01e3d-c240-453f-8cd5-c689e2136568
-# ╠═750c635d-737a-4a1a-bc50-c600e60d99f9
-# ╠═3ed49ed9-cbfb-484c-b65a-bd88386492af
-# ╠═3dd7a431-9b24-4d75-97f8-30a0e84cee86
-# ╠═840edf28-2caa-4a6d-a181-6a848b00e2da
-# ╠═46f75667-894a-464a-ad4e-68e9ee608c93
-# ╠═653094ea-5062-44cf-9472-1db0f3c9ee91
+# ╠═268526b0-edb4-11ed-1b0d-019d077829e3
+# ╠═2ab9340a-7199-4902-bb76-bc21b32c0446
+# ╠═d370be0e-2e7e-4a4b-a8e9-6a85799311af
+# ╠═eca15439-bdb7-44b5-8be0-9f203e8e4ac1
+# ╠═087f643c-a690-4f23-b6b1-1d813a307918
+# ╠═7e70d5a5-cde4-4403-93c7-d17fd9795277
+# ╠═c02005bf-bbb5-4f88-9807-c7773a1b6c6c
+# ╠═46aca555-1cc0-4f09-89c3-8ef12fded60c
+# ╠═3fb83791-c632-4d13-94c9-d100de4dd70c
+# ╠═8b9b506e-9de3-4a28-b57c-f87a41e58d30
+# ╠═d473fa07-92c1-4e63-92e1-6226e807df5e
+# ╠═44272fe8-d67e-45b0-8cd4-1d5d8afca5d4
+# ╠═ad0d0e01-1e88-4202-8f0a-b5b2ac7503f1
+# ╠═a9fa131f-978e-4290-b1da-5c619e0f51cb
+# ╠═3392f98b-49e7-418b-8d8d-ee831bc1dcae
+# ╠═aab2a038-7682-4ac0-bfb0-af041e2c1596
+# ╠═f8da7620-1eda-4cbe-8762-a82f733df829
+# ╠═222622fb-a866-4fc6-8eac-a5ebb171d7a5
+# ╠═435ae0c4-3e36-407f-9b33-fd635edfae10
+# ╠═211d8aae-52cc-4820-bdb5-f114b57f8af4
+# ╠═fd1bcab7-e018-4e97-b3d9-f0f6545615d5
+# ╠═2e32171a-0715-418e-b9fb-39a78f5548c4
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
