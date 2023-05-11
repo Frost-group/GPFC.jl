@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.25
+# v0.19.22
 
 using Markdown
 using InteractiveUtils
@@ -18,7 +18,7 @@ end
 begin
 	σₒ = 0.1                   # Kernel Scale
 	l = 0.4                     # Length Scale
-	σₑ = 1e-5                	# Energy Gaussian noise
+	σₑ = 1e-3                	# Energy Gaussian noise
 	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
 		
 	Num = 100                   # Number of training points
@@ -156,6 +156,41 @@ function S2(M)
 	return S2
 end
 
+# ╔═╡ 9c38fe61-21f7-4797-9c99-fc4d6445d8c0
+function MarginalSym(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
+	dim = size(X,1)
+	num = size(X,2)
+	#building Marginal Likelihood containers
+	#For Energy + Force
+	KK = zeros(((1+dim)*num, (1+dim)*num))
+	#For Energy
+	K₀₀ = zeros(((1)*num, (1)*num))
+	#For Force
+	K₁₁ = zeros(((dim)*num, (dim)*num))
+	
+	for i in 1:num 
+		for j in 1:num 
+		#Fillin convarian of Energy vs Energy
+			KK[i, j] = kernelfunction(k, X[:,i], X[:,j], 0)
+		#Fillin convarian of Force vs Energy
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction(k, X[:,i], X[:,j], 1)
+		#Fillin convarian of Energy vs Force	
+			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]
+		#Fillin convarian of Energy vs Force
+			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = S2(-kernelfunction(k, X[:,i], X[:,j], 2))
+		end
+	end
+
+	Iee = σₑ^2 * Matrix(I, num, num)
+	Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
+	Ief = zeros(num, dim * num)
+	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
+
+	Kₘₘ = KK + II
+	
+	return Kₘₘ
+end
+
 # ╔═╡ 294b9824-7211-4e63-817c-240551d37688
 function sym_marginal(X::Matrix{Float64}, Kmm⁻¹)
 	dim = size(X,1)
@@ -174,7 +209,7 @@ end
 function Posterior(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
 	dimₜ = size(Marginal, 1)
-	Kₘₘ⁻¹ = Marginal   #
+	Kₘₘ⁻¹ = inv(Marginal)   #
 	Kₙₘ = Covariance
 	
 	MarginalTar = zeros(dimₜ)
@@ -213,16 +248,19 @@ end
 @time  Kmm⁻¹ₛ = sym_marginal(feature, inv(Kmm));
 
 # ╔═╡ 6d41d08e-a1e2-4c57-baff-8062e0614f86
-
+Kmmₛ = MarginalSym(feature, kernel, l, σₑ, σₙ)
 
 # ╔═╡ c3075f9c-c442-47c2-8d07-40077b8f2892
  @time K₀ₙₘ = Coveriance_energy(feature, equi, kernel);
 
 # ╔═╡ 235cbb37-5b21-456e-94d2-247a3885197c
-@time Posterior(Kmm⁻¹, K₀ₙₘ, Target)
+@time Posterior(Kmm, K₀ₙₘ, Target)
 
 # ╔═╡ 7ae86327-bc32-4032-89ce-7d5949d1819c
-@time Posterior(Kmm⁻¹ₛ, K₀ₙₘ, Target)
+@time Posterior(Kmmₛ, K₀ₙₘ, Target)
+
+# ╔═╡ 1480a98f-a78f-42b5-91f3-2dc22f41cc81
+Target[1]
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1493,6 +1531,7 @@ version = "1.4.1+0"
 # ╠═3d7e9452-1b55-4b2f-a928-9e80f1c555e5
 # ╠═74588963-cf01-4d6b-88e6-e2269f85cd55
 # ╠═34e6fbb4-2ea3-4aba-86c4-807e565a560e
+# ╠═9c38fe61-21f7-4797-9c99-fc4d6445d8c0
 # ╠═cb43563c-04bb-48ef-abe3-de2a7906d097
 # ╠═b8ae89c1-c4bc-4dfa-bf19-33c758ac2916
 # ╠═294b9824-7211-4e63-817c-240551d37688
@@ -1505,5 +1544,6 @@ version = "1.4.1+0"
 # ╠═c3075f9c-c442-47c2-8d07-40077b8f2892
 # ╠═235cbb37-5b21-456e-94d2-247a3885197c
 # ╠═7ae86327-bc32-4032-89ce-7d5949d1819c
+# ╠═1480a98f-a78f-42b5-91f3-2dc22f41cc81
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

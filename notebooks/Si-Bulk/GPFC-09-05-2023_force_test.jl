@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.25
+# v0.19.22
 
 using Markdown
 using InteractiveUtils
@@ -16,9 +16,9 @@ end
 
 # ╔═╡ 42f92325-a723-4c9b-aa2b-f32c2ce155e0
 begin
-	σₒ = 0.1                   # Kernel Scale
-	l = 0.4                     # Length Scale
-	σₑ = 1e-5                   # Energy Gaussian noise
+	σₒ = 0.1                  # Kernel Scale
+	l = 0.4                   # Length Scale
+	σₑ = 1e-5                 # Energy Gaussian noise
 	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
 		
 	Num = 100                   # Number of training points
@@ -304,6 +304,9 @@ function Coveriance_forceSym(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 end
 
 
+# ╔═╡ 270861b9-14d4-4100-b04c-0e84797d3551
+
+
 # ╔═╡ 822808bd-fec2-412d-a11e-10be0afba8df
 function Posterior(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
@@ -383,19 +386,67 @@ sum(F)
 @time FDD = Posterior(KₘₘD, K₁ₙₘD, Target)
 
 # ╔═╡ ec44381d-4519-41e8-bc34-132fefe326e6
-@time FD = Posterior(Kₘₘ, K₁ₙₘD, Target)
+@time FD2 = Posterior(Kₘₘ, K₁ₙₘD, Target)
+
+# ╔═╡ 46b2bc86-b5e6-4d9d-b7ed-f198d30b9629
+@time FD1 = Posterior(KₘₘD, K₁ₙₘ, Target)
 
 # ╔═╡ f8a94be9-a1b3-4b65-ae3d-10308d368e65
-@time FP = Posterior(Kₘₘ, K₁ₙₘP, Target)
+@time FP2 = Posterior(Kₘₘ, K₁ₙₘP, Target)
 
 # ╔═╡ 301f96dd-f853-4ceb-b337-e8f9521fa925
-@time FS = Posterior(Kₘₘ, K₁ₙₘS, Target)
+@time FS2 = Posterior(Kₘₘ, K₁ₙₘS, Target)
+
+# ╔═╡ 66313482-0564-456e-b1c7-91b83a12811b
+isposdef(Kₘₘ)
+
+# ╔═╡ ff71585c-869f-44fc-bf08-4b4227fe613a
+isposdef(KₘₘD)
+
+# ╔═╡ 121b2297-a502-4e39-97a2-441e321fbf41
+isposdef(KₘₘS)
+
+# ╔═╡ 3be634bb-b9c3-4b0d-98a6-8c83e3d67c5e
+isposdef(KₘₘP)
+
+# ╔═╡ 59a54d87-1280-4fc9-b02c-0df2e11e17e1
+sum(FD1)
+
+# ╔═╡ dcb2bbdb-3d4e-427f-998a-5627fd17e1bb
+sum(FD2)
+
+# ╔═╡ f617636d-dc7e-46d0-aa1b-7a3a561ec786
+sum(FDS)
+
+# ╔═╡ 92bafe55-fad4-4821-af5a-4ca958598960
+sum(FPS)
+
+# ╔═╡ 607802a1-3111-4421-aade-c846d73070c8
+sum(FDD)
+
+# ╔═╡ 93a0939f-aff2-40e1-8a52-97b394fadba4
+sum(FSD)
+
+# ╔═╡ 89d707ab-0a71-4642-9359-0de2b36c6129
+sum(FP2)
+
+# ╔═╡ 8222296c-4bfc-46f3-986d-3f0701140b28
+sum(FSS)
+
+# ╔═╡ a2d41f7a-161c-4076-a159-38e3b032813d
+sum(F)
 
 # ╔═╡ 99765fcf-8c06-44f1-b35b-7f5e79abcbf3
-sum(FS + FP + FD)
+sum(FS2 + FP2 + FD2)
 
 # ╔═╡ 9ab80d07-6fe0-4f5b-a8c2-0b4450c68b72
-sum(F)
+Target[101:148]
+
+# ╔═╡ 95a5c232-de1b-42f9-bd21-79414d23c81c
+sum(Target[101:148])
+
+# ╔═╡ 43dc7d30-2e3a-404d-ac9a-1e6cffbeac37
+
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1673,6 +1724,7 @@ version = "1.4.1+0"
 # ╠═d95286d6-cb26-4dcd-8156-d79a59c8daf4
 # ╠═00ac95d3-9f9c-4f38-9d6d-ca5e7d565f61
 # ╠═ea5aad73-d355-4c7f-a2b4-cb63cb4d4db9
+# ╠═270861b9-14d4-4100-b04c-0e84797d3551
 # ╠═822808bd-fec2-412d-a11e-10be0afba8df
 # ╠═29770ebf-2db1-4b5f-b50b-2a631f2321c5
 # ╠═f6d337d7-31e5-4bd6-9403-a3e2a1c153f3
@@ -1691,9 +1743,25 @@ version = "1.4.1+0"
 # ╠═e181c412-56e6-4eb7-8be8-83aee0bf4482
 # ╠═06391222-3458-4ea0-b786-3d299e88e246
 # ╠═ec44381d-4519-41e8-bc34-132fefe326e6
+# ╠═46b2bc86-b5e6-4d9d-b7ed-f198d30b9629
 # ╠═f8a94be9-a1b3-4b65-ae3d-10308d368e65
 # ╠═301f96dd-f853-4ceb-b337-e8f9521fa925
+# ╠═66313482-0564-456e-b1c7-91b83a12811b
+# ╠═ff71585c-869f-44fc-bf08-4b4227fe613a
+# ╠═121b2297-a502-4e39-97a2-441e321fbf41
+# ╠═3be634bb-b9c3-4b0d-98a6-8c83e3d67c5e
+# ╠═59a54d87-1280-4fc9-b02c-0df2e11e17e1
+# ╠═dcb2bbdb-3d4e-427f-998a-5627fd17e1bb
+# ╠═f617636d-dc7e-46d0-aa1b-7a3a561ec786
+# ╠═92bafe55-fad4-4821-af5a-4ca958598960
+# ╠═607802a1-3111-4421-aade-c846d73070c8
+# ╠═93a0939f-aff2-40e1-8a52-97b394fadba4
+# ╠═89d707ab-0a71-4642-9359-0de2b36c6129
+# ╠═8222296c-4bfc-46f3-986d-3f0701140b28
+# ╠═a2d41f7a-161c-4076-a159-38e3b032813d
 # ╠═99765fcf-8c06-44f1-b35b-7f5e79abcbf3
 # ╠═9ab80d07-6fe0-4f5b-a8c2-0b4450c68b72
+# ╠═95a5c232-de1b-42f9-bd21-79414d23c81c
+# ╠═43dc7d30-2e3a-404d-ac9a-1e6cffbeac37
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

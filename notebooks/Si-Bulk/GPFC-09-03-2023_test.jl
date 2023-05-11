@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.25
+# v0.19.22
 
 using Markdown
 using InteractiveUtils
@@ -130,6 +130,63 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 	return Kₘₘ
 end
 
+# ╔═╡ b3eb382d-fffb-4fca-81f9-132d643e4bca
+function S2(M)
+	n = Int(size(M, 1)/3)
+	S2 = zeros((3*n, 3*n))
+	
+	for i in 1:n
+		for j in 1:n
+			Mₓₓ = M[ 3*i-2:3*i , 3*j-2:3*j ]
+			Tr = Mₓₓ[1,1] + Mₓₓ[2,2] + Mₓₓ[3,3]
+ 
+			S2[3*i-2:3*i, 3*j-2:3*j]= [ 
+			Mₓₓ[1, 1]-(Tr/3)      (Mₓₓ[1,2]+Mₓₓ[2,1])/2  (Mₓₓ[1,3]+Mₓₓ[3,1])/2;
+			(Mₓₓ[1,2]+Mₓₓ[2,1])/2 Mₓₓ[2, 2]-(Tr/3)       (Mₓₓ[2,3]+Mₓₓ[3,2])/2;
+			(Mₓₓ[1,3]+Mₓₓ[3,1])/2 (Mₓₓ[2,3]+Mₓₓ[3,2])/2  Mₓₓ[3, 3]-(Tr/3)  ]
+		end
+	end	
+	return S2
+end
+
+# ╔═╡ 2dcd0737-627e-4bee-9afd-1ced4e193574
+function MarginalSym(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
+	dim = size(X,1)
+	num = size(X,2)
+	#building Marginal Likelihood containers
+	#For Energy + Force
+	KK = zeros(((1+dim)*num, (1+dim)*num))
+	#For Energy
+	K₀₀ = zeros(((1)*num, (1)*num))
+	#For Force
+	K₁₁ = zeros(((dim)*num, (dim)*num))
+	
+	for i in 1:num 
+		for j in 1:num 
+		#Fillin convarian of Energy vs Energy
+			KK[i, j] = kernelfunction(k, X[:,i], X[:,j], 0)
+		#Fillin convarian of Force vs Energy
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction(k, X[:,i], X[:,j], 1)
+		#Fillin convarian of Energy vs Force	
+			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]
+		#Fillin convarian of Energy vs Force
+			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = S2(-kernelfunction(k, X[:,i], X[:,j], 2))
+		end
+	end
+
+	Iee = σₑ^2 * Matrix(I, num, num)
+	Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
+	Ief = zeros(num, dim * num)
+	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
+
+	Kₘₘ = KK + II
+	
+	return Kₘₘ
+end
+
+# ╔═╡ 66583f77-b478-4f92-af7b-3ed67b3e7d23
+
+
 # ╔═╡ 10c27a5e-87e0-4e44-87cd-fd34c95851fa
 function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	dim = size(X,1)
@@ -201,7 +258,7 @@ function Posterior(Marginal, Covariance, Target)
 		Meanₚ = zeros(dimₚ, dimₚ, dimₚ)
 		@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * MarginalTar[m]
 	end
-
+	
 	return Meanₚ 
 end
 
@@ -254,8 +311,10 @@ isposdef(Kₘₘcomp)
 # ╔═╡ 3bc0a784-8fe0-44c5-ab24-720272983ba0
 begin
 	P2 = zeros(( 48, 48, 10))
+	P3= zeros(( 48, 48, 10))
 	nd = [1,5,10,15,20,30,40,50,60,80]
 	SumRule2 = zeros((10))
+	SumRule3 = zeros((10))
 end
 
 # ╔═╡ 00b01e3d-c240-453f-8cd5-c689e2136568
@@ -273,6 +332,24 @@ end
 	SumRule2[i] = abs(sum(Mp))
 end 
 
+# ╔═╡ 9876110f-87ef-4a22-809e-9ab3604b5d73
+@time for i in 1:10
+	numt1 = nd[i]
+	equi, feature, energy, force, Target = ASEFeatureTarget(
+    Featurefile, Energyfile, Forcefile, numt1, DIM);
+
+	Kₘₘ = MarginalSym(feature, kernel, l, σₑ, σₙ);
+	K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
+	Mp = Posterior(Kₘₘ, K₂ₙₘ, Target);
+	
+	P3[:,:,i] = Mp 
+	
+	SumRule3[i] = abs(sum(Mp))
+end 
+
+# ╔═╡ 8a49c650-7a04-419d-b03a-faf175bf54a7
+SumRule3
+
 # ╔═╡ 750c635d-737a-4a1a-bc50-c600e60d99f9
 SumRule2
 
@@ -281,7 +358,7 @@ SumRule1 = [523.12, 223.24, 125.33, 80.23, 23.2, 15.233, 1.0444, 0.59823, 0.3332
 
 # ╔═╡ 3dd7a431-9b24-4d75-97f8-30a0e84cee86
 anim3 = @animate for i in 1:10
-	plot(nd[1:i], [SumRule1[1:i], SumRule2[1:i]],
+	plot(nd[1:i], [SumRule3[1:i], SumRule2[1:i]],
 		xlabel="Training points",
 		ylabel="Sum of FC2 element",
 		xlim = (-1, 90), 
@@ -308,6 +385,21 @@ begin
 		)
 	savefig("Si_FC2_SR_symmetry.png")
 end
+
+# ╔═╡ 4064199c-66f7-4a92-b0d1-78409f9a1852
+anim4 = @animate for i in 1:10
+	heatmap(1:size(P2[:,:,i],1),
+		    1:size(P2[:,:,i],2), P2[:,:,i],
+		    c=cgrad([:blue, :white, :red, :yellow]),
+		    xlabel="feature coord. (n x d)", ylabel="feature coord. (n x d)",
+		    title="FC2")
+end
+
+# ╔═╡ a509528d-5212-4dad-950b-ad8f6a28f0dd
+gif(anim4, "Si_FC2_SR_symmetry.gif", fps=2)
+
+# ╔═╡ 59d47223-5bc4-412a-99b1-d7261f7d1070
+P2[:,:,10]
 
 # ╔═╡ 653094ea-5062-44cf-9472-1db0f3c9ee91
 
@@ -1759,6 +1851,9 @@ version = "1.4.1+0"
 # ╠═03d70c6d-2dcd-4d17-91be-58f53a6ed0e8
 # ╠═4ecf427d-df24-4348-9140-da0017b6965d
 # ╠═4db9b881-8c8a-4551-a67d-505c2211c797
+# ╠═2dcd0737-627e-4bee-9afd-1ced4e193574
+# ╠═b3eb382d-fffb-4fca-81f9-132d643e4bca
+# ╠═66583f77-b478-4f92-af7b-3ed67b3e7d23
 # ╠═10c27a5e-87e0-4e44-87cd-fd34c95851fa
 # ╠═fd1163bc-eeb7-42dc-a65b-918deb8e0d47
 # ╠═a9a49c89-6fe7-4080-ac68-e3816670b04b
@@ -1775,11 +1870,16 @@ version = "1.4.1+0"
 # ╠═d9776baf-4c81-4085-a051-04f07afd0f35
 # ╠═3bc0a784-8fe0-44c5-ab24-720272983ba0
 # ╠═00b01e3d-c240-453f-8cd5-c689e2136568
+# ╠═9876110f-87ef-4a22-809e-9ab3604b5d73
+# ╠═8a49c650-7a04-419d-b03a-faf175bf54a7
 # ╠═750c635d-737a-4a1a-bc50-c600e60d99f9
 # ╠═3ed49ed9-cbfb-484c-b65a-bd88386492af
 # ╠═3dd7a431-9b24-4d75-97f8-30a0e84cee86
 # ╠═840edf28-2caa-4a6d-a181-6a848b00e2da
 # ╠═46f75667-894a-464a-ad4e-68e9ee608c93
+# ╠═4064199c-66f7-4a92-b0d1-78409f9a1852
+# ╠═a509528d-5212-4dad-950b-ad8f6a28f0dd
+# ╠═59d47223-5bc4-412a-99b1-d7261f7d1070
 # ╠═653094ea-5062-44cf-9472-1db0f3c9ee91
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
