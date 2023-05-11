@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 93f29ee4-ee7c-11ed-3891-7785c4df2ed4
+# ╔═╡ 01ed3330-ef83-11ed-010b-35d542b97f70
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum
@@ -14,11 +14,11 @@ begin
 	using Plots
 end
 
-# ╔═╡ c9e5d484-ab16-4f74-9565-47b45b7161aa
+# ╔═╡ f597f2b0-2b5f-423e-8697-a47af1cc0ad0
 begin
 	σₒ = 0.1                   # Kernel Scale
 	l = 0.4                     # Length Scale
-	σₑ = 1e-5                	# Energy Gaussian noise
+	σₑ = 1e-5                   # Energy Gaussian noise
 	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
 		
 	Num = 100                   # Number of training points
@@ -29,44 +29,18 @@ begin
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
 
-# ╔═╡ 5d8d7c9b-23f0-4987-917e-1b6f8c3d8c94
-begin
-	Featurefile = "feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv"
-	Energyfile = "energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv"
-	Forcefile = "force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv"
-end;
-
-# ╔═╡ 3d7e9452-1b55-4b2f-a928-9e80f1c555e5
-function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
-	a  = 4 - dimA
-	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
-	
-	equi = feature[:,1]
-	
-	dim = size(feature,1)
-	num = size(feature,2)
-	
-	energy = (CSV.File(FileEnergy)|> Tables.matrix)[begin:numt,2]
-
-	force = -reshape((CSV.File(FileForce)|> Tables.matrix)[begin:a:end,2:numt+1], (dim*num,1))
-		
-	Target = vcat(energy, reshape(force, (dim*num,1)))
-
-	return equi, feature, energy, force, Target
-end
-
-# ╔═╡ 74588963-cf01-4d6b-88e6-e2269f85cd55
-function kernelfunction(k, x₁, x₂::Vector{Float64}, grad::Int64)
-	function f1st(x₁, x₂::Vector{Float64}) 
+# ╔═╡ 541f4a39-0919-4281-b6e8-fae8c51f96f6
+function kernelfunction(k, x₁, x₂, grad::Int64)
+	function f1st(x₁, x₂) 
 		Zygote.gradient( a -> k(a, x₂), x₁)[1]
 	end	
-	function f2nd(x₁, x₂::Vector{Float64})
+	function f2nd(x₁, x₂)
 		Zygote.hessian(a -> k(a, x₂), x₁)
 	end
-	function f3rd(x₁, x₂::Vector{Float64}) 
+	function f3rd(x₁, x₂) 
 		ForwardDiff.jacobian( a -> f2nd(a, x₂), x₁)
 	end 
-	function f4th(x₁, x₂::Vector{Float64})
+	function f4th(x₁, x₂)
 		ForwardDiff.jacobian( a -> f3rd(a, x₂), x₁)
 	end
 
@@ -85,144 +59,44 @@ function kernelfunction(k, x₁, x₂::Vector{Float64}, grad::Int64)
 	end
 end
 
-# ╔═╡ 34e6fbb4-2ea3-4aba-86c4-807e565a560e
-function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
-	dim = size(X,1)
-	num = size(X,2)
-	#building Marginal Likelihood containers
-	#For Energy + Force
-	KK = zeros(((1+dim)*num, (1+dim)*num))
-	#For Energy
-	K₀₀ = zeros(((1)*num, (1)*num))
-	#For Force
-	K₁₁ = zeros(((dim)*num, (dim)*num))
-	
-	for i in 1:num 
-		for j in 1:num 
-		#Fillin convarian of Energy vs Energy
-			KK[i, j] = kernelfunction(k, X[:,i], X[:,j], 0)
-		#Fillin convarian of Force vs Energy
-			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction(k, X[:,i], X[:,j], 1)
-		#Fillin convarian of Energy vs Force	
-			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]
-		#Fillin convarian of Energy vs Force
-			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -kernelfunction(k, X[:,i], X[:,j], 2)
-		end
+# ╔═╡ a36d0d02-bc7e-4b58-bf1d-0fdb5311add3
+x  = [-sqrt(.5)*(1-1im) sqrt(.5)*(1+1im) 1] 
+
+# ╔═╡ 7ed25ad3-7825-431d-ac19-a32ea8cb89ae
+x*x'
+
+# ╔═╡ 56a1cf50-99d1-4e64-acea-cc74e70e0ba8
+kernel(x,x)
+
+# ╔═╡ 8926e471-eab7-4fe1-91b8-584221e0deb1
+# ╠═╡ disabled = true
+#=╠═╡
+Zygote.gradient( a -> kernel(a, x), x)[1]
+  ╠═╡ =#
+
+# ╔═╡ 9c725658-387c-4516-94c0-317eec294f53
+function k( x1, x2)
+	return exp(-0.5*(x1-x2)*(x1'- x2'))
+end
+
+# ╔═╡ 71d185db-f187-4710-9e89-b8e369f7a8da
+Zygote.gradient( a -> k(a, x), x)[1]
+
+# ╔═╡ 946130b2-4ca0-470f-9c21-c1f6851206c0
+begin
+	function jacobi(f, x)
+	  y, back = Zygote.pullback(f, x)
+	  back(1)[1], back(im)[1]
 	end
-
-	Iee = σₑ^2 * Matrix(I, num, num)
-	Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
-	Ief = zeros(num, dim * num)
-	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
-
-	Kₘₘ = KK + II
 	
-	return Kₘₘ
-end
-
-# ╔═╡ cb43563c-04bb-48ef-abe3-de2a7906d097
-function Coveriance_energy(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
-	dim = size(X,1)
-	num = size(X,2)
-	
-	#Covariance matrix for Energy prediction
-	#building Covariance matrix containers
-	K₀ₙₘ= zeros(((1+dim)*num))
-	for j in 1:num
-		#Fillin convarian of Energy vs Energy
-		K₀ₙₘ[j] = kernelfunction(k, X[:,j], xₒ, 0)
-		#Fillin convarian of Force vs Energy
-		K₀ₙₘ[(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] =  kernelfunction(k, X[:,j], xₒ, 1)
+	function wirtinger(f, x)
+	  du, dv = jacobi(f, x)
+	  (du' + im*dv')/2, (du + im*dv)/2
 	end
-	return K₀ₙₘ
 end
 
-# ╔═╡ b8ae89c1-c4bc-4dfa-bf19-33c758ac2916
-function S2(M)
-	n = Int(size(M, 1)/3)
-	S2 = zeros((3*n, 3*n))
-	
-	for i in 1:n
-		for j in 1:n
-			Mₓₓ = M[ 3*i-2:3*i , 3*j-2:3*j ]
-			Tr = Mₓₓ[1,1] + Mₓₓ[2,2] + Mₓₓ[3,3]
- 
-			S2[3*i-2:3*i, 3*j-2:3*j]= [ 
-			Mₓₓ[1, 1]-(Tr/3)      (Mₓₓ[1,2]+Mₓₓ[2,1])/2  (Mₓₓ[1,3]+Mₓₓ[3,1])/2;
-			(Mₓₓ[1,2]+Mₓₓ[2,1])/2 Mₓₓ[2, 2]-(Tr/3)       (Mₓₓ[2,3]+Mₓₓ[3,2])/2;
-			(Mₓₓ[1,3]+Mₓₓ[3,1])/2 (Mₓₓ[2,3]+Mₓₓ[3,2])/2  Mₓₓ[3, 3]-(Tr/3)  ]
-		end
-	end	
-	return S2
-end
-
-# ╔═╡ 294b9824-7211-4e63-817c-240551d37688
-function sym_marginal(X::Matrix{Float64}, Kmm⁻¹)
-	dim = size(X,1)
-	num = size(X,2)
-	Kmm⁻¹ₛ = Kmm⁻¹
-	for a in 1: num
-		for b in 1: num
-			Kmm⁻¹ₛ[(dim*(a-1)+1)+num: (a*dim)+num,
-					(dim*(b-1)+1)+num: (b*dim)+num] = S2(Kmm⁻¹[(dim*(a-1)+1)+num: (a*dim)+num, (dim*(b-1)+1)+num: (b*dim)+num])
-		end
-	end
-	return Kmm⁻¹ₛ
-end
-
-# ╔═╡ c1fcc424-a4ec-4045-a309-fdf3f896972b
-function Posterior(Marginal, Covariance, Target)
-	dimₚ = size(Covariance, 1)
-	dimₜ = size(Marginal, 1)
-	Kₘₘ⁻¹ = Marginal   #
-	Kₙₘ = Covariance
-	
-	MarginalTar = zeros(dimₜ)
-	@einsum MarginalTar[m] = Kₘₘ⁻¹[m, n] * Target[n]
-
-	if size(Kₙₘ) == (dimₜ,)
-		Meanₚ = Kₙₘ'  * MarginalTar
-		
-	elseif size(Kₙₘ) == (dimₚ, dimₜ)
-		Meanₚ = zeros(dimₚ)
-		@einsum Meanₚ[i] = Kₙₘ[i, m] * MarginalTar[m]
-	
-	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₜ)
-		Meanₚ = zeros(dimₚ, dimₚ)
-		@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * MarginalTar[m]
-
-	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₚ, dimₜ)
-		Meanₚ = zeros(dimₚ, dimₚ, dimₚ)
-		@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * MarginalTar[m]
-	end
-
-	return Meanₚ 
-end
-
-# ╔═╡ ae6647ac-5974-4992-9f12-09f9f76ea8e0
-@time equi, feature, energy, force, Target = ASEFeatureTarget(
-    Featurefile, Energyfile, Forcefile, Num, DIM);
-
-# ╔═╡ b95df7de-8c62-4467-b02b-1e3bad94831e
-@time Kmm = Marginal(feature, kernel, l, σₑ, σₙ);
-
-# ╔═╡ 6eb86217-6364-4d4d-af47-cc00b8bd829f
-@time Kmm⁻¹ = inv(Kmm);
-
-# ╔═╡ 8ae2bc41-a83c-43de-845d-0876da37ef1b
-@time  Kmm⁻¹ₛ = sym_marginal(feature, inv(Kmm));
-
-# ╔═╡ 6d41d08e-a1e2-4c57-baff-8062e0614f86
-
-
-# ╔═╡ c3075f9c-c442-47c2-8d07-40077b8f2892
- @time K₀ₙₘ = Coveriance_energy(feature, equi, kernel);
-
-# ╔═╡ 235cbb37-5b21-456e-94d2-247a3885197c
-@time Posterior(Kmm⁻¹, K₀ₙₘ, Target)
-
-# ╔═╡ 7ae86327-bc32-4032-89ce-7d5949d1819c
-@time Posterior(Kmm⁻¹ₛ, K₀ₙₘ, Target)
+# ╔═╡ eb2cfde3-0b80-42f9-8314-83bfe3dce897
+wirtinger(k, x)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -238,7 +112,7 @@ Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
-CSV = "~0.10.9"
+CSV = "~0.10.10"
 DataFrames = "~1.5.0"
 DelimitedFiles = "~1.9.1"
 Einsum = "~0.4.1"
@@ -254,7 +128,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.0-beta4"
 manifest_format = "2.0"
-project_hash = "f56709a28f7e20854653aaf7327522e7236e7c18"
+project_hash = "faa88bf00f80d91df798e2524c474acf849f1f3f"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -305,10 +179,10 @@ uuid = "fa961155-64e5-5f13-b03f-caf6b980ea82"
 version = "0.4.2"
 
 [[deps.CSV]]
-deps = ["CodecZlib", "Dates", "FilePathsBase", "InlineStrings", "Mmap", "Parsers", "PooledArrays", "SentinelArrays", "SnoopPrecompile", "Tables", "Unicode", "WeakRefStrings", "WorkerUtilities"]
-git-tree-sha1 = "c700cce799b51c9045473de751e9319bdd1c6e94"
+deps = ["CodecZlib", "Dates", "FilePathsBase", "InlineStrings", "Mmap", "Parsers", "PooledArrays", "PrecompileTools", "SentinelArrays", "Tables", "Unicode", "WeakRefStrings", "WorkerUtilities"]
+git-tree-sha1 = "ed28c86cbde3dc3f53cf76643c2e9bc11d56acc7"
 uuid = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
-version = "0.10.9"
+version = "0.10.10"
 
 [[deps.Cairo_jll]]
 deps = ["Artifacts", "Bzip2_jll", "CompilerSupportLibraries_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "JLLWrappers", "LZO_jll", "Libdl", "Pixman_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Zlib_jll", "libpng_jll"]
@@ -324,9 +198,9 @@ version = "1.49.0"
 
 [[deps.ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra", "SparseArrays"]
-git-tree-sha1 = "c6d890a52d2c4d55d326439580c3b8d0875a77d9"
+git-tree-sha1 = "e30f2f4e20f7f186dc36529910beaedc60cfa644"
 uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-version = "1.15.7"
+version = "1.16.0"
 
 [[deps.CodecZlib]]
 deps = ["TranscodingStreams", "Zlib_jll"]
@@ -386,9 +260,9 @@ version = "0.1.1"
 
 [[deps.ConcurrentUtilities]]
 deps = ["Serialization", "Sockets"]
-git-tree-sha1 = "b306df2650947e9eb100ec125ff8c65ca2053d30"
+git-tree-sha1 = "96d823b94ba8d187a6d8f0826e731195a74b90e9"
 uuid = "f0e56b4a-5159-44fe-b623-3e5288b988bb"
-version = "2.1.1"
+version = "2.2.0"
 
 [[deps.Contour]]
 git-tree-sha1 = "d05d9e7b7aedff4e5b51a029dced05cfb6125781"
@@ -611,9 +485,9 @@ version = "1.0.2"
 
 [[deps.HTTP]]
 deps = ["Base64", "CodecZlib", "ConcurrentUtilities", "Dates", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
-git-tree-sha1 = "69182f9a2d6add3736b7a06ab6416aafdeec2196"
+git-tree-sha1 = "42c6b37c6a2242cb646a1dd5518631db0be9b967"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "1.8.0"
+version = "1.8.1"
 
 [[deps.HarfBuzz_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "Graphite2_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg"]
@@ -623,9 +497,9 @@ version = "2.8.1+1"
 
 [[deps.IRTools]]
 deps = ["InteractiveUtils", "MacroTools", "Test"]
-git-tree-sha1 = "0ade27f0c49cebd8db2523c4eeccf779407cf12c"
+git-tree-sha1 = "eac00994ce3229a464c2847e956d77a2c64ad3a5"
 uuid = "7869d1d1-7146-5819-86e3-90919afe41df"
-version = "0.4.9"
+version = "0.4.10"
 
 [[deps.InlineStrings]]
 deps = ["Parsers"]
@@ -901,9 +775,9 @@ version = "0.8.1+0"
 
 [[deps.OpenSSL]]
 deps = ["BitFlags", "Dates", "MozillaCACerts_jll", "OpenSSL_jll", "Sockets"]
-git-tree-sha1 = "7fb975217aea8f1bb360cf1dde70bad2530622d2"
+git-tree-sha1 = "51901a49222b09e3743c65b8847687ae5fc78eb2"
 uuid = "4d8831e6-92b7-49fb-bdf8-b643e874388c"
-version = "1.4.0"
+version = "1.4.1"
 
 [[deps.OpenSSL_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1487,23 +1361,16 @@ version = "1.4.1+0"
 """
 
 # ╔═╡ Cell order:
-# ╠═93f29ee4-ee7c-11ed-3891-7785c4df2ed4
-# ╠═c9e5d484-ab16-4f74-9565-47b45b7161aa
-# ╠═5d8d7c9b-23f0-4987-917e-1b6f8c3d8c94
-# ╠═3d7e9452-1b55-4b2f-a928-9e80f1c555e5
-# ╠═74588963-cf01-4d6b-88e6-e2269f85cd55
-# ╠═34e6fbb4-2ea3-4aba-86c4-807e565a560e
-# ╠═cb43563c-04bb-48ef-abe3-de2a7906d097
-# ╠═b8ae89c1-c4bc-4dfa-bf19-33c758ac2916
-# ╠═294b9824-7211-4e63-817c-240551d37688
-# ╠═c1fcc424-a4ec-4045-a309-fdf3f896972b
-# ╠═ae6647ac-5974-4992-9f12-09f9f76ea8e0
-# ╠═b95df7de-8c62-4467-b02b-1e3bad94831e
-# ╠═6eb86217-6364-4d4d-af47-cc00b8bd829f
-# ╠═8ae2bc41-a83c-43de-845d-0876da37ef1b
-# ╠═6d41d08e-a1e2-4c57-baff-8062e0614f86
-# ╠═c3075f9c-c442-47c2-8d07-40077b8f2892
-# ╠═235cbb37-5b21-456e-94d2-247a3885197c
-# ╠═7ae86327-bc32-4032-89ce-7d5949d1819c
+# ╠═01ed3330-ef83-11ed-010b-35d542b97f70
+# ╠═f597f2b0-2b5f-423e-8697-a47af1cc0ad0
+# ╠═541f4a39-0919-4281-b6e8-fae8c51f96f6
+# ╠═a36d0d02-bc7e-4b58-bf1d-0fdb5311add3
+# ╠═7ed25ad3-7825-431d-ac19-a32ea8cb89ae
+# ╠═56a1cf50-99d1-4e64-acea-cc74e70e0ba8
+# ╠═8926e471-eab7-4fe1-91b8-584221e0deb1
+# ╠═9c725658-387c-4516-94c0-317eec294f53
+# ╠═71d185db-f187-4710-9e89-b8e369f7a8da
+# ╠═946130b2-4ca0-470f-9c21-c1f6851206c0
+# ╠═eb2cfde3-0b80-42f9-8314-83bfe3dce897
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

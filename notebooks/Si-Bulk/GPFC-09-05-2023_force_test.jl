@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.22
+# v0.19.25
 
 using Markdown
 using InteractiveUtils
@@ -120,6 +120,65 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 	return Kₘₘ
 end
 
+# ╔═╡ 77b4565d-3bde-48f7-a3da-2ef45fe965e5
+function Coveriance_force(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
+	dim = size(X,1)
+	num = size(X,2)
+	
+	#Covariance matrix for Force prediction	
+	#building Covariance matrix containers
+	K₁ₙₘ= zeros((dim, (1+dim)*num))
+	for j in 1:num
+		#Fillin convarian of Energy vs Force
+		K₁ₙₘ[:,j] = reshape(
+					-  kernelfunction(k, X[:,j], xₒ, 1)
+				, (dim)
+			)
+		#Fillin convarian of Force vs Force
+		K₁ₙₘ[:, (num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
+					-  kernelfunction(k, X[:,j], xₒ, 2)
+					, (dim, dim)
+				)
+	end
+	return K₁ₙₘ  
+end
+
+
+# ╔═╡ 75750378-067e-447b-841c-c052457edf09
+function S0(M)
+	n = Int(size(M, 1)/3)
+	S0 = zeros((3*n, 3*n))
+	
+	for i in 1:n
+		for j in 1:n
+				Mₓₓ = M[ 3*i-2:3*i , 3*j-2:3*j ]
+				Tr = Mₓₓ[1,1] + Mₓₓ[2,2] + Mₓₓ[3,3]
+				 
+				S0[3*i-2:3*i, 3*j-2:3*j]= (1/3)*Tr*Matrix(I,3,3)
+		end
+	end	
+	return S0
+end
+
+# ╔═╡ 3808964c-049c-4692-894e-15d1ea7cf650
+function S1(M)
+	n = Int(size(M, 1)/3)
+	S1 = zeros((3*n, 3*n))
+	
+	for i in 1:n
+		for j in 1:n
+				Mₓₓ = M[ 3*i-2:3*i , 3*j-2:3*j ]
+				 
+				S1[3*i-2:3*i, 3*j-2:3*j] = [ 
+				0  (Mₓₓ[1,2] - Mₓₓ[2,1])/2  (Mₓₓ[1,3] - Mₓₓ[3,1])/2;
+				-(Mₓₓ[1,2] - Mₓₓ[2,1])/2  0  (Mₓₓ[2,3] - Mₓₓ[3,2])/2;
+				-(Mₓₓ[1,3] - Mₓₓ[3,1])/2 -(Mₓₓ[2,3] - Mₓₓ[3,2])/2  0   
+				]
+		end
+	end	
+	return S1
+end
+
 # ╔═╡ 834725c3-44f1-4aff-b48d-002331ae3b3f
 function S2(M)
 	n = Int(size(M, 1)/3)
@@ -146,7 +205,9 @@ function MarginalSym(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::F
 	num = size(X,2)
 	#building Marginal Likelihood containers
 	#For Energy + Force
-	KK = zeros(((1+dim)*num, (1+dim)*num))
+	KK0 = zeros(((1+dim)*num, (1+dim)*num))
+	KK1 = zeros(((1+dim)*num, (1+dim)*num))
+	KK2 = zeros(((1+dim)*num, (1+dim)*num))
 	#For Energy
 	K₀₀ = zeros(((1)*num, (1)*num))
 	#For Force
@@ -155,13 +216,31 @@ function MarginalSym(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::F
 	for i in 1:num 
 		for j in 1:num 
 		#Fillin convarian of Energy vs Energy
-			KK[i, j] = kernelfunction(k, X[:,i], X[:,j], 0)
+			
+			KK0[i, j] = kernelfunction(k, X[:,i], X[:,j], 0)
+			KK1[i, j] = KK0[i, j]
+			KK2[i, j] = KK0[i, j]
+			
 		#Fillin convarian of Force vs Energy
-			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction(k, X[:,i], X[:,j], 1)
+			
+			KK0[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction(k, X[:,i], X[:,j], 1)
+			KK1[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = KK0[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]
+			KK2[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = KK0[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]
+			
 		#Fillin convarian of Energy vs Force	
-			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]
+			
+			KK0[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK0[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]
+			
+			KK1[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK0[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]
+			
+			KK2[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK0[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]
+			
 		#Fillin convarian of Energy vs Force
-			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = S2(-kernelfunction(k, X[:,i], X[:,j], 2))
+			kk = -kernelfunction(k, X[:,i], X[:,j], 2)
+			
+			KK0[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = S0( kk)
+			KK1[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = S1( kk)
+			KK2[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = S2( kk)
 		end
 	end
 
@@ -170,13 +249,153 @@ function MarginalSym(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::F
 	Ief = zeros(num, dim * num)
 	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
 
-	Kₘₘ = KK + II
+	Kₘₘ0 = KK0 + II
+	Kₘₘ1 = KK1 + II
+	Kₘₘ2 = KK2 + II
 	
-	return Kₘₘ
+	return Kₘₘ0, Kₘₘ1, Kₘₘ2
 end
 
-# ╔═╡ 77b4565d-3bde-48f7-a3da-2ef45fe965e5
+# ╔═╡ 00ac95d3-9f9c-4f38-9d6d-ca5e7d565f61
+zeros(3)
 
+# ╔═╡ ea5aad73-d355-4c7f-a2b4-cb63cb4d4db9
+function Coveriance_forceSym(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
+	dim = size(X,1)
+	num = size(X,2)
+	
+	#Covariance matrix for Force prediction	
+	#building Covariance matrix containers
+	K₁ₙₘ0 = zeros((dim, (1+dim)*num))
+	K₁ₙₘ1 = zeros((dim, (1+dim)*num))
+	K₁ₙₘ2 = zeros((dim, (1+dim)*num))
+	
+	for j in 1:num
+		#Fillin convarian of Energy vs Force
+		K₁ₙₘ0[:,j] = reshape(
+					zeros(dim)
+				, (dim)
+			)
+		K₁ₙₘ1[:,j] = reshape(
+					-  kernelfunction(k, X[:,j], xₒ, 1)
+				, (dim)
+			)
+		K₁ₙₘ2[:,j] = reshape(
+					zeros(dim)
+				, (dim)
+			)
+		#Fillin convarian of Force vs Force
+		kk = - kernelfunction(k, X[:,j], xₒ, 2)
+		
+		K₁ₙₘ0[:, (num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
+					S0( kk )
+					, (dim, dim)
+				)
+		K₁ₙₘ1[:, (num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
+					S1( kk )
+					, (dim, dim)
+				)
+		K₁ₙₘ2[:, (num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
+					S2( kk )
+					, (dim, dim)
+				)
+	end
+	return K₁ₙₘ0, K₁ₙₘ1, K₁ₙₘ2
+end
+
+
+# ╔═╡ 822808bd-fec2-412d-a11e-10be0afba8df
+function Posterior(Marginal, Covariance, Target)
+	dimₚ = size(Covariance, 1)
+	dimₜ = size(Marginal, 1)
+	Kₘₘ⁻¹ = inv(Marginal)
+	Kₙₘ = Covariance
+	
+	MarginalTar = zeros(dimₜ)
+	@einsum MarginalTar[m] = Kₘₘ⁻¹[m, n] * Target[n]
+
+	if size(Kₙₘ) == (dimₜ,)
+		Meanₚ = Kₙₘ'  * MarginalTar
+		
+	elseif size(Kₙₘ) == (dimₚ, dimₜ)
+		Meanₚ = zeros(dimₚ)
+		@einsum Meanₚ[i] = Kₙₘ[i, m] * MarginalTar[m]
+	
+	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₜ)
+		Meanₚ = zeros(dimₚ, dimₚ)
+		@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * MarginalTar[m]
+
+	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₚ, dimₜ)
+		Meanₚ = zeros(dimₚ, dimₚ, dimₚ)
+		@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * MarginalTar[m]
+	end
+
+	return Meanₚ 
+end
+
+# ╔═╡ 29770ebf-2db1-4b5f-b50b-2a631f2321c5
+equi, feature, energy, force, Target = ASEFeatureTarget(
+    Featurefile, Energyfile, Forcefile, Num, DIM);
+
+# ╔═╡ f6d337d7-31e5-4bd6-9403-a3e2a1c153f3
+@time Kₘₘ  = Marginal(feature, kernel, l, σₑ, σₙ);
+
+# ╔═╡ 70369b6d-75d8-4633-abe8-21ec7ce7aafa
+ @time K₁ₙₘ = Coveriance_force(feature, equi, kernel);
+
+# ╔═╡ 30160247-cb57-4c22-84a3-a830dcf345aa
+@time F = Posterior(Kₘₘ, K₁ₙₘ, Target)
+
+# ╔═╡ f7868088-ea3d-4d93-b2ee-80613b3ed7ba
+sum(F)
+
+# ╔═╡ 90f61fbb-5342-4c22-964a-8093f98ac5a6
+@time KₘₘS, KₘₘP, KₘₘD = MarginalSym(feature, kernel, l, σₑ, σₙ);
+
+# ╔═╡ f0996128-658a-43f8-97ed-a378f0c59a85
+ @time K₁ₙₘS, K₁ₙₘP, K₁ₙₘD = Coveriance_forceSym(feature, equi, kernel);
+
+# ╔═╡ e9196589-d1a4-413b-a35f-7d5d2cd7dab1
+@time FSS = Posterior(KₘₘS, K₁ₙₘS, Target)
+
+# ╔═╡ aa972893-4e83-4f0c-98f7-1bd0ced872c4
+@time FSP = Posterior(KₘₘS, K₁ₙₘP, Target)
+
+# ╔═╡ ac2bc5c3-b8a6-4dfd-a5f6-e8790ce0e9e7
+@time FSD = Posterior(KₘₘS, K₁ₙₘD, Target)
+
+# ╔═╡ 848ca13a-84e4-4ab4-be05-e02c81e373e5
+@time FPS = Posterior(KₘₘP, K₁ₙₘS, Target)
+
+# ╔═╡ f246641e-f2c6-4a99-a63b-ab6efe0d3f36
+@time FPP = Posterior(KₘₘP, K₁ₙₘP, Target)
+
+# ╔═╡ e5055543-08b5-4c61-9a8c-8a9aec9d9f50
+@time FPD = Posterior(KₘₘP, K₁ₙₘD, Target)
+
+# ╔═╡ e6f879fa-556a-44bd-b881-4f8c6deed873
+@time FDS = Posterior(KₘₘD, K₁ₙₘS, Target)
+
+# ╔═╡ e181c412-56e6-4eb7-8be8-83aee0bf4482
+@time FDP = Posterior(KₘₘD, K₁ₙₘP, Target)
+
+# ╔═╡ 06391222-3458-4ea0-b786-3d299e88e246
+@time FDD = Posterior(KₘₘD, K₁ₙₘD, Target)
+
+# ╔═╡ ec44381d-4519-41e8-bc34-132fefe326e6
+@time FD = Posterior(Kₘₘ, K₁ₙₘD, Target)
+
+# ╔═╡ f8a94be9-a1b3-4b65-ae3d-10308d368e65
+@time FP = Posterior(Kₘₘ, K₁ₙₘP, Target)
+
+# ╔═╡ 301f96dd-f853-4ceb-b337-e8f9521fa925
+@time FS = Posterior(Kₘₘ, K₁ₙₘS, Target)
+
+# ╔═╡ 99765fcf-8c06-44f1-b35b-7f5e79abcbf3
+sum(FS + FP + FD)
+
+# ╔═╡ 9ab80d07-6fe0-4f5b-a8c2-0b4450c68b72
+sum(F)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -208,7 +427,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.0-beta4"
 manifest_format = "2.0"
-project_hash = "c5bdba02590b96b8bb589e309379559caf1a066e"
+project_hash = "f56709a28f7e20854653aaf7327522e7236e7c18"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -1447,8 +1666,34 @@ version = "1.4.1+0"
 # ╠═4578d06a-59ba-4fdb-8de2-f07c7160c04a
 # ╠═1a88aaf5-7879-4cee-bc37-37a67459abf4
 # ╠═9b8bee5b-37aa-4707-bc54-3fa94d038046
+# ╠═77b4565d-3bde-48f7-a3da-2ef45fe965e5
+# ╠═75750378-067e-447b-841c-c052457edf09
+# ╠═3808964c-049c-4692-894e-15d1ea7cf650
 # ╠═834725c3-44f1-4aff-b48d-002331ae3b3f
 # ╠═d95286d6-cb26-4dcd-8156-d79a59c8daf4
-# ╠═77b4565d-3bde-48f7-a3da-2ef45fe965e5
+# ╠═00ac95d3-9f9c-4f38-9d6d-ca5e7d565f61
+# ╠═ea5aad73-d355-4c7f-a2b4-cb63cb4d4db9
+# ╠═822808bd-fec2-412d-a11e-10be0afba8df
+# ╠═29770ebf-2db1-4b5f-b50b-2a631f2321c5
+# ╠═f6d337d7-31e5-4bd6-9403-a3e2a1c153f3
+# ╠═70369b6d-75d8-4633-abe8-21ec7ce7aafa
+# ╠═30160247-cb57-4c22-84a3-a830dcf345aa
+# ╠═f7868088-ea3d-4d93-b2ee-80613b3ed7ba
+# ╠═90f61fbb-5342-4c22-964a-8093f98ac5a6
+# ╠═f0996128-658a-43f8-97ed-a378f0c59a85
+# ╠═e9196589-d1a4-413b-a35f-7d5d2cd7dab1
+# ╠═aa972893-4e83-4f0c-98f7-1bd0ced872c4
+# ╠═ac2bc5c3-b8a6-4dfd-a5f6-e8790ce0e9e7
+# ╠═848ca13a-84e4-4ab4-be05-e02c81e373e5
+# ╠═f246641e-f2c6-4a99-a63b-ab6efe0d3f36
+# ╠═e5055543-08b5-4c61-9a8c-8a9aec9d9f50
+# ╠═e6f879fa-556a-44bd-b881-4f8c6deed873
+# ╠═e181c412-56e6-4eb7-8be8-83aee0bf4482
+# ╠═06391222-3458-4ea0-b786-3d299e88e246
+# ╠═ec44381d-4519-41e8-bc34-132fefe326e6
+# ╠═f8a94be9-a1b3-4b65-ae3d-10308d368e65
+# ╠═301f96dd-f853-4ceb-b337-e8f9521fa925
+# ╠═99765fcf-8c06-44f1-b35b-7f5e79abcbf3
+# ╠═9ab80d07-6fe0-4f5b-a8c2-0b4450c68b72
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

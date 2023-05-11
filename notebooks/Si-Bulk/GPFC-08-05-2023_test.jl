@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.22
+# v0.19.25
 
 using Markdown
 using InteractiveUtils
@@ -303,11 +303,11 @@ end
 
 # ╔═╡ fd1bcab7-e018-4e97-b3d9-f0f6545615d5
 anim = @animate for i in 1:9
-	plot(nd[1:i], [Error[1:i]*50e+5, ErrorSym[1:i]],
+	plot(nd[1:i], [Error[1:i], ErrorSym[1:i]],
 		xlabel="Training points",
 		ylabel="Error",
 		xlim = (0, 100), 
-		ylim = (-1e-5, 10000),
+		ylim = (-1e-5, 1e-2),
 		labels = ["without Symmetry (*50e+5)" "with Symmetry"],
 		linewidth=3,
 		title="PES at Equilibrium (Traning Data = " * string(nd[i]) *")"
