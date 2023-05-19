@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.22
+# v0.19.25
 
 using Markdown
 using InteractiveUtils
@@ -59,10 +59,42 @@ end
 equi, feature, energy, force, Target = ASEFeatureTarget(
     Featurefile, Energyfile, Forcefile, Num, DIM);
 
+# ╔═╡ 9a5f94b6-406f-4467-be14-ada9c3278c9b
+A = [1 9 5 13 3 11 7 15 2 10 6 14 4 12 8 16];
+
+# ╔═╡ a35cc2cd-99ef-43a1-972d-04ab9054935d
+begin
+	n = size(A, 2)
+	MatrixTrans = zeros((3*n ,3*n));
+end;
+
+# ╔═╡ cde4c50b-783c-4d92-a9ab-e9fcc8486406
+Matrix( I, 3 , 3)
+
+# ╔═╡ b0bff9ba-4ff0-4dbd-9f33-1550891086b8
+for i in 1:n
+	MatrixTrans[3*(i-1)+1 : 3*i, 3*(A[i]-1)+1 : 3*A[i] ] = Matrix( I, 3 , 3)
+end 
+
+# ╔═╡ 2fab6e76-d177-417a-800a-8c52977da236
+heatmap(1:48,1:48,MatrixTrans)
+
+# ╔═╡ c26a513c-3efe-4070-a456-3b997ccaaa69
+ equi_new = MatrixTrans * equi;
+
 # ╔═╡ df47fbcb-f541-48b8-a968-d8c78c3641a8
+# ╠═╡ disabled = true
+#=╠═╡
 begin
 	aa = 16
 	equi[3*(aa-1)+1:3*aa]
+end
+  ╠═╡ =#
+
+# ╔═╡ 0e56cddc-92c3-4c11-84f3-a067cfb4de49
+begin
+	aa = 7
+	equi_new[3*(aa-1)+1:3*aa]
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -95,7 +127,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.0-beta4"
 manifest_format = "2.0"
-project_hash = "c5bdba02590b96b8bb589e309379559caf1a066e"
+project_hash = "f56709a28f7e20854653aaf7327522e7236e7c18"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -1334,5 +1366,12 @@ version = "1.4.1+0"
 # ╠═5cc1b1f2-5243-48d9-805a-fee2bbe51ee9
 # ╠═23ac04e1-3a20-4037-b4b1-61bf0a1055d3
 # ╠═df47fbcb-f541-48b8-a968-d8c78c3641a8
+# ╠═9a5f94b6-406f-4467-be14-ada9c3278c9b
+# ╠═a35cc2cd-99ef-43a1-972d-04ab9054935d
+# ╠═cde4c50b-783c-4d92-a9ab-e9fcc8486406
+# ╠═b0bff9ba-4ff0-4dbd-9f33-1550891086b8
+# ╠═2fab6e76-d177-417a-800a-8c52977da236
+# ╠═c26a513c-3efe-4070-a456-3b997ccaaa69
+# ╠═0e56cddc-92c3-4c11-84f3-a067cfb4de49
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
