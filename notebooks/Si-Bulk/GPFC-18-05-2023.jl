@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.25
+# v0.19.22
 
 using Markdown
 using InteractiveUtils
@@ -59,6 +59,15 @@ end
 equi, feature, energy, force, Target = ASEFeatureTarget(
     Featurefile, Energyfile, Forcefile, Num, DIM);
 
+# ╔═╡ df47fbcb-f541-48b8-a968-d8c78c3641a8
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	aa = 16
+	equi[3*(aa-1)+1:3*aa]
+end
+  ╠═╡ =#
+
 # ╔═╡ 9a5f94b6-406f-4467-be14-ada9c3278c9b
 A = [1 9 5 13 3 11 7 15 2 10 6 14 4 12 8 16];
 
@@ -82,20 +91,76 @@ heatmap(1:48,1:48,MatrixTrans)
 # ╔═╡ c26a513c-3efe-4070-a456-3b997ccaaa69
  equi_new = MatrixTrans * equi;
 
-# ╔═╡ df47fbcb-f541-48b8-a968-d8c78c3641a8
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	aa = 16
-	equi[3*(aa-1)+1:3*aa]
-end
-  ╠═╡ =#
-
 # ╔═╡ 0e56cddc-92c3-4c11-84f3-a067cfb4de49
 begin
 	aa = 7
 	equi_new[3*(aa-1)+1:3*aa]
 end
+
+# ╔═╡ 03e8858b-a5e7-477f-877f-b72619d923df
+eigVec = 
+[[-0.70710678 -0.        -0.         -0.70710678 0.          0.        ] 
+[ 0.          0.         -0.70710678 0.          0.70710678  0.        ]
+[ 0.         -0.70710678  0.         0.          0.         -0.70710678]
+[-0.70710678  0.          0.         0.70710678  0.          0.        ]
+[ 0.          0.         -0.70710678 0.         -0.70710678  0.        ]
+[ 0.         -0.70710678  0.         0.          0.          0.70710678]]
+
+# ╔═╡ cedcb3f3-357c-4d4c-be58-0b4b69dd5cc9
+eigVec1 = 
+[[ 0.          -0.707106781  0.           0.          -0.707106781  0.          ] 
+[  0.573226443  0.           0.414018653 -0.0101875558 0.           0.707033389 ]
+[ -0.414018653  0.           0.573226443  0.707033389  0.           0.0101875558]
+[  0.          -0.707106781  0.           0.           0.707106781  0.          ]
+[  0.573226443  0.           0.414018653  0.0101875558 0.          -0.707033389 ]
+[ -0.414018653  0.           0.573226443 -0.707033389  0.          -0.0101875558]]
+
+# ╔═╡ 03c324cc-d70a-45ef-a3ab-6c2acdeefef0
+begin
+	dim = 3
+	nump = 2
+	nums = 16
+end;
+
+# ╔═╡ 122a68f5-d635-4f1b-83ea-b5710e3b3693
+eigVec1' 
+
+# ╔═╡ f7e8cde2-553d-4bb4-a912-2e1e6444bb69
+amu = 1.66e-27
+
+# ╔═╡ e1edb144-3ca4-407c-aabd-770b41ddd0a1
+mass = sqrt(28.085*amu)* Matrix(I , 6, 6)
+
+# ╔═╡ f4701589-1545-4c20-9dea-82616f66ab72
+qpoint = [0. 0. 0.];
+
+# ╔═╡ d714a096-67d9-48e9-9904-a325bbf8f066
+dot(qpoint, equi[1:3])
+
+# ╔═╡ ebb05ab5-b7fa-4b25-99dd-7277853312f5
+exp(dot(qpoint, equi[1:3]) * 1im)
+
+# ╔═╡ ec2e4fd7-226e-4a7b-bce1-379bde09a687
+mod(4, nump)
+
+# ╔═╡ b44cd3df-eaa2-4497-b993-b16ccf87bde5
+begin
+	phase = zeros((dim*nump,dim*nums))
+	for  ii in 1:nums
+		for jj in 1:nump
+			if mod(ii, nump) == mod(jj, nump) 
+				phase[3*(jj-1)+1:3*jj, 3*(ii-1)+1:3*ii] = 
+				Matrix(I, 3, 3) * exp(-dot(qpoint, equi[3*(ii-1)+1:3*ii]) * 1im)
+			end
+		end
+	end
+end
+
+# ╔═╡ ed85bca0-b302-47a6-a41a-848201845a16
+heatmap(1:48, 1:6, phase)
+
+# ╔═╡ fba78b48-a6ad-4ac4-8169-6f796a443f8b
+eigVec1' * mass * 1/sqrt(2) * equi' * phase' 
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1373,5 +1438,18 @@ version = "1.4.1+0"
 # ╠═2fab6e76-d177-417a-800a-8c52977da236
 # ╠═c26a513c-3efe-4070-a456-3b997ccaaa69
 # ╠═0e56cddc-92c3-4c11-84f3-a067cfb4de49
+# ╠═03e8858b-a5e7-477f-877f-b72619d923df
+# ╠═cedcb3f3-357c-4d4c-be58-0b4b69dd5cc9
+# ╠═03c324cc-d70a-45ef-a3ab-6c2acdeefef0
+# ╠═122a68f5-d635-4f1b-83ea-b5710e3b3693
+# ╠═f7e8cde2-553d-4bb4-a912-2e1e6444bb69
+# ╠═e1edb144-3ca4-407c-aabd-770b41ddd0a1
+# ╠═f4701589-1545-4c20-9dea-82616f66ab72
+# ╠═d714a096-67d9-48e9-9904-a325bbf8f066
+# ╠═ebb05ab5-b7fa-4b25-99dd-7277853312f5
+# ╠═ec2e4fd7-226e-4a7b-bce1-379bde09a687
+# ╠═b44cd3df-eaa2-4497-b993-b16ccf87bde5
+# ╠═ed85bca0-b302-47a6-a41a-848201845a16
+# ╠═fba78b48-a6ad-4ac4-8169-6f796a443f8b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
