@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.25
+# v0.19.22
 
 using Markdown
 using InteractiveUtils
@@ -16,8 +16,8 @@ end
 
 # ╔═╡ c9e5d484-ab16-4f74-9565-47b45b7161aa
 begin
-	σₒ = 0.1                   # Kernel Scale
-	l = 0.4                     # Length Scale
+	σₒ = 1.0                  # Kernel Scale
+	l = 1.0                     # Length Scale
 	σₑ = 1e-3                	# Energy Gaussian noise
 	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
 		
