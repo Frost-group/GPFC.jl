@@ -14,8 +14,283 @@ begin
 	using Plots
 end
 
-# ╔═╡ 06a9ec80-ba5e-4587-b448-2c87c0178aad
+# ╔═╡ 27fc8d3a-16ca-4143-916d-7351fab5aa4b
+function kernelfunction(k, x₁, x₂::Vector{Float64}, grad::Int64)
+	function f1st(x₁, x₂::Vector{Float64}) 
+		Zygote.gradient( a -> k(a, x₂), x₁)[1]
+	end	
+	function f2nd(x₁, x₂::Vector{Float64})
+		Zygote.hessian(a -> k(a, x₂), x₁)
+	end
+	function f3rd(x₁, x₂::Vector{Float64}) 
+		ForwardDiff.jacobian( a -> f2nd(a, x₂), x₁)
+	end 
+	function f4th(x₁, x₂::Vector{Float64})
+		ForwardDiff.jacobian( a -> f3rd(a, x₂), x₁)
+	end
 
+	if grad == 0
+		return k(x₁, x₂)
+	elseif grad == 1
+		return f1st(x₁, x₂)
+	elseif grad == 2
+		return f2nd(x₁, x₂)	
+	elseif grad == 3
+		return f3rd(x₁, x₂)
+	elseif grad == 4
+		return f4th(x₁, x₂)
+	else
+		println("Grad in btw [0, 4]")
+	end
+end
+
+# ╔═╡ fa5ec98c-99bc-4a07-a398-ce14043e5d20
+function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
+	a  = 4 - dimA
+	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
+	
+	equi = feature[:,1]
+	
+	dim = size(feature,1)
+	num = size(feature,2)
+	
+	energy = (CSV.File(FileEnergy)|> Tables.matrix)[begin:numt,2]
+
+	force = -reshape((CSV.File(FileForce)|> Tables.matrix)[begin:a:end,2:numt+1], (dim*num,1))
+		
+	Target = vcat(energy, reshape(force, (dim*num,1)))
+	
+	
+	return equi, feature, energy, force, Target
+end
+
+# ╔═╡ 1da36f99-7e15-48e3-ae08-2da5769cb506
+function ph_trans(equi, feature, force, energy, phase, mass, eigVec)
+	equi_ph = eigVec' * mass * 1/sqrt(2) * phase * (equi-equi)
+	Nor_dim = size(mass, 1)
+	Num_data = size(feature, 2)
+	dim = size(feature, 1)
+	feature_ph = zeros((Nor_dim, Num_data))
+	force_ph = zeros((Nor_dim*Num_data, 1))
+
+	for ii in 1:Num_data
+		feature_ph[:, ii] = eigVec' * mass * 1/sqrt(2) * phase * (feature[:, ii]-equi)
+		force_ph[Nor_dim*(ii-1)+1 : Nor_dim*ii] = eigVec' * mass * 1/sqrt(2) * phase * (force[dim*(ii-1)+1 : dim*ii]-force[1:dim])
+	end
+
+	Target_ph = vcat(energy, reshape(force_ph, (Nor_dim*Num_data,1)))
+	
+	return equi_ph, feature_ph, Target_ph
+end
+
+# ╔═╡ 6eb33236-3afc-4c2e-a004-b393bc4946c8
+function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
+	dim = size(X,1)
+	num = size(X,2)
+	#building Marginal Likelihood containers
+	#For Energy + Force
+	KK = zeros(((1+dim)*num, (1+dim)*num))
+	#For Energy
+	K₀₀ = zeros(((1)*num, (1)*num))
+	#For Force
+	K₁₁ = zeros(((dim)*num, (dim)*num))
+	
+	for i in 1:num 
+		for j in 1:num 
+		#Fillin convarian of Energy vs Energy
+			KK[i, j] = kernelfunction(k, X[:,i], X[:,j], 0)
+		#Fillin convarian of Force vs Energy
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction(k, X[:,i], X[:,j], 1)
+		#Fillin convarian of Energy vs Force	
+			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]
+		#Fillin convarian of Energy vs Force
+			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -kernelfunction(k, X[:,i], X[:,j], 2)
+		end
+	end
+
+	Iee = σₑ^2 * Matrix(I, num, num)
+	Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
+	Ief = zeros(num, dim * num)
+	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
+
+	Kₘₘ = KK + II
+	
+	return Kₘₘ
+end
+
+# ╔═╡ 2e2fb6be-646e-41ff-83bb-69dd12f81ff4
+function Coveriance_energy(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
+	dim = size(X,1)
+	num = size(X,2)
+	
+	#Covariance matrix for Energy prediction
+	#building Covariance matrix containers
+	K₀ₙₘ= zeros(((1+dim)*num))
+	for j in 1:num
+		#Fillin convarian of Energy vs Energy
+		K₀ₙₘ[j] = kernelfunction(k, X[:,j], xₒ, 0)
+		#Fillin convarian of Force vs Energy
+		K₀ₙₘ[(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] =  kernelfunction(k, X[:,j], xₒ, 1)
+	end
+	return K₀ₙₘ
+end
+
+# ╔═╡ 7c1d2c93-bc41-4144-bfb0-2128ce3519e9
+function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
+	dim = size(X,1)
+	num = size(X,2)
+	
+	#Covariance matrix for FC2 prediction
+	#building Covariance matrix containers	
+	K₂ₙₘ= zeros((dim, dim, (1+dim)*num))
+		
+	for j in 1:num
+		#Fillin convarian of Energy vs FC2
+		K₂ₙₘ[:,:,j] = reshape(
+					 kernelfunction(k, X[:,j], xₒ, 2)
+					, (dim, dim)
+				)
+		#Fillin convarian of Force vs FC2
+		K₂ₙₘ[:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
+					 kernelfunction(k, X[:,j], xₒ, 3)
+					, (dim, dim, dim)
+				)
+	end
+	return K₂ₙₘ
+end
+
+# ╔═╡ 8eb52208-b603-48dc-9c54-84f35f669b65
+function Posterior(Marginal, Covariance, Target)
+	dimₚ = size(Covariance, 1)
+	dimₜ = size(Marginal, 1)
+	Kₘₘ⁻¹ = inv(Marginal)   #
+	Kₙₘ = Covariance
+	
+	MarginalTar = zeros(dimₜ)
+	@einsum MarginalTar[m] = Kₘₘ⁻¹[m, n] * Target[n]
+
+	if size(Kₙₘ) == (dimₜ,)
+		Meanₚ = Kₙₘ'  * MarginalTar
+		
+	elseif size(Kₙₘ) == (dimₚ, dimₜ)
+		Meanₚ = zeros(dimₚ)
+		@einsum Meanₚ[i] = Kₙₘ[i, m] * MarginalTar[m]
+	
+	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₜ)
+		Meanₚ = zeros(dimₚ, dimₚ)
+		@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * MarginalTar[m]
+
+	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₚ, dimₜ)
+		Meanₚ = zeros(dimₚ, dimₚ, dimₚ)
+		@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * MarginalTar[m]
+	end
+
+	return Meanₚ 
+end
+
+# ╔═╡ e4de5b20-3d5f-44c7-a696-a44e1de9341e
+begin
+	Featurefile = "feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv"
+	Energyfile = "energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv"
+	Forcefile = "force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv"
+end;
+
+# ╔═╡ 55c30380-d9ef-41e9-9dae-9700fe17e3f5
+begin
+	eigVecG = 
+[[ 0.00000000e+00 -7.07106781e-01  0.00000000e+00 0.00000000e+00 -7.07106781e-01  0.00000000e+00]
+[ 5.73226443e-01  0.00000000e+00  4.14018653e-01 -1.01875558e-02  0.00000000e+00  7.07033389e-01]
+[-4.14018653e-01  0.00000000e+00  5.73226443e-01 7.07033389e-01  0.00000000e+00  1.01875558e-02]
+[ 0.00000000e+00 -7.07106781e-01  0.00000000e+00 -5.20417043e-18  7.07106781e-01  0.00000000e+00]
+[ 5.73226443e-01 -5.98176036e-18  4.14018653e-01 1.01875558e-02  5.98176036e-18 -7.07033389e-01]
+[-4.14018653e-01  5.98176036e-18  5.73226443e-01 -7.07033389e-01 -5.98176036e-18 -1.01875558e-02]];
+	dim = 3
+	nump = 2
+	nums = 16
+	amu = 1
+	mass = sqrt(28.085*amu)* Matrix(I , dim*nump, dim*nump)
+end;
+
+# ╔═╡ 63473888-5aeb-4d48-8020-27e06147de3f
+Dyna = [[ 4.67251785e-01  0.00000000e+00  0.00000000e+00 -4.67287390e-01 -3.95301143e-18  3.95301143e-18]
+       [ 0.00000000e+00  4.67251785e-01  0.00000000e+00 -3.95301143e-18 -4.67287390e-01  3.95301143e-18]
+       [ 0.00000000e+00  0.00000000e+00  4.67251785e-01 3.95301143e-18  3.95301143e-18 -4.67287390e-01]
+       [-4.67287390e-01 -3.95301143e-18  3.95301143e-18 4.67251785e-01  0.00000000e+00  0.00000000e+00]
+       [-3.95301143e-18 -4.67287390e-01  3.95301143e-18 0.00000000e+00  4.67251785e-01  0.00000000e+00]
+       [ 3.95301143e-18  3.95301143e-18 -4.67287390e-01 0.00000000e+00  0.00000000e+00  4.67251785e-01]];
+
+# ╔═╡ 27b8d359-5a0f-4d7a-bc70-3eb02e1d8c87
+A = eigVecG' * Dyna * eigVecG
+
+# ╔═╡ 2b4112df-db79-48ee-9579-4961854511b2
+heatmap(1:6,1:6, A)
+
+# ╔═╡ dda9dfc0-4581-4a93-aa48-e0fe61c5d0f2
+begin
+	data = eigen(Dyna)
+	eigVecg = data.vectors
+	eigValg = data.values
+end
+
+# ╔═╡ 06a9ec80-ba5e-4587-b448-2c87c0178aad
+begin
+	σₒ = 1.0                    # Kernel Scale
+	l = 2.0 				    # Length Scale
+	lph = det(eigVecg)* l * sqrt(28.085/2) 
+	σₑ = 1e-5 					# Energy Gaussian noise
+	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
+		
+	Num = 100                   # Number of training points
+	DIM = 3                     # Dimension of Materials
+	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
+	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
+		
+	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
+	kernelph = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(lph)
+end;
+
+# ╔═╡ 3259213b-f48d-4209-9cf1-cfe9ff6ef795
+equi, feature, energy, force, Target = ASEFeatureTarget(
+    Featurefile, Energyfile, Forcefile, Num, DIM);
+
+# ╔═╡ b28e2e9b-8a94-4229-af3f-5b6a574e96fc
+begin
+	qpointG = [0. 0. 0.];
+	
+	phaseG = zeros((dim*nump, dim*nums))
+	for  ii in 1:nums
+		for jj in 1:nump
+			if mod(ii, nump) == mod(jj, nump) 
+				phaseG[3*(jj-1)+1:3*jj, 3*(ii-1)+1:3*ii] = 
+				Matrix(I, 3, 3) * exp(-dot(qpointG, equi[3*(ii-1)+1:3*ii]) * 1im)
+			end
+		end
+	end
+end;
+
+# ╔═╡ 5ba11ea6-6f41-4c57-b5b1-3293738c53f1
+det(eigVecg)
+
+# ╔═╡ 4972e5bf-9742-491d-9165-b9c82d0b39b3
+eigVecg' * Dyna * eigVecg
+
+# ╔═╡ 8c2dd257-01dc-4ac7-8e0e-620cebf06c35
+equi_ph, feature_ph, Target_ph = ph_trans(equi, feature, force, energy, phaseG, mass, eigVecg);
+
+# ╔═╡ ccdfed5d-479a-49c9-822a-5c90c9db6ff2
+@time Kmm_ph = Marginal(feature_ph, kernelph, lph, σₑ, σₙ);
+
+# ╔═╡ d426b2c4-5c30-40cf-920b-a75d4a11d4db
+ @time K₀ₙₘph = Coveriance_energy(feature_ph, equi_ph, kernelph);
+
+# ╔═╡ 43f36150-6e48-4401-887d-8ccd1170d16a
+@time Posterior(Kmm_ph, K₀ₙₘph, Target_ph)
+
+# ╔═╡ bc0e4c4c-8fee-4233-addd-f85f4aea49fb
+@time K₂ₙₘ = Coveriance_fc2(feature_ph, equi_ph, kernelph);
+
+# ╔═╡ e9d8c24f-4b76-4ac6-adb6-166b1681253b
+@time FC2_ph = Posterior(Kmm_ph, K₂ₙₘ, Target_ph)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1281,6 +1556,29 @@ version = "1.4.1+0"
 
 # ╔═╡ Cell order:
 # ╠═3a4c7866-fa3d-11ed-382d-f971821a83fd
+# ╠═27fc8d3a-16ca-4143-916d-7351fab5aa4b
+# ╠═fa5ec98c-99bc-4a07-a398-ce14043e5d20
+# ╠═1da36f99-7e15-48e3-ae08-2da5769cb506
+# ╠═6eb33236-3afc-4c2e-a004-b393bc4946c8
+# ╠═2e2fb6be-646e-41ff-83bb-69dd12f81ff4
+# ╠═7c1d2c93-bc41-4144-bfb0-2128ce3519e9
+# ╠═8eb52208-b603-48dc-9c54-84f35f669b65
+# ╠═e4de5b20-3d5f-44c7-a696-a44e1de9341e
 # ╠═06a9ec80-ba5e-4587-b448-2c87c0178aad
+# ╠═5ba11ea6-6f41-4c57-b5b1-3293738c53f1
+# ╠═3259213b-f48d-4209-9cf1-cfe9ff6ef795
+# ╠═55c30380-d9ef-41e9-9dae-9700fe17e3f5
+# ╠═63473888-5aeb-4d48-8020-27e06147de3f
+# ╠═27b8d359-5a0f-4d7a-bc70-3eb02e1d8c87
+# ╠═2b4112df-db79-48ee-9579-4961854511b2
+# ╠═b28e2e9b-8a94-4229-af3f-5b6a574e96fc
+# ╠═dda9dfc0-4581-4a93-aa48-e0fe61c5d0f2
+# ╠═4972e5bf-9742-491d-9165-b9c82d0b39b3
+# ╠═8c2dd257-01dc-4ac7-8e0e-620cebf06c35
+# ╠═ccdfed5d-479a-49c9-822a-5c90c9db6ff2
+# ╠═d426b2c4-5c30-40cf-920b-a75d4a11d4db
+# ╠═43f36150-6e48-4401-887d-8ccd1170d16a
+# ╠═bc0e4c4c-8fee-4233-addd-f85f4aea49fb
+# ╠═e9d8c24f-4b76-4ac6-adb6-166b1681253b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

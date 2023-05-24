@@ -16,9 +16,9 @@ end
 
 # ╔═╡ 558c0701-b84f-4371-b26a-e3a76a7e90e6
 begin
-	σₒ = 1.0                    # Kernel Scale
-	l = 1.0 				    # Length Scale
-	lph = 1.0 * sqrt(28.085/2) 
+	σₒ = 1.                   # Kernel Scale
+	l = 1.5		          # Length Scale
+	lph = l * sqrt(28.085/2) 
 	σₑ = 1e-5 					# Energy Gaussian noise
 	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
 		
@@ -92,6 +92,9 @@ end
 equi, feature, energy, force, Target = ASEFeatureTarget(
     Featurefile, Energyfile, Forcefile, Num, DIM);
 
+# ╔═╡ 318143dc-d617-4726-bbfc-a965c64329a1
+energy
+
 # ╔═╡ df47fbcb-f541-48b8-a968-d8c78c3641a8
 # ╠═╡ disabled = true
 #=╠═╡
@@ -154,6 +157,9 @@ begin
 	amu = 1
 	mass = sqrt(28.085*amu)* Matrix(I , 6, 6)
 end;
+
+# ╔═╡ fd766c0f-7482-43c1-a185-3277731a7cff
+eigVecG 
 
 # ╔═╡ b44cd3df-eaa2-4497-b993-b16ccf87bde5
 begin
@@ -394,12 +400,6 @@ heatmap(1:6,1:6,FC2_ph)
 # ╔═╡ 5712717f-0179-4efc-a99b-1d6934f22743
 FC2G = phaseG' * inv(mass)/sqrt(2) * eigVecG' * FC2_ph * eigVecG * inv(mass)/sqrt(2) * phaseG
 
-# ╔═╡ 671c1c0c-6726-41ac-a011-ac2bbda8b6e6
-eigVecG * FC2_ph * eigVecG'
-
-# ╔═╡ 4eb03927-b51c-4588-b5b4-6e733c0698d2
-eigVecG' * FC2_ph * eigVecG'
-
 # ╔═╡ ec234a84-a5eb-419f-90b8-aa8b28a8dd80
 heatmap(1:48,1:48,FC2G)
 
@@ -486,7 +486,7 @@ anim = @animate for i in 1:9
 		xlabel="Training points",
 		ylabel="Error",
 		xlim = (-1, 110), 
-		ylim = (-1e-5, 1e-3),
+		ylim = (-1e-5, 1e-4),
 		labels = ["Cartesian" "Phonon"],
 		linewidth=3,
 		title="PES Error (Traning Data = " *string(nd[i]) *")"
@@ -514,6 +514,9 @@ gif(anim2, "Si_Energy_ph2.gif", fps=2)
 
 # ╔═╡ f5501212-6101-41c3-91ca-6bd049e2cdc6
  Eph2
+
+# ╔═╡ d25965df-6ed3-4f0f-b34c-2e6c0966c092
+ Ecar2
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1779,6 +1782,7 @@ version = "1.4.1+0"
 
 # ╔═╡ Cell order:
 # ╠═9ee070ca-f583-11ed-0277-abe2ee6d1b77
+# ╠═318143dc-d617-4726-bbfc-a965c64329a1
 # ╠═558c0701-b84f-4371-b26a-e3a76a7e90e6
 # ╠═5ced8228-2722-406d-b130-eb56200d9a54
 # ╠═79cb74ea-624a-4c38-bd1f-b8d6b6676660
@@ -1795,6 +1799,7 @@ version = "1.4.1+0"
 # ╠═c26a513c-3efe-4070-a456-3b997ccaaa69
 # ╠═0e56cddc-92c3-4c11-84f3-a067cfb4de49
 # ╠═03e8858b-a5e7-477f-877f-b72619d923df
+# ╠═fd766c0f-7482-43c1-a185-3277731a7cff
 # ╠═03c324cc-d70a-45ef-a3ab-6c2acdeefef0
 # ╠═b44cd3df-eaa2-4497-b993-b16ccf87bde5
 # ╠═7ab6f60d-b78c-42a3-8b29-b3986428db4e
@@ -1819,8 +1824,6 @@ version = "1.4.1+0"
 # ╠═da059a36-6635-4813-9266-3da3654e1f30
 # ╠═0eeb86af-2730-4497-9c39-b497595f9654
 # ╠═5712717f-0179-4efc-a99b-1d6934f22743
-# ╠═671c1c0c-6726-41ac-a011-ac2bbda8b6e6
-# ╠═4eb03927-b51c-4588-b5b4-6e733c0698d2
 # ╠═ec234a84-a5eb-419f-90b8-aa8b28a8dd80
 # ╠═7fa519ff-5284-428c-8ada-c1cb7ef9f31d
 # ╠═6d788204-65a8-4e7a-844c-b4c13893b078
@@ -1835,5 +1838,6 @@ version = "1.4.1+0"
 # ╠═8010c6c0-42c7-42fe-9442-df8397169d7d
 # ╠═9546d03c-1e62-4e7d-ad75-6be5c19d963e
 # ╠═f5501212-6101-41c3-91ca-6bd049e2cdc6
+# ╠═d25965df-6ed3-4f0f-b34c-2e6c0966c092
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

@@ -22,8 +22,8 @@ end
 
 # ╔═╡ 4d441983-27b6-41e3-8fa9-5701f216a958
 begin
-	σₒ = 0.1                   # Kernel Scale
-	l = 0.4                     # Length Scale
+	σₒ = 1.                   # Kernel Scale
+	l = 2.                     # Length Scale
 	σₑ = 1e-5                   # Energy Gaussian noise
 	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
 		
@@ -357,7 +357,7 @@ SumRule2
 SumRule1 = [523.12, 223.24, 125.33, 80.23, 23.2, 15.233, 1.0444, 0.59823, 0.3332, 0.31268]
 
 # ╔═╡ 3dd7a431-9b24-4d75-97f8-30a0e84cee86
-anim3 = @animate for i in 1:10
+anim = @animate for i in 1:10
 	plot(nd[1:i], [SumRule3[1:i], SumRule2[1:i]],
 		xlabel="Training points",
 		ylabel="Sum of FC2 element",
@@ -370,7 +370,7 @@ anim3 = @animate for i in 1:10
 end
 
 # ╔═╡ 840edf28-2caa-4a6d-a181-6a848b00e2da
-gif(anim3, "Si_FC2_SR_symmetry.gif", fps=2)
+gif(anim, "Si_FC2_SR_symmetry.gif", fps=2)
 
 # ╔═╡ 46f75667-894a-464a-ad4e-68e9ee608c93
 begin
@@ -392,7 +392,7 @@ anim4 = @animate for i in 1:10
 		    1:size(P2[:,:,i],2), P2[:,:,i],
 		    c=cgrad([:blue, :white, :red, :yellow]),
 		    xlabel="feature coord. (n x d)", ylabel="feature coord. (n x d)",
-		    title="FC2")
+		    title="FC2 (Traning Data = " *string(nd[i]) *")")
 end
 
 # ╔═╡ a509528d-5212-4dad-950b-ad8f6a28f0dd
@@ -403,6 +403,15 @@ P2[:,:,10]
 
 # ╔═╡ 653094ea-5062-44cf-9472-1db0f3c9ee91
 Target[1]
+
+# ╔═╡ ba3f1330-3966-41aa-88c4-9471f91d8059
+anim3 = @animate for i in 1:10
+	heatmap(1:size(P3[:,:,i],1),
+		    1:size(P3[:,:,i],2), P3[:,:,i],
+		    c=cgrad([:blue, :white, :red, :yellow]),
+		    xlabel="feature coord. (n x d)", ylabel="feature coord. (n x d)",
+		    title="FC2")
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1881,5 +1890,6 @@ version = "1.4.1+0"
 # ╠═a509528d-5212-4dad-950b-ad8f6a28f0dd
 # ╠═59d47223-5bc4-412a-99b1-d7261f7d1070
 # ╠═653094ea-5062-44cf-9472-1db0f3c9ee91
+# ╠═ba3f1330-3966-41aa-88c4-9471f91d8059
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
