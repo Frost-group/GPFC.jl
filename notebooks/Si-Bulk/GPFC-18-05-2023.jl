@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.22
+# v0.19.25
 
 using Markdown
 using InteractiveUtils
@@ -139,40 +139,92 @@ eigVec =
 
 # ╔═╡ 03c324cc-d70a-45ef-a3ab-6c2acdeefef0
 begin
-	eigVec1 = 
+	eigVecG = 
 [[ 0.          -0.707106781  0.           0.          -0.707106781  0.          ] 
 [  0.573226443  0.           0.414018653 -0.0101875558 0.           0.707033389 ]
 [ -0.414018653  0.           0.573226443  0.707033389  0.           0.0101875558]
 [  0.          -0.707106781  0.           0.           0.707106781  0.          ]
 [  0.573226443  0.           0.414018653  0.0101875558 0.          -0.707033389 ]
 [ -0.414018653  0.           0.573226443 -0.707033389  0.          -0.0101875558]];
-	
 	dim = 3
 	nump = 2
 	nums = 16
-
 	amu = 1
-
 	mass = sqrt(28.085*amu)* Matrix(I , 6, 6)
 end;
 
 # ╔═╡ b44cd3df-eaa2-4497-b993-b16ccf87bde5
 begin
-	qpoint = [0. 0. 0.];
+	qpointG = [0. 0. 0.];
 	
-	phase = zeros((dim*nump,dim*nums))
+	phaseG = zeros((dim*nump,dim*nums))
 	for  ii in 1:nums
 		for jj in 1:nump
 			if mod(ii, nump) == mod(jj, nump) 
-				phase[3*(jj-1)+1:3*jj, 3*(ii-1)+1:3*ii] = 
-				Matrix(I, 3, 3) * exp(-dot(qpoint, equi[3*(ii-1)+1:3*ii]) * 1im)
+				phaseG[3*(jj-1)+1:3*jj, 3*(ii-1)+1:3*ii] = 
+				Matrix(I, 3, 3) * exp(-dot(qpointG, equi[3*(ii-1)+1:3*ii]) * 1im)
 			end
 		end
 	end
 end;
 
+# ╔═╡ 7ab6f60d-b78c-42a3-8b29-b3986428db4e
+begin
+	qpointK = [0.3750 0.3750 0.7500];
+	eigVecK = 
+	[[ -.5+0.0im .445413881+0.0im .334723970+0.0im -.227170584+0.0im .5+0.0im -.371429487+0.0im] 
+	
+	[5.00000000e-01+6.08928335e-17im  4.45413881e-01+6.46036084e-17im 3.34723970e-01+8.40355788e-17im -2.27170584e-01+5.82452614e-17im -5.00000000e-01-3.86011224e-16im -3.71429487e-01-4.99352018e-16im]
+	
+	[1.11022302e-16+2.77555756e-16im 2.22044605e-16-3.21267721e-01im -2.22044605e-16+5.25280618e-01im -1.11022302e-16-6.29910352e-01im -1.66533454e-16-2.73392420e-15im -1.66533454e-16+4.73371178e-01im]
+	
+	[-5.00000000e-01+6.08928335e-17im  -4.45413881e-01+6.46036084e-17im 3.34723970e-01+8.40355788e-17im 2.27170584e-01+5.82452614e-17im 5.00000000e-01-3.86011224e-16im -3.71429487e-01-4.99352018e-16im]
+	
+	[5.00000000e-01-4.04010960e-18im -4.45413881e-01-2.74465538e-17im 3.34723970e-01-1.87339124e-16im 2.27170584e-01-3.42803444e-16im 5.00000000e-01-2.29571769e-17im -3.71429487e-01+2.27773521e-17im ]
+	
+	[3.30909978e-17+2.22044605e-16im 3.46261136e-17-3.21267721e-01im -4.40238065e-16-5.25280618e-01im -6.33434901e-16-6.29910352e-01im 1.57148606e-16+2.74259782e-15im 2.83067625e-16-4.73371178e-01im]];
+end
+
+# ╔═╡ d67f9664-2762-4b53-8eb6-8930f80a890f
+begin
+	phaseK = zeros((dim*nump,dim*nums))*(0+0im)
+		for  ii in 1:nums
+			for jj in 1:nump
+				if mod(ii, nump) == mod(jj, nump) 
+					phaseK[3*(jj-1)+1:3*jj, 3*(ii-1)+1:3*ii] = 
+					Matrix(I, 3, 3) * exp(-dot(qpointK, equi[3*(ii-1)+1:3*ii]) * 1im)
+				end
+			end
+		end
+end
+
+# ╔═╡ 5d569c5b-d837-4eed-8c0a-00e551da1faa
+begin
+	qpointL = [0.5 0.5 0.5];
+	eigVecL = 
+	[[0.07978786-0.00000000e+00im -0.57181048+0.00000000e+00im -0.40824829+0.00000000e+00im 0.40824829+0.00000000e+00im -0.00733297+0.00000000e+00im -0.5773037+0.00000000e+00im]
+    [0.32473143-3.35072781e-01im  0.33678342-4.67545487e-02im -0.40824829+1.61434902e-16im  0.40824829+1.84497031e-16im -0.49534176+3.08291890e-02im  0.2949903-3.91595488e-04im] 
+	[-0.40451929+3.35072781e-01im  0.23502706+4.67545487e-02im -0.40824829-3.67879148e-17im  0.40824829+3.70946144e-17im 0.50267473-3.08291890e-02im  0.2823134+3.91595488e-04im]
+    [ 0.05641854+5.64185389e-02im -0.40433107-4.04331071e-01im 0.28867513+2.88675135e-01im  0.28867513+2.88675135e-01im 0.00518519+5.18519293e-03im  0.40821536+4.08215360e-01im]
+	[ 0.46655203-7.31244015e-03im  0.2712023+2.05081385e-01im 0.28867513+2.88675135e-01im  0.28867513+2.88675135e-01im 0.37205905+3.28459991e-01im -0.20886654-2.08312744e-01im]
+    [-0.52297057-4.91060987e-02im  0.13312877+1.99249686e-01im 0.28867513+2.88675135e-01im  0.28867513+2.88675135e-01im -0.37724424-3.33645184e-01im -0.19934882-1.99902617e-01im]];
+end;
+
+# ╔═╡ 64abc714-fd70-475c-817a-8942beedf86e
+begin
+	phaseL = zeros((dim*nump,dim*nums))*(0+0im)
+		for  ii in 1:nums
+			for jj in 1:nump
+				if mod(ii, nump) == mod(jj, nump) 
+					phaseL[3*(jj-1)+1:3*jj, 3*(ii-1)+1:3*ii] = 
+					Matrix(I, 3, 3) * exp(-dot(qpointL, equi[3*(ii-1)+1:3*ii]) * 1im)
+				end
+			end
+		end
+end
+
 # ╔═╡ fba78b48-a6ad-4ac4-8169-6f796a443f8b
-eigVec1' * mass * 1/sqrt(2) * phase * equi 
+eigVecG' * mass * 1/sqrt(2) * phaseG * equi 
 
 # ╔═╡ 028348c8-cd4e-4e52-bd4e-11af6398b99b
 size(feature)
@@ -185,7 +237,7 @@ size(mass,1)
 
 # ╔═╡ 57a5bb05-bbac-4d05-90b4-0906afbb4426
 function ph_trans(equi, feature, force, energy, phase, mass, eigVec)
-	equi_ph = eigVec1' * mass * 1/sqrt(2) * phase * equi 
+	equi_ph = eigVec' * mass * 1/sqrt(2) * phase * equi 
 	Nor_dim = size(mass, 1)
 	Num_data = size(feature, 2)
 	dim = size(feature, 1)
@@ -202,8 +254,8 @@ function ph_trans(equi, feature, force, energy, phase, mass, eigVec)
 	return equi_ph, feature_ph, Target_ph
 end
 
-# ╔═╡ 63374d1e-fa11-4388-8732-90bae87c1a52
-equi_ph, feature_ph, Target_ph = ph_trans(equi, feature, force, energy, phase, mass, eigVec1);
+# ╔═╡ 5e63e2b5-c319-4284-9d95-f86b2c1d0e37
+equi_ph, feature_ph, Target_ph = ph_trans(equi, feature, force, energy, phaseG, mass, eigVecG);
 
 # ╔═╡ d874afe8-21e8-48fe-90e6-d95565c23bac
 function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
@@ -332,10 +384,22 @@ end
 heatmap(1:6,1:6,FC2_ph)
 
 # ╔═╡ 5712717f-0179-4efc-a99b-1d6934f22743
-FC2 = phase' * inv(mass)/sqrt(2) * eigVec' * FC2_ph * eigVec * inv(mass)/sqrt(2) * phase 
+FC2G = phaseG' * inv(mass)/sqrt(2) * eigVecG' * FC2_ph * eigVecG * inv(mass)/sqrt(2) * phaseG
+
+# ╔═╡ 671c1c0c-6726-41ac-a011-ac2bbda8b6e6
+eigVecG * FC2_ph * eigVecG'
+
+# ╔═╡ 4eb03927-b51c-4588-b5b4-6e733c0698d2
+eigVecG' * FC2_ph * eigVecG'
 
 # ╔═╡ ec234a84-a5eb-419f-90b8-aa8b28a8dd80
-heatmap(1:48,1:48,FC2)
+heatmap(1:48,1:48,FC2G)
+
+# ╔═╡ 7fa519ff-5284-428c-8ada-c1cb7ef9f31d
+FC2L = phaseL' * inv(mass)/sqrt(2) * eigVecL' * FC2_ph * eigVecL * inv(mass)/sqrt(2) * phaseL
+
+# ╔═╡ fc806699-534b-4ba5-b12d-69ee6c7db36a
+heatmap(1:48,1:48,FC2L)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1618,12 +1682,16 @@ version = "1.4.1+0"
 # ╠═03e8858b-a5e7-477f-877f-b72619d923df
 # ╠═03c324cc-d70a-45ef-a3ab-6c2acdeefef0
 # ╠═b44cd3df-eaa2-4497-b993-b16ccf87bde5
+# ╠═7ab6f60d-b78c-42a3-8b29-b3986428db4e
+# ╠═d67f9664-2762-4b53-8eb6-8930f80a890f
+# ╠═5d569c5b-d837-4eed-8c0a-00e551da1faa
+# ╠═64abc714-fd70-475c-817a-8942beedf86e
 # ╠═fba78b48-a6ad-4ac4-8169-6f796a443f8b
 # ╠═028348c8-cd4e-4e52-bd4e-11af6398b99b
 # ╠═290f0692-3e51-4f60-925c-cfd58445d1f4
 # ╠═12bfe07d-8b65-4f8d-8aac-a167a641da2a
 # ╠═57a5bb05-bbac-4d05-90b4-0906afbb4426
-# ╠═63374d1e-fa11-4388-8732-90bae87c1a52
+# ╠═5e63e2b5-c319-4284-9d95-f86b2c1d0e37
 # ╠═d874afe8-21e8-48fe-90e6-d95565c23bac
 # ╠═3f50e0a0-65e0-4af6-9e99-5825e607403a
 # ╠═b84bd2d5-cec0-4297-a203-349aeff0c629
@@ -1635,6 +1703,10 @@ version = "1.4.1+0"
 # ╠═da059a36-6635-4813-9266-3da3654e1f30
 # ╠═0eeb86af-2730-4497-9c39-b497595f9654
 # ╠═5712717f-0179-4efc-a99b-1d6934f22743
+# ╠═671c1c0c-6726-41ac-a011-ac2bbda8b6e6
+# ╠═4eb03927-b51c-4588-b5b4-6e733c0698d2
 # ╠═ec234a84-a5eb-419f-90b8-aa8b28a8dd80
+# ╠═7fa519ff-5284-428c-8ada-c1cb7ef9f31d
+# ╠═fc806699-534b-4ba5-b12d-69ee6c7db36a
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
