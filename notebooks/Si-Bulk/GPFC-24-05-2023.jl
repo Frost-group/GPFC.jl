@@ -505,7 +505,7 @@ begin
 	KₘₘCar2ph = Marginal_ph(feature, kernel, l, σₑ, σₙ, phaseG, mass, eigVecG);
 	@time for k in 1:11
 		equik = equi + (DIS * dis[k])
-		equik_ph = (eigVecg' * inv(mass)/sqrt(2) * phaseG * equi) + (eigVecg' * inv(mass)/sqrt(2) * phaseG * (DIS * dis[k]))
+		equik_ph = (eigVecg' * inv(mass)/sqrt(2) * phaseG * equi) + dis[k]*[1, 1, 1, 0, 0, 0] * sqrt(28.085/2)
 		
 		K₀ₙₘCar = Coveriance_energy(feature, equik, kernel);
 		K₀ₙₘph = Coveriance_energy(feature_ph, equik_ph, kernelph);
@@ -528,9 +528,6 @@ plot(dis[1:11], [Ecar_dis[1:11], Eph_dis[1:11], Ecar2ph_dis[1:11]],
 		title="Harmonic PES by shaking 1st Si"
 	)
 
-# ╔═╡ b2ef1612-0383-41c3-8436-8a1739efede7
-Ecar_dis
-
 # ╔═╡ 5da64d73-64fc-4da1-811a-73aee237c3be
 Eph_dis
 
@@ -538,7 +535,10 @@ Eph_dis
  Ecar2ph_dis
 
 # ╔═╡ dcc3f238-8d61-4b7c-9924-c3ec415e8cff
-eigVecg' * inv(mass)/sqrt(2) * phaseG * equi
+eigVecg' * inv(mass)/sqrt(2) * phaseG * (equi) + dis[1]*[1, 1, 1, 0, 0, 0] * sqrt(28.085/2)
+
+# ╔═╡ 56dc3a55-a8a8-4727-b4d6-0460c1a93f82
+eigVecg' * inv(mass)/sqrt(2) * phaseG * (DIS * dis[1])
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1849,9 +1849,9 @@ version = "1.4.1+0"
 # ╠═da913a95-a262-4193-9cd9-d402ffcad68e
 # ╠═c37e43af-dcf9-4b78-a0b6-c546d2d0fba3
 # ╠═a9fe24cf-7daa-45ba-9666-321146e0caa4
-# ╠═b2ef1612-0383-41c3-8436-8a1739efede7
 # ╠═5da64d73-64fc-4da1-811a-73aee237c3be
 # ╠═3ebcbb90-6312-446d-b75a-9b77803432b8
 # ╠═dcc3f238-8d61-4b7c-9924-c3ec415e8cff
+# ╠═56dc3a55-a8a8-4727-b4d6-0460c1a93f82
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
