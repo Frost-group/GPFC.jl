@@ -16,9 +16,9 @@ end
 
 # ╔═╡ 558c0701-b84f-4371-b26a-e3a76a7e90e6
 begin
-	σₒ = 1.                   # Kernel Scale
-	l = 1.5		          # Length Scale
-	lph = l * sqrt(28.085/2) 
+	σₒ = 1.0                # Kernel Scale
+	l = 1.0		              # Length Scale
+	lph = l * sqrt(28.085) 
 	σₑ = 1e-5 					# Energy Gaussian noise
 	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
 		
@@ -406,6 +406,9 @@ heatmap(1:48,1:48,FC2G)
 # ╔═╡ 7fa519ff-5284-428c-8ada-c1cb7ef9f31d
 FC2L = phaseL' * inv(mass)/sqrt(2) * eigVecL' * FC2_ph * eigVecL * inv(mass)/sqrt(2) * phaseL
 
+# ╔═╡ 7c9e72dc-f51d-429f-ba74-6c2d0d25d98d
+heatmap(1:48,1:48,real(FC2L))
+
 # ╔═╡ 6d788204-65a8-4e7a-844c-b4c13893b078
 Dyna = [[ 4.67251785e-01  0.00000000e+00  0.00000000e+00 -4.67287390e-01 -3.95301143e-18  3.95301143e-18]
        [ 0.00000000e+00  4.67251785e-01  0.00000000e+00 -3.95301143e-18 -4.67287390e-01  3.95301143e-18]
@@ -415,10 +418,10 @@ Dyna = [[ 4.67251785e-01  0.00000000e+00  0.00000000e+00 -4.67287390e-01 -3.9530
        [ 3.95301143e-18  3.95301143e-18 -4.67287390e-01 0.00000000e+00  0.00000000e+00  4.67251785e-01]]
 
 # ╔═╡ b508833f-80c0-4f16-81e0-f4e70042572b
+FC2K = phaseK' * inv(mass)/sqrt(2) * eigVecK' * FC2_ph * eigVecK * inv(mass)/sqrt(2) * phaseK
 
-
-# ╔═╡ fc806699-534b-4ba5-b12d-69ee6c7db36a
-heatmap(1:48,1:48,FC2L)
+# ╔═╡ ee34f06c-ade8-40a5-829f-ad2df9959e4f
+heatmap(1:48,1:48,real(FC2K))
 
 # ╔═╡ 91cf4cc9-9098-4098-b4ec-17d6b029fa51
 begin
@@ -1825,10 +1828,11 @@ version = "1.4.1+0"
 # ╠═0eeb86af-2730-4497-9c39-b497595f9654
 # ╠═5712717f-0179-4efc-a99b-1d6934f22743
 # ╠═ec234a84-a5eb-419f-90b8-aa8b28a8dd80
+# ╠═7c9e72dc-f51d-429f-ba74-6c2d0d25d98d
 # ╠═7fa519ff-5284-428c-8ada-c1cb7ef9f31d
 # ╠═6d788204-65a8-4e7a-844c-b4c13893b078
 # ╠═b508833f-80c0-4f16-81e0-f4e70042572b
-# ╠═fc806699-534b-4ba5-b12d-69ee6c7db36a
+# ╠═ee34f06c-ade8-40a5-829f-ad2df9959e4f
 # ╠═91cf4cc9-9098-4098-b4ec-17d6b029fa51
 # ╠═7b1a55f0-cd7d-4dde-a940-2428472f784c
 # ╠═a4d055c4-4717-479b-a9dd-5341ee14094b

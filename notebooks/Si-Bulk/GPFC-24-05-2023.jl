@@ -220,10 +220,15 @@ Dyna = [[ 4.67251785e-01  0.00000000e+00  0.00000000e+00 -4.67287390e-01 -3.9530
        [ 3.95301143e-18  3.95301143e-18 -4.67287390e-01 0.00000000e+00  0.00000000e+00  4.67251785e-01]];
 
 # ╔═╡ 27b8d359-5a0f-4d7a-bc70-3eb02e1d8c87
+# ╠═╡ disabled = true
+#=╠═╡
 A = eigVecG' * Dyna * eigVecG
+  ╠═╡ =#
 
 # ╔═╡ 2b4112df-db79-48ee-9579-4961854511b2
+#=╠═╡
 heatmap(1:6,1:6, A)
+  ╠═╡ =#
 
 # ╔═╡ dda9dfc0-4581-4a93-aa48-e0fe61c5d0f2
 begin
@@ -234,8 +239,8 @@ end
 
 # ╔═╡ 06a9ec80-ba5e-4587-b448-2c87c0178aad
 begin
-	σₒ = 1.0                    # Kernel Scale
-	l = 2.0 				    # Length Scale
+	σₒ = 1.0                   # Kernel Scale
+	l = 1.0				    # Length Scale
 	lph = det(eigVecg)* l * sqrt(28.085/2) 
 	σₑ = 1e-5 					# Energy Gaussian noise
 	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
@@ -268,9 +273,6 @@ begin
 	end
 end;
 
-# ╔═╡ 5ba11ea6-6f41-4c57-b5b1-3293738c53f1
-det(eigVecg)
-
 # ╔═╡ 4972e5bf-9742-491d-9165-b9c82d0b39b3
 eigVecg' * Dyna * eigVecg
 
@@ -290,7 +292,253 @@ equi_ph, feature_ph, Target_ph = ph_trans(equi, feature, force, energy, phaseG, 
 @time K₂ₙₘ = Coveriance_fc2(feature_ph, equi_ph, kernelph);
 
 # ╔═╡ e9d8c24f-4b76-4ac6-adb6-166b1681253b
-@time FC2_ph = Posterior(Kmm_ph, K₂ₙₘ, Target_ph)
+@time FC2_ph = Posterior(Kmm_ph, K₂ₙₘ, Target_ph);
+
+# ╔═╡ 523296ca-3ac4-4c54-9872-4ba77f2bdc13
+begin
+	function Car2Ph_1st(phase, mass, eigvec, Tensor1st)
+		transMat = eigvec' * inv(mass)/sqrt(2) * phase
+		return transMat * Tensor1st
+	end
+	function Car2Ph_2nd(phase, mass, eigvec, Tensor2nd)
+		transMat = eigvec' * inv(mass)/sqrt(2) * phase
+		return transMat * Tensor2nd * transMat'
+	end
+end;
+
+# ╔═╡ ab4fd18b-1918-4329-baf4-0f5ad3a954c7
+function Marginal_ph(X, k, l, σₑ, σₙ, phase, mass, eigvec)
+	dim = Int(size(feature,1)/8)
+	num = size(X,2)
+	#building Marginal Likelihood containers
+	#For Energy + Force
+	KK = zeros(((1+dim)*num, (1+dim)*num))
+	
+	for i in 1:num 
+		for j in 1:num 
+		#Fillin convarian of Energy vs Energy
+			KK[i, j] = kernelfunction(k, X[:,i], X[:,j], 0)
+		#Fillin convarian of Force vs Energy
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = Car2Ph_1st(phase, mass, eigvec, kernelfunction(k, X[:,i], X[:,j], 1))
+		#Fillin convarian of Energy vs Force	
+			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]
+		#Fillin convarian of Energy vs Force
+			KK[(num+1)+((i-1) * dim):(num+1)+((i) * dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = Car2Ph_2nd(phase, mass, eigvec, -kernelfunction(k, X[:,i], X[:,j], 2))
+		end
+	end
+
+	Iee = σₑ^2 * Matrix(I, num, num)
+	Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
+	Ief = zeros(num, dim * num)
+	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
+
+	Kₘₘ = KK + II
+	
+	return Kₘₘ
+end
+
+# ╔═╡ aae137f6-a793-4c07-a7a9-0f668b3bacc6
+function Coveriance_energy_ph(X, xₒ, k, phase, mass, eigvec)
+	dim = Int(size(X,1)/8)
+	num = size(X,2)
+	
+	#Covariance matrix for Energy prediction
+	#building Covariance matrix containers
+	K₀ₙₘ= zeros(((1+dim)*num))
+	for j in 1:num
+		#Fillin convarian of Energy vs Energy
+		K₀ₙₘ[j] = kernelfunction(k, X[:,j], xₒ, 0)
+		#Fillin convarian of Force vs Energy
+		K₀ₙₘ[(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] =  Car2Ph_1st(phase, mass, eigvec, kernelfunction(k, X[:,j], xₒ, 1))
+	end
+	return K₀ₙₘ
+end
+
+# ╔═╡ 5fb20402-fd3b-4f69-bfca-585e807959da
+
+
+# ╔═╡ 1f748b0c-2969-4f01-95db-271b205cdb28
+begin
+	Mph = Marginal_ph(feature, kernel, l, σₑ, σₙ, phaseG, mass, eigVecg)
+	heatmap(1:700,1:700,Mph)
+end
+
+# ╔═╡ 51dbe12d-974f-453b-9515-3b02f0c5d932
+begin
+	M = Marginal(feature_ph, kernelph, l, σₑ, σₙ)
+	heatmap(1:700,1:700,M)
+end
+
+# ╔═╡ 1d4d4eeb-659f-439c-b008-f087749f0497
+begin
+	Cph = Coveriance_energy_ph(feature, equi, kernel, phaseG, mass, eigVecg)
+end
+
+# ╔═╡ 20344865-935a-43d0-a8c3-f0e0a9690dfb
+begin
+	C = Coveriance_energy(feature_ph, equi_ph, kernelph)
+end
+
+# ╔═╡ 3151bfc3-ae98-4c60-b1d4-f65c4f8c965e
+energy[1]
+
+# ╔═╡ c2a93149-3fb2-4ceb-b487-15cb051a8fdc
+@time Posterior(Mph, Cph, Target_ph)
+
+# ╔═╡ c2f0e04a-5d7a-46b9-a3ed-74885c052ccb
+@time Posterior(M, C, Target_ph)
+
+# ╔═╡ c36344d7-80e7-48e6-b608-5fe97d492209
+begin
+	Ecar = zeros((9))
+	Eph = zeros((9))
+	nd = [2, 5 , 10, 15, 20, 30, 50, 70, 100]
+	Ecar2 = zeros((9))
+	Eph2 = zeros((9))
+end;
+
+# ╔═╡ 056d0f85-316b-49c7-bfc9-b6167bb3e676
+@time for k in 1:9
+	numt1 = nd[k]
+	equi, feature, energy, force, Target = ASEFeatureTarget(
+    Featurefile, Energyfile, Forcefile, numt1, DIM);
+
+	
+	equi_ph, feature_ph, Target_ph = ph_trans(equi, feature, force, energy, phaseG, mass, eigVecg);
+	
+	Kₘₘ = Marginal_ph(feature, kernel, l, σₑ, σₙ, phaseG, mass, eigVecg);
+	K₀ₙₘ = Coveriance_energy_ph(feature, equi, kernel, phaseG, mass, eigVecg);
+
+	
+	Kₘₘph = Marginal(feature_ph, kernelph, lph, σₑ, σₙ);
+	K₀ₙₘph = Coveriance_energy(feature_ph, equi_ph, kernelph);
+
+
+	Ecar[k] = abs(Posterior(Kₘₘ, K₀ₙₘ, Target_ph)-Target[1])
+	Eph[k] = abs(Posterior(Kₘₘph, K₀ₙₘph, Target_ph)-Target[1])
+
+end
+
+# ╔═╡ d991e850-1759-4976-924f-ac99524328f0
+anim = @animate for i in 1:9
+	plot(nd[1:i], [Ecar[1:i], Eph[1:i]],
+		xlabel="Training points",
+		ylabel="Error",
+		xlim = (-1, 110), 
+		ylim = (-1e-5, 1e-4),
+		labels = ["Cartesian" "Phonon"],
+		linewidth=3,
+		title="PES Error (Traning Data = " *string(nd[i]) *")"
+	)
+end
+
+# ╔═╡ 0450c18d-1a0d-4285-84f1-c41962213c0a
+gif(anim, "Si_Energy_ph_02062023.gif", fps=2)
+
+# ╔═╡ 7b14452e-65a3-42cb-beed-89d01d57432a
+@time for k in 1:9
+	numt1 = nd[k]
+	equi, feature, energy, force, Target = ASEFeatureTarget(
+    Featurefile, Energyfile, Forcefile, numt1, DIM);
+
+	feature2 = feature[:, 2:numt1];
+	force2 = force[49:48*numt1];
+	energy2 = energy[2:numt1];
+	Target2 = zeros(((48+1)*(numt1-1),1));
+	Target2[1:numt1-1,:] = energy2;
+	Target2[numt1:(numt1-1)*(1+48),:] = force2;
+	
+	equi_ph, feature_ph, Target_ph = ph_trans(equi, feature2, force2, energy2, phaseG, mass, eigVecg);
+
+	
+	Kₘₘ = Marginal_ph(feature2, kernel, l, σₑ, σₙ, phaseG, mass, eigVecg);
+	K₀ₙₘ = Coveriance_energy_ph(feature2, equi, kernel, phaseG, mass, eigVecg);
+
+	
+	Kₘₘph = Marginal(feature_ph, kernelph, lph, σₑ, σₙ);
+	K₀ₙₘph = Coveriance_energy(feature_ph, equi_ph, kernelph);
+
+
+	Ecar2[k] = abs(Posterior(Kₘₘ, K₀ₙₘ, Target_ph)-Target[1])
+	Eph2[k] = abs(Posterior(Kₘₘph, K₀ₙₘph, Target_ph)-Target[1])
+end
+
+# ╔═╡ 7220f0a4-1b8a-4f07-89c1-88558073b3c0
+anim2 = @animate for i in 1:9
+	plot(nd[1:i], [Ecar2[1:i], Eph2[1:i]],
+		xlabel="Training points",
+		ylabel="Error",
+		xlim = (-1, 110), 
+		ylim = (-1e-5, 1e-0),
+		labels = ["Cartesian" "Phonon"],
+		linewidth=3,
+		title="PES Error (Traning Data = " *string(nd[i]) *")"
+	)
+end
+
+# ╔═╡ e0d04409-f77d-4076-90e0-5bd692799b43
+gif(anim2, "Si_Energy_ph2_020620230.gif", fps=2)
+
+# ╔═╡ 96439fe8-7f62-4676-a8fd-72b6a6f5e4a7
+begin
+	dis = LinRange(-0.02, 0.02, 11)
+	Ecar_dis = zeros((11))
+	Eph_dis = zeros((11))
+	Ecar2ph_dis = zeros((11))
+end
+
+# ╔═╡ da913a95-a262-4193-9cd9-d402ffcad68e
+
+begin
+	DIS = zeros((48))
+		for kk in 1:16
+			if mod(kk,2) == 1
+				DIS[3*(kk-1)+1:3*kk] = [1 1 1]
+			end
+		end
+	end
+
+# ╔═╡ c37e43af-dcf9-4b78-a0b6-c546d2d0fba3
+begin
+	KₘₘCar = Marginal(feature, kernel, l, σₑ, σₙ);
+	Kₘₘph = Marginal(feature_ph, kernelph, lph, σₑ, σₙ);
+	KₘₘCar2ph = Marginal_ph(feature, kernel, l, σₑ, σₙ, phaseG, mass, eigVecG);
+	@time for k in 1:11
+		equik = equi + (DIS * dis[k])
+		equik_ph = (eigVecg' * inv(mass)/sqrt(2) * phaseG * equi) + (eigVecg' * inv(mass)/sqrt(2) * phaseG * (DIS * dis[k]))
+		
+		K₀ₙₘCar = Coveriance_energy(feature, equik, kernel);
+		K₀ₙₘph = Coveriance_energy(feature_ph, equik_ph, kernelph);
+		K₀ₙₘCar2ph = Coveriance_energy_ph(feature, equik, kernel, phaseG, mass, eigVecg);
+		
+		Ecar_dis[k] = Posterior(KₘₘCar, K₀ₙₘCar, Target)
+		Eph_dis[k] = Posterior(Kₘₘph, K₀ₙₘph, Target_ph)
+		Ecar2ph_dis[k] = Posterior(KₘₘCar2ph, K₀ₙₘCar2ph, Target_ph)
+	end
+end
+
+# ╔═╡ a9fe24cf-7daa-45ba-9666-321146e0caa4
+plot(dis[1:11], [Ecar_dis[1:11], Eph_dis[1:11], Ecar2ph_dis[1:11]],
+		xlabel="Displacement in Angstom",
+		ylabel="Harmonic PES",
+		#xlim = (-1, 110), 
+		ylim = (-86.5, -86),
+		labels = ["Cartesian" "Ph bf Deri" "Deri bf Ph"],
+		linewidth=3,
+		title="Harmonic PES by shaking 1st Si"
+	)
+
+# ╔═╡ b2ef1612-0383-41c3-8436-8a1739efede7
+Ecar_dis
+
+# ╔═╡ 5da64d73-64fc-4da1-811a-73aee237c3be
+Eph_dis
+
+# ╔═╡ 3ebcbb90-6312-446d-b75a-9b77803432b8
+ Ecar2ph_dis
+
+# ╔═╡ dcc3f238-8d61-4b7c-9924-c3ec415e8cff
+eigVecg' * inv(mass)/sqrt(2) * phaseG * equi
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -322,7 +570,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.0-beta4"
 manifest_format = "2.0"
-project_hash = "c5bdba02590b96b8bb589e309379559caf1a066e"
+project_hash = "f56709a28f7e20854653aaf7327522e7236e7c18"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -1565,7 +1813,6 @@ version = "1.4.1+0"
 # ╠═8eb52208-b603-48dc-9c54-84f35f669b65
 # ╠═e4de5b20-3d5f-44c7-a696-a44e1de9341e
 # ╠═06a9ec80-ba5e-4587-b448-2c87c0178aad
-# ╠═5ba11ea6-6f41-4c57-b5b1-3293738c53f1
 # ╠═3259213b-f48d-4209-9cf1-cfe9ff6ef795
 # ╠═55c30380-d9ef-41e9-9dae-9700fe17e3f5
 # ╠═63473888-5aeb-4d48-8020-27e06147de3f
@@ -1580,5 +1827,31 @@ version = "1.4.1+0"
 # ╠═43f36150-6e48-4401-887d-8ccd1170d16a
 # ╠═bc0e4c4c-8fee-4233-addd-f85f4aea49fb
 # ╠═e9d8c24f-4b76-4ac6-adb6-166b1681253b
+# ╠═523296ca-3ac4-4c54-9872-4ba77f2bdc13
+# ╠═ab4fd18b-1918-4329-baf4-0f5ad3a954c7
+# ╠═aae137f6-a793-4c07-a7a9-0f668b3bacc6
+# ╠═5fb20402-fd3b-4f69-bfca-585e807959da
+# ╠═1f748b0c-2969-4f01-95db-271b205cdb28
+# ╠═51dbe12d-974f-453b-9515-3b02f0c5d932
+# ╠═1d4d4eeb-659f-439c-b008-f087749f0497
+# ╠═20344865-935a-43d0-a8c3-f0e0a9690dfb
+# ╠═3151bfc3-ae98-4c60-b1d4-f65c4f8c965e
+# ╠═c2a93149-3fb2-4ceb-b487-15cb051a8fdc
+# ╠═c2f0e04a-5d7a-46b9-a3ed-74885c052ccb
+# ╠═c36344d7-80e7-48e6-b608-5fe97d492209
+# ╠═056d0f85-316b-49c7-bfc9-b6167bb3e676
+# ╠═d991e850-1759-4976-924f-ac99524328f0
+# ╠═0450c18d-1a0d-4285-84f1-c41962213c0a
+# ╠═7b14452e-65a3-42cb-beed-89d01d57432a
+# ╠═7220f0a4-1b8a-4f07-89c1-88558073b3c0
+# ╠═e0d04409-f77d-4076-90e0-5bd692799b43
+# ╠═96439fe8-7f62-4676-a8fd-72b6a6f5e4a7
+# ╠═da913a95-a262-4193-9cd9-d402ffcad68e
+# ╠═c37e43af-dcf9-4b78-a0b6-c546d2d0fba3
+# ╠═a9fe24cf-7daa-45ba-9666-321146e0caa4
+# ╠═b2ef1612-0383-41c3-8436-8a1739efede7
+# ╠═5da64d73-64fc-4da1-811a-73aee237c3be
+# ╠═3ebcbb90-6312-446d-b75a-9b77803432b8
+# ╠═dcc3f238-8d61-4b7c-9924-c3ec415e8cff
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
