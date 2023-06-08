@@ -195,6 +195,9 @@ begin
 	Forcefile = "force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv"
 end;
 
+# ╔═╡ 65123c9e-dacf-4dc7-a6eb-6839843ffe11
+
+
 # ╔═╡ 55c30380-d9ef-41e9-9dae-9700fe17e3f5
 begin
 	eigVecG = 
@@ -487,6 +490,12 @@ begin
 	Ecar2ph_dis = zeros((11))
 end
 
+# ╔═╡ 9ac57d4f-a762-46eb-a64a-676cdebf9e0a
+
+
+# ╔═╡ f50badf4-ed43-4674-a3ec-d8e344de2aff
+dis
+
 # ╔═╡ da913a95-a262-4193-9cd9-d402ffcad68e
 
 begin
@@ -505,7 +514,7 @@ begin
 	KₘₘCar2ph = Marginal_ph(feature, kernel, l, σₑ, σₙ, phaseG, mass, eigVecG);
 	@time for k in 1:11
 		equik = equi + (DIS * dis[k])
-		equik_ph = (eigVecg' * inv(mass)/sqrt(2) * phaseG * equi) + dis[k]*[1, 1, 1, 0, 0, 0] * sqrt(28.085/2)
+		equik_ph = (eigVecg' * mass/sqrt(2) * phaseG * equi) + dis[k]*[1, 1, 1, 0, 0, 0] * sqrt(28.085/2)
 		
 		K₀ₙₘCar = Coveriance_energy(feature, equik, kernel);
 		K₀ₙₘph = Coveriance_energy(feature_ph, equik_ph, kernelph);
@@ -535,7 +544,7 @@ Eph_dis
  Ecar2ph_dis
 
 # ╔═╡ dcc3f238-8d61-4b7c-9924-c3ec415e8cff
-eigVecg' * inv(mass)/sqrt(2) * phaseG * (equi) + dis[1]*[1, 1, 1, 0, 0, 0] * sqrt(28.085/2)
+eigVecg' * mass/sqrt(2) * phaseG * (equi) + dis[1]*[1, 1, 1, 0, 0, 0] * sqrt(28.085/2)
 
 # ╔═╡ 56dc3a55-a8a8-4727-b4d6-0460c1a93f82
 eigVecg' * inv(mass)/sqrt(2) * phaseG * (DIS * dis[1])
@@ -1814,6 +1823,7 @@ version = "1.4.1+0"
 # ╠═e4de5b20-3d5f-44c7-a696-a44e1de9341e
 # ╠═06a9ec80-ba5e-4587-b448-2c87c0178aad
 # ╠═3259213b-f48d-4209-9cf1-cfe9ff6ef795
+# ╠═65123c9e-dacf-4dc7-a6eb-6839843ffe11
 # ╠═55c30380-d9ef-41e9-9dae-9700fe17e3f5
 # ╠═63473888-5aeb-4d48-8020-27e06147de3f
 # ╠═27b8d359-5a0f-4d7a-bc70-3eb02e1d8c87
@@ -1846,6 +1856,8 @@ version = "1.4.1+0"
 # ╠═7220f0a4-1b8a-4f07-89c1-88558073b3c0
 # ╠═e0d04409-f77d-4076-90e0-5bd692799b43
 # ╠═96439fe8-7f62-4676-a8fd-72b6a6f5e4a7
+# ╠═9ac57d4f-a762-46eb-a64a-676cdebf9e0a
+# ╠═f50badf4-ed43-4674-a3ec-d8e344de2aff
 # ╠═da913a95-a262-4193-9cd9-d402ffcad68e
 # ╠═c37e43af-dcf9-4b78-a0b6-c546d2d0fba3
 # ╠═a9fe24cf-7daa-45ba-9666-321146e0caa4

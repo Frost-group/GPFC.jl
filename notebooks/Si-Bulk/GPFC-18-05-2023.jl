@@ -95,15 +95,6 @@ equi, feature, energy, force, Target = ASEFeatureTarget(
 # ╔═╡ 318143dc-d617-4726-bbfc-a965c64329a1
 energy
 
-# ╔═╡ df47fbcb-f541-48b8-a968-d8c78c3641a8
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	aa = 16
-	equi[3*(aa-1)+1:3*aa]
-end
-  ╠═╡ =#
-
 # ╔═╡ 9a5f94b6-406f-4467-be14-ada9c3278c9b
 A = [1 9 5 13 3 11 7 15 2 10 6 14 4 12 8 16];
 
