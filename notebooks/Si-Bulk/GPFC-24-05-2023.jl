@@ -288,6 +288,9 @@ eigVecg
 # ╔═╡ 8c2dd257-01dc-4ac7-8e0e-620cebf06c35
 equi_ph, feature_ph, Target_ph = ph_trans(equi, feature, force, energy, phaseG, mass, eigVecg);
 
+# ╔═╡ f378c125-9103-4303-a5d9-bebd2c5ecc44
+equi_ph
+
 # ╔═╡ ccdfed5d-479a-49c9-822a-5c90c9db6ff2
 @time Kmm_ph = Marginal(feature_ph, kernelph, lph, σₑ, σₙ);
 
@@ -570,6 +573,7 @@ eigVecg' * inv(mass)/sqrt(2) * phaseG * (DIS * dis[1])
 # ╠═730e31a0-418a-4155-a2d3-218a5fe0102a
 # ╠═4972e5bf-9742-491d-9165-b9c82d0b39b3
 # ╠═67442a55-ae04-4cc9-ba54-05fcce62c0b8
+# ╠═f378c125-9103-4303-a5d9-bebd2c5ecc44
 # ╠═9563fef3-073d-43e1-b468-bf9b7aab99de
 # ╠═8c2dd257-01dc-4ac7-8e0e-620cebf06c35
 # ╠═ccdfed5d-479a-49c9-822a-5c90c9db6ff2

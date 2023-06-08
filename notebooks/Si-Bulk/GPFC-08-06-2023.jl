@@ -345,11 +345,52 @@ for jj in 1:100
 		end 
 	end
 end	
-equiph = feature_ph[1:6,1]
+equi_ph = feature_ph[1:6,1]
 end
+
+# ╔═╡ bcb745ef-2b27-47eb-9147-a6a1b5219b78
+feature
 
 # ╔═╡ 1c711be3-4556-436d-8ea7-2b745b680244
 feature_ph
+
+# ╔═╡ 79a6726f-5b8f-4db2-a855-2db904e41894
+begin
+	force_r = reshape(force,(48,100))
+	begin
+	force_ph = zeros((6,100))
+	for jj in 1:100
+		for kk in 1:8
+			if kk == 1
+				force_ph[1:6,jj] = force_r[1:6,jj]
+			else
+				force_ph[1:6,jj] = force_ph[1:6,jj] + force_r[6*(kk-1)+1:6*kk,jj]
+			end 
+		end
+	end
+	Target_ph = zeros((700))
+	Target_ph[1:100] = Target[1:100]
+	Target_ph[101:700] = reshape(force_ph,(600,1))
+	end
+end;
+
+# ╔═╡ d98f0799-2eaa-4051-a33e-b7f9a8edd6a0
+force_ph
+
+# ╔═╡ d84d1424-a48b-424a-a5db-88c4cf989c59
+@time Kₘₘ_ph = Marginal(feature_ph, kernel, l, σₑ, σₙ);
+
+# ╔═╡ d092c336-e12a-4d08-844e-6dde50e566be
+@time K₂ₙₘ_ph = Coveriance_fc2(feature_ph, equi_ph, kernel);
+
+# ╔═╡ c60cca8b-3f20-4f9b-99ee-4343af791b8d
+@time FC2_ph = Posterior(Kₘₘ_ph, K₂ₙₘ_ph, Target_ph);
+
+# ╔═╡ 34028b79-0bb1-4b8b-a58f-f71826cc60ea
+FC2_ph
+
+# ╔═╡ 89b9d837-fa20-4cf5-9735-9d63e776ffe6
+heatmap(1:6,1:6,FC2_ph)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1662,6 +1703,14 @@ version = "1.4.1+0"
 # ╠═59042a26-be2d-436e-9293-d7965089b52c
 # ╠═70c137be-6ad0-4227-916b-0d8e3b18ef13
 # ╠═afa7a2de-c998-4cc0-85f2-a7d227b689aa
+# ╠═bcb745ef-2b27-47eb-9147-a6a1b5219b78
 # ╠═1c711be3-4556-436d-8ea7-2b745b680244
+# ╠═79a6726f-5b8f-4db2-a855-2db904e41894
+# ╠═d98f0799-2eaa-4051-a33e-b7f9a8edd6a0
+# ╠═d84d1424-a48b-424a-a5db-88c4cf989c59
+# ╠═d092c336-e12a-4d08-844e-6dde50e566be
+# ╠═c60cca8b-3f20-4f9b-99ee-4343af791b8d
+# ╠═34028b79-0bb1-4b8b-a58f-f71826cc60ea
+# ╠═89b9d837-fa20-4cf5-9735-9d63e776ffe6
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
