@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 36635fd0-0546-11ee-2ad6-5deb0647e6c0
+# ╔═╡ 4b5efc22-05fb-11ee-0315-5d2682cde1a3
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum
@@ -14,7 +14,7 @@ begin
 	using Plots
 end
 
-# ╔═╡ fb59c51e-d28b-41b3-855d-deb687876985
+# ╔═╡ f4b35f17-723a-482e-88a7-2049722ed60c
 function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
 	a  = 4 - dimA
 	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
@@ -34,22 +34,35 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 	return equi, feature, energy, force, Target
 end
 
-# ╔═╡ 3bcfff73-6a44-4e4d-b1e7-4cb1d64b0f95
+# ╔═╡ 50bbd615-6f2e-46ce-a855-ef6e1fa21597
 begin
-	y = 0.1 * [1; 2; 3; 4; 5; 6]
-	x = 0.1 * [1; 2; 3; 1; 2; 3]
-end
+	σₒ = 1.0                   # Kernel Scale
+	l = 1.0 
+	lph =1.0 * sqrt(28.085/2)   # Length Scale
+	σₑ = 1e-5 					# Energy Gaussian noise
+	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
+		
+	Num = 100                   # Number of training points
+	DIM = 3                     # Dimension of Materials
+	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
+	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
+		
+	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
+	kernelph = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(lph)
+end;
 
-# ╔═╡ 2fb4f03a-be80-40d5-9fd2-f40032992800
+# ╔═╡ d5e3443c-6753-4cca-8012-302e27ed6db4
 begin
-	y1 = 0.1 * [1 2 3; 4 5 6]
-	x1 = 0.1 * [1 2 3; 1 2 3]
-end
+	Featurefile = "feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv"
+	Energyfile = "energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv"
+	Forcefile = "force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv"
+end;
 
-# ╔═╡ a68a06ec-fbb5-47fc-88e7-1b1607b8c235
-k = zeros((3,3,2,2))
+# ╔═╡ 69960dc0-5036-40d2-9319-69938dfd1e4b
+equi, feature, energy, force, Target = ASEFeatureTarget(
+    Featurefile, Energyfile, Forcefile, Num, DIM);
 
-# ╔═╡ 3076f255-15c3-41d7-a2ed-813d67b4c584
+# ╔═╡ d98b9aaf-49ce-4d0a-b0b3-21a41e5325ec
 function kernelfunction(k, x₁, x₂, grad::Int64)
 	function f1st(x₁, x₂) 
 		Zygote.gradient( a -> k(a, x₂), x₁)[1]
@@ -79,142 +92,10 @@ function kernelfunction(k, x₁, x₂, grad::Int64)
 	end
 end
 
-# ╔═╡ e430f1b6-1012-4215-84a4-f205fad0c816
-function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
-	dim = size(X,1)
-	num = size(X,2)
-	#building Marginal Likelihood containers
-	#For Energy + Force
-	KK = zeros(((1+dim)*num, (1+dim)*num))
-	#For Energy
-	K₀₀ = zeros(((1)*num, (1)*num))
-	#For Force
-	K₁₁ = zeros(((dim)*num, (dim)*num))
-	
-	for i in 1:num 
-		for j in 1:num 
-		#Fillin convarian of Energy vs Energy
-			KK[i, j] = kernelfunction(k, X[:,i], X[:,j], 0)
-		#Fillin convarian of Force vs Energy
-			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction(k, X[:,i], X[:,j], 1)
-		#Fillin convarian of Energy vs Force	
-			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]
-		#Fillin convarian of Energy vs Force
-			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -kernelfunction(k, X[:,i], X[:,j], 2)
-		end
-	end
+# ╔═╡ c1355ac7-3765-4b38-a765-45461e98ebcd
 
-	Iee = σₑ^2 * Matrix(I, num, num)
-	Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
-	Ief = zeros(num, dim * num)
-	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
 
-	Kₘₘ = KK + II
-	
-	return Kₘₘ
-end
-
-# ╔═╡ 05e7fe81-c515-4a2f-8573-9b421aeadef0
-function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
-	dim = size(X,1)
-	num = size(X,2)
-	
-	#Covariance matrix for FC2 prediction
-	#building Covariance matrix containers	
-	K₂ₙₘ= zeros((dim, dim, (1+dim)*num))
-		
-	for j in 1:num
-		#Fillin convarian of Energy vs FC2
-		K₂ₙₘ[:,:,j] = reshape(
-					 kernelfunction(k, X[:,j], xₒ, 2)
-					, (dim, dim)
-				)
-		#Fillin convarian of Force vs FC2
-		K₂ₙₘ[:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
-					 kernelfunction(k, X[:,j], xₒ, 3)
-					, (dim, dim, dim)
-				)
-	end
-	return K₂ₙₘ
-end
-
-# ╔═╡ f1019e78-4a31-4c0e-9818-90efc22b7773
-function Posterior(Marginal, Covariance, Target)
-	dimₚ = size(Covariance, 1)
-	dimₜ = size(Marginal, 1)
-	Kₘₘ⁻¹ = inv(Marginal)   #
-	Kₙₘ = Covariance
-	
-	MarginalTar = zeros(dimₜ)
-	@einsum MarginalTar[m] = Kₘₘ⁻¹[m, n] * Target[n]
-
-	if size(Kₙₘ) == (dimₜ,)
-		Meanₚ = Kₙₘ'  * MarginalTar
-		
-	elseif size(Kₙₘ) == (dimₚ, dimₜ)
-		Meanₚ = zeros(dimₚ)
-		@einsum Meanₚ[i] = Kₙₘ[i, m] * MarginalTar[m]
-	
-	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₜ)
-		Meanₚ = zeros(dimₚ, dimₚ)
-		@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * MarginalTar[m]
-
-	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₚ, dimₜ)
-		Meanₚ = zeros(dimₚ, dimₚ, dimₚ)
-		@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * MarginalTar[m]
-	end
-
-	return Meanₚ 
-end
-
-# ╔═╡ 2eeff1fd-139b-46be-bdc6-df9010fc865a
-begin
-	σₒ = 1.0                   # Kernel Scale
-	l = 1.0 * sqrt(28.085/2)	   # Length Scale
-	σₑ = 1e-5 					# Energy Gaussian noise
-	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
-		
-	Num = 100                   # Number of training points
-	DIM = 3                     # Dimension of Materials
-	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
-	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
-		
-	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
-end;
-
-# ╔═╡ baf4034e-0dbf-4ac6-bec6-52e0dbbc9056
-kernel(x1,y1)
-
-# ╔═╡ ecd30f8a-2d4d-4230-9e4d-b7eb6361df11
-kernel(x,y)
-
-# ╔═╡ 3bd88046-3620-4ae9-90de-31392045082d
-@time Zygote.gradient(a -> kernel(a, y), x)
-
-# ╔═╡ 07a7fa29-e7d7-4934-801b-40c2613cd8c8
-@time ForwardDiff.gradient(a -> kernel(a, y), x)
-
-# ╔═╡ f070bd11-5024-4094-97d4-331ea5120968
-@time ForwardDiff.gradient(a -> kernel(a, y1), x1)
-
-# ╔═╡ 664a9e9a-c3ea-4044-bb50-1e2096e0b641
-@time ForwardDiff.jacobian(a -> ForwardDiff.gradient(a -> kernel(a, y1), a), x1)
-
-# ╔═╡ 78a767cd-402b-4349-a8f2-725b9c7ea30b
-@time ForwardDiff.jacobian(a -> ForwardDiff.gradient(a -> kernel(a, y), a), x)
-
-# ╔═╡ 281bee3f-802b-4dfa-8fd1-2db205f6ea53
-begin
-	Featurefile = "feature_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv"
-	Energyfile = "energy_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv"
-	Forcefile = "force_Si_222spc_01_n100_PW800_kpts9_e100_d1.csv"
-end;
-
-# ╔═╡ ece06cfe-d7fb-4d3a-8237-5088c84591ae
-equi, feature, energy, force, Target = ASEFeatureTarget(
-    Featurefile, Energyfile, Forcefile, Num, DIM);
-
-# ╔═╡ 13ecf2d5-4805-44b9-a63d-d38f299c8e3e
+# ╔═╡ b54c6601-b724-4102-9183-50ad5bdbf820
 begin
 	eigVecG = 
 [[ 0.          -0.707106781  0.           0.          -0.707106781  0.          ] 
@@ -229,127 +110,53 @@ begin
 	amu = 1
 	mass = sqrt(28.085*amu)* Matrix(I , 6, 6)
 	PhononTr = eigVecG' * mass * 1/sqrt(2)
+	CarTr = eigVecG * inv(mass) * 1/sqrt(2)
 end;
 
+# ╔═╡ 59efc02e-b488-4f46-b818-027fe5307699
+heatmap(1:6,1:6,CarTr * PhononTr)
 
-# ╔═╡ fc8db6fd-b71a-4a34-9a9d-f603cc90e75e
+# ╔═╡ b81af36c-8ea9-4f26-a6c7-31d484e6f5c9
 begin
-	featurePh = zeros(size(feature))
-	TargetPh = zeros(size(Target))
-	for ii in 1:Int(size(feature,1)/6)
-		for jj in 1:Int(size(feature,2))
-			featurePh[6*(ii-1)+1:6*ii, jj] = PhononTr * feature[6*(ii-1)+1:6*ii, jj]
+	qpointG = [0. 0. 0.];
+	
+	phaseG = zeros((dim*nump, dim*nums))
+	for  ii in 1:nums
+		for jj in 1:nump
+			if mod(ii, nump) == mod(jj, nump) 
+				phaseG[3*(jj-1)+1:3*jj, 3*(ii-1)+1:3*ii] = 
+				Matrix(I, 3, 3) * exp(-dot(qpointG, equi[3*(ii-1)+1:3*ii]) * 1im)
+			end
 		end
 	end
-	for kk in 1:Int(size(feature,1)/6 * size(feature,2)) 
-		TargetPh[100 + 6*(kk-1) + 1: 100 + 6*kk] = PhononTr * Target[100 + 6*(kk-1) + 1: 100 + 6*kk]
-	end
-	TargetPh[1:100] = Target[1:100]
 end;
 
-# ╔═╡ 707adeee-f408-457f-953b-91ac7f7627a1
-begin
-	featurePh2 = zeros(size(feature))
-	TargetPh2 = zeros(size(Target))
-	for ii in 1:Int(size(feature,1)/6)
-		for jj in 1:Int(size(feature,2))
-			featurePh2[6*(ii-1)+1:6*ii, jj] = feature[6*(ii-1)+1:6*ii, jj]' * PhononTr
-		end
-	end
-	for kk in 1:Int(size(feature,1)/6 * size(feature,2)) 
-		TargetPh2[100 + 6*(kk-1) + 1: 100 + 6*kk] = Target[100 + 6*(kk-1) + 1: 100 + 6*kk]' * PhononTr
-	end
-	TargetPh2[1:100] = Target[1:100]
-end;
-
-# ╔═╡ 46f1414c-aa34-4ab8-b347-4f02eaaef428
-PhononTr
-
-# ╔═╡ 0dadad81-b0e2-4d23-bf4f-152387f56537
-feature[1:6,1]' * PhononTr
-
-# ╔═╡ 0a5ee9af-fd19-440b-b510-62010cbce181
-PhononTr * feature[1:6,1]
-
-# ╔═╡ 0ab284f9-8cf4-42ee-8b22-df3239b26161
-feature[1:6,1]
-
-# ╔═╡ 0d8ecd12-0b80-4a56-8d8d-4aed9798ab04
-Target[101:106]
-
-# ╔═╡ 68551d25-742d-4a37-9ce6-9fd1d63328d4
-@time Kₘₘ = Marginal(featurePh, kernel, l, σₑ, σₙ);
-
-# ╔═╡ f0d3309a-8ee5-4758-83ba-6b48b392dbee
-@time Kₘₘ2 = Marginal(featurePh2, kernel, l, σₑ, σₙ);
-
-# ╔═╡ 546a900a-3d9e-442f-991c-bebb06dc5da6
-begin
-	equiPh = featurePh[1:48,1]
-	equiPh2 = featurePh2[1:48,1]
-end;
-
-# ╔═╡ d22ea44d-6a62-472f-a276-446d5c2bbe19
-@time K₂ₙₘ = Coveriance_fc2(featurePh, equiPh, kernel);
-
-# ╔═╡ 9ca487fa-c00b-450b-8e09-bd9be49f0259
-@time K₂ₙₘ2 = Coveriance_fc2(featurePh2, equiPh2, kernel);
-
-# ╔═╡ 4179b011-9a6e-4add-8708-b4807e395503
-@time FC2 = Posterior(Kₘₘ, K₂ₙₘ, TargetPh);
-
-# ╔═╡ 8464a561-8c3a-417f-9836-608edf028576
-@time FC22 = Posterior(Kₘₘ2, K₂ₙₘ2, Target);
-
-# ╔═╡ e4e1fee2-979e-4dd8-b153-9f81eedfe938
-heatmap(1:48, 1:48, FC2, c = cgrad([:blue, :white, :red, :yellow]))
-
-# ╔═╡ 1fb8855b-7748-49d6-88ea-cef2b9b42308
-heatmap(1:48, 1:48, FC22, c = cgrad([:blue, :white, :red, :yellow]))
-
-# ╔═╡ bb0a791a-49bd-42d0-b376-33fc35454f7f
-begin
-	CarTr2 = eigVecG * inv(mass) * sqrt(2)
-	FC22_Car = zeros(size(FC22))
-	for ii in 1:8
-		for jj in 1:8
-			FC22_Car[6*(ii-1)+1:6*ii,6*(jj-1)+1:6*jj] = CarTr2' * FC22[6*(ii-1)+1:6*ii,6*(jj-1)+1:6*jj] * CarTr2 
-		end
-	end
-end
-
-# ╔═╡ 31f7b29e-30dc-48b2-bd46-5d0079ebdff9
-heatmap(1:48, 1:48, FC22_Car,c = cgrad([:blue, :white, :red, :yellow]))
-
-# ╔═╡ 269ab8c1-aa7e-46ee-b526-9cc68dda0c3f
+# ╔═╡ 6e5809c6-aa10-4055-a9c2-36e8ab892473
 begin
 	A = feature[1:6,1]
 	B = feature[1:6,2]
 end;
 
-# ╔═╡ 59042a26-be2d-436e-9293-d7965089b52c
-Ap = A' * PhononTr
+# ╔═╡ b0e7c4ac-3ef9-4444-bc05-548b3051533b
+KK = kernelfunction(kernel, A, B, 2)
 
-# ╔═╡ 70c137be-6ad0-4227-916b-0d8e3b18ef13
-Bp = B' * PhononTr
+# ╔═╡ 72372d94-dd32-4c72-8e3d-3cbea3f39c12
+PhononTr' * KK * PhononTr
 
-# ╔═╡ afa7a2de-c998-4cc0-85f2-a7d227b689aa
+# ╔═╡ 296d0311-548a-4201-8acb-c97016b96056
 begin
-feature_ph = zeros((6,100))
-for jj in 1:100
-	for kk in 1:8
-		if kk == 1
-			feature_ph[1:6,jj] = feature[1:6,jj]
-		else
-			feature_ph[1:6,jj] = feature_ph[1:6,jj] + feature[6*(kk-1)+1:6*kk,jj]
-		end 
-	end
-end	
-equiph = feature_ph[1:6,1]
+	Ap = PhononTr' * A
+	Bp = PhononTr' * B
 end
 
-# ╔═╡ 1c711be3-4556-436d-8ea7-2b745b680244
-feature_ph
+# ╔═╡ c6ef86a0-e9f9-4258-a3b1-d3e4659c8a24
+KKph = kernelfunction(kernelph, Ap, Bp, 2)
+
+# ╔═╡ 2d2c3fdb-540a-4cad-816a-8a2ef4a12586
+CarTr' * KKph * CarTr
+
+# ╔═╡ 18701629-596d-4d04-85da-dc90bfc10b34
+
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -365,14 +172,14 @@ Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
-CSV = "~0.10.10"
+CSV = "~0.10.11"
 DataFrames = "~1.5.0"
 DelimitedFiles = "~1.9.1"
 Einsum = "~0.4.1"
 ForwardDiff = "~0.10.35"
 KernelFunctions = "~0.10.55"
-Plots = "~1.38.11"
-Zygote = "~0.6.61"
+Plots = "~1.38.15"
+Zygote = "~0.6.62"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -381,7 +188,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.0-beta4"
 manifest_format = "2.0"
-project_hash = "675883e458cf0b97af4a228d3163bc55109b699c"
+project_hash = "c5bdba02590b96b8bb589e309379559caf1a066e"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -433,9 +240,9 @@ version = "0.4.2"
 
 [[deps.CSV]]
 deps = ["CodecZlib", "Dates", "FilePathsBase", "InlineStrings", "Mmap", "Parsers", "PooledArrays", "PrecompileTools", "SentinelArrays", "Tables", "Unicode", "WeakRefStrings", "WorkerUtilities"]
-git-tree-sha1 = "ed28c86cbde3dc3f53cf76643c2e9bc11d56acc7"
+git-tree-sha1 = "44dbf560808d49041989b8a96cae4cffbeb7966a"
 uuid = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
-version = "0.10.10"
+version = "0.10.11"
 
 [[deps.Cairo_jll]]
 deps = ["Artifacts", "Bzip2_jll", "CompilerSupportLibraries_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "JLLWrappers", "LZO_jll", "Libdl", "Pixman_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Zlib_jll", "libpng_jll"]
@@ -445,9 +252,9 @@ version = "1.16.1+1"
 
 [[deps.ChainRules]]
 deps = ["Adapt", "ChainRulesCore", "Compat", "Distributed", "GPUArraysCore", "IrrationalConstants", "LinearAlgebra", "Random", "RealDot", "SparseArrays", "Statistics", "StructArrays"]
-git-tree-sha1 = "8bae903893aeeb429cf732cf1888490b93ecf265"
+git-tree-sha1 = "82e2d776be8bef478792d6cba65b06b16952f8ba"
 uuid = "082447d4-558c-5d27-93f4-14fc19e9eca2"
-version = "1.49.0"
+version = "1.50.0"
 
 [[deps.ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra", "SparseArrays"]
@@ -523,6 +330,20 @@ git-tree-sha1 = "96d823b94ba8d187a6d8f0826e731195a74b90e9"
 uuid = "f0e56b4a-5159-44fe-b623-3e5288b988bb"
 version = "2.2.0"
 
+[[deps.ConstructionBase]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "738fec4d684a9a6ee9598a8bfee305b26831f28c"
+uuid = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
+version = "1.5.2"
+
+    [deps.ConstructionBase.extensions]
+    ConstructionBaseIntervalSetsExt = "IntervalSets"
+    ConstructionBaseStaticArraysExt = "StaticArrays"
+
+    [deps.ConstructionBase.weakdeps]
+    IntervalSets = "8197267c-284f-5f27-9208-e0e47529a953"
+    StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+
 [[deps.Contour]]
 git-tree-sha1 = "d05d9e7b7aedff4e5b51a029dced05cfb6125781"
 uuid = "d38c429a-6771-53c6-b99e-75d170b6e991"
@@ -573,9 +394,9 @@ version = "1.1.0"
 
 [[deps.DiffRules]]
 deps = ["IrrationalConstants", "LogExpFunctions", "NaNMath", "Random", "SpecialFunctions"]
-git-tree-sha1 = "a4ad7ef19d2cdc2eff57abbbe68032b1cd0bd8f8"
+git-tree-sha1 = "23163d55f885173722d1e4cf0f6110cdbaf7e272"
 uuid = "b552c78f-8df3-52c6-915a-8e097449b14b"
-version = "1.13.0"
+version = "1.15.1"
 
 [[deps.Distances]]
 deps = ["LinearAlgebra", "SparseArrays", "Statistics", "StatsAPI"]
@@ -633,9 +454,9 @@ uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
 
 [[deps.FillArrays]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "Statistics"]
-git-tree-sha1 = "fc86b4fd3eff76c3ce4f5e96e2fdfa6282722885"
+git-tree-sha1 = "589d3d3bff204bdd80ecc53293896b4f39175723"
 uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
-version = "1.0.0"
+version = "1.1.1"
 
 [[deps.FixedPointNumbers]]
 deps = ["Statistics"]
@@ -697,27 +518,27 @@ version = "3.3.8+0"
 
 [[deps.GPUArrays]]
 deps = ["Adapt", "GPUArraysCore", "LLVM", "LinearAlgebra", "Printf", "Random", "Reexport", "Serialization", "Statistics"]
-git-tree-sha1 = "9ade6983c3dbbd492cf5729f865fe030d1541463"
+git-tree-sha1 = "a3351bc577a6b49297248aadc23a4add1097c2ac"
 uuid = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
-version = "8.6.6"
+version = "8.7.1"
 
 [[deps.GPUArraysCore]]
 deps = ["Adapt"]
-git-tree-sha1 = "1cd7f0af1aa58abc02ea1d872953a97359cb87fa"
+git-tree-sha1 = "2d6ca471a6c7b536127afccfa7564b5b39227fe0"
 uuid = "46192b85-c4d5-4398-a991-12ede77f4527"
-version = "0.1.4"
+version = "0.1.5"
 
 [[deps.GR]]
 deps = ["Artifacts", "Base64", "DelimitedFiles", "Downloads", "GR_jll", "HTTP", "JSON", "Libdl", "LinearAlgebra", "Pkg", "Preferences", "Printf", "Random", "Serialization", "Sockets", "TOML", "Tar", "Test", "UUIDs", "p7zip_jll"]
-git-tree-sha1 = "efaac003187ccc71ace6c755b197284cd4811bfe"
+git-tree-sha1 = "8b8a2fd4536ece6e554168c21860b6820a8a83db"
 uuid = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
-version = "0.72.4"
+version = "0.72.7"
 
 [[deps.GR_jll]]
 deps = ["Artifacts", "Bzip2_jll", "Cairo_jll", "FFMPEG_jll", "Fontconfig_jll", "GLFW_jll", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "Pixman_jll", "Qt5Base_jll", "Zlib_jll", "libpng_jll"]
-git-tree-sha1 = "4486ff47de4c18cb511a0da420efebb314556316"
+git-tree-sha1 = "19fad9cd9ae44847fe842558a744748084a722d1"
 uuid = "d2c73de3-f751-5644-a686-071e5b155ba9"
-version = "0.72.4+0"
+version = "0.72.7+0"
 
 [[deps.Gettext_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Libiconv_jll", "Pkg", "XML2_jll"]
@@ -744,9 +565,9 @@ version = "1.0.2"
 
 [[deps.HTTP]]
 deps = ["Base64", "CodecZlib", "ConcurrentUtilities", "Dates", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
-git-tree-sha1 = "41f7dfb2b20e7e8bf64f6b6fae98f4d2df027b06"
+git-tree-sha1 = "5e77dbf117412d4f164a464d610ee6050cc75272"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "1.9.4"
+version = "1.9.6"
 
 [[deps.HarfBuzz_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "Graphite2_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg"]
@@ -944,9 +765,9 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[deps.LogExpFunctions]]
 deps = ["DocStringExtensions", "IrrationalConstants", "LinearAlgebra"]
-git-tree-sha1 = "0a1b7c2863e44523180fdb3146534e265a91870b"
+git-tree-sha1 = "c3ce8e7420b3a6e071e0fe4745f5d4300e37b13f"
 uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
-version = "0.3.23"
+version = "0.3.24"
 
     [deps.LogExpFunctions.extensions]
     LogExpFunctionsChainRulesCoreExt = "ChainRulesCore"
@@ -1039,10 +860,10 @@ uuid = "4d8831e6-92b7-49fb-bdf8-b643e874388c"
 version = "1.4.1"
 
 [[deps.OpenSSL_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "9ff31d101d987eb9d66bd8b176ac7c277beccd09"
+deps = ["Artifacts", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "1aa4b74f80b01c6bc2b89992b861b5f210e665b5"
 uuid = "458c3c95-2e84-50aa-8efc-19380b2a3a95"
-version = "1.1.20+0"
+version = "1.1.21+0"
 
 [[deps.OpenSpecFun_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Pkg"]
@@ -1068,9 +889,9 @@ version = "10.42.0+0"
 
 [[deps.Parsers]]
 deps = ["Dates", "PrecompileTools", "UUIDs"]
-git-tree-sha1 = "7302075e5e06da7d000d9bfa055013e3e85578ca"
+git-tree-sha1 = "a5aef8d4a6e8d81f171b2bd4be5265b01384c74c"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "2.5.9"
+version = "2.5.10"
 
 [[deps.Pipe]]
 git-tree-sha1 = "6842804e7867b115ca9de748a0cf6b364523c16d"
@@ -1101,10 +922,10 @@ uuid = "995b91a9-d308-5afd-9ec6-746e21dbc043"
 version = "1.3.5"
 
 [[deps.Plots]]
-deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers", "GR", "JLFzf", "JSON", "LaTeXStrings", "Latexify", "LinearAlgebra", "Measures", "NaNMath", "Pkg", "PlotThemes", "PlotUtils", "PrecompileTools", "Preferences", "Printf", "REPL", "Random", "RecipesBase", "RecipesPipeline", "Reexport", "RelocatableFolders", "Requires", "Scratch", "Showoff", "SparseArrays", "Statistics", "StatsBase", "UUIDs", "UnicodeFun", "Unzip"]
-git-tree-sha1 = "6c7f47fd112001fc95ea1569c2757dffd9e81328"
+deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers", "GR", "JLFzf", "JSON", "LaTeXStrings", "Latexify", "LinearAlgebra", "Measures", "NaNMath", "Pkg", "PlotThemes", "PlotUtils", "PrecompileTools", "Preferences", "Printf", "REPL", "Random", "RecipesBase", "RecipesPipeline", "Reexport", "RelocatableFolders", "Requires", "Scratch", "Showoff", "SparseArrays", "Statistics", "StatsBase", "UUIDs", "UnicodeFun", "UnitfulLatexify", "Unzip"]
+git-tree-sha1 = "ceb1ec8d4fbeb02f8817004837d924583707951b"
 uuid = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-version = "1.38.11"
+version = "1.38.15"
 
     [deps.Plots.extensions]
     FileIOExt = "FileIO"
@@ -1128,9 +949,9 @@ version = "1.4.2"
 
 [[deps.PrecompileTools]]
 deps = ["Preferences"]
-git-tree-sha1 = "259e206946c293698122f63e2b513a7c99a244e8"
+git-tree-sha1 = "9673d39decc5feece56ef3940e5dafba15ba0f81"
 uuid = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
-version = "1.1.1"
+version = "1.1.2"
 
 [[deps.Preferences]]
 deps = ["TOML"]
@@ -1209,9 +1030,9 @@ version = "1.2.0"
 
 [[deps.SentinelArrays]]
 deps = ["Dates", "Random"]
-git-tree-sha1 = "77d3c4726515dca71f6d80fbb5e251088defe305"
+git-tree-sha1 = "04bdff0b09c65ff3e06a05e3eb7b120223da3d39"
 uuid = "91c51154-3ec4-41a3-a24f-3f23e20d615c"
-version = "1.3.18"
+version = "1.4.0"
 
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
@@ -1349,6 +1170,24 @@ deps = ["REPL"]
 git-tree-sha1 = "53915e50200959667e78a92a418594b428dffddf"
 uuid = "1cfade01-22cf-5700-b092-accc4b62d6e1"
 version = "0.4.1"
+
+[[deps.Unitful]]
+deps = ["ConstructionBase", "Dates", "LinearAlgebra", "Random"]
+git-tree-sha1 = "ba4aa36b2d5c98d6ed1f149da916b3ba46527b2b"
+uuid = "1986cc42-f94f-5a68-af5c-568840ba703d"
+version = "1.14.0"
+
+    [deps.Unitful.extensions]
+    InverseFunctionsUnitfulExt = "InverseFunctions"
+
+    [deps.Unitful.weakdeps]
+    InverseFunctions = "3587e190-3f89-42d0-90ee-14403ec27112"
+
+[[deps.UnitfulLatexify]]
+deps = ["LaTeXStrings", "Latexify", "Unitful"]
+git-tree-sha1 = "e2d817cc500e960fdbafcf988ac8436ba3208bfd"
+uuid = "45397f5d-5981-4c77-b2b3-fc36d6e9b728"
+version = "1.6.3"
 
 [[deps.Unzip]]
 git-tree-sha1 = "ca0969166a028236229f63514992fc073799bb78"
@@ -1529,9 +1368,9 @@ version = "1.5.5+0"
 
 [[deps.Zygote]]
 deps = ["AbstractFFTs", "ChainRules", "ChainRulesCore", "DiffRules", "Distributed", "FillArrays", "ForwardDiff", "GPUArrays", "GPUArraysCore", "IRTools", "InteractiveUtils", "LinearAlgebra", "LogExpFunctions", "MacroTools", "NaNMath", "PrecompileTools", "Random", "Requires", "SparseArrays", "SpecialFunctions", "Statistics", "ZygoteRules"]
-git-tree-sha1 = "ebac1ae9f048c669317ad48c9bed815790a468d8"
+git-tree-sha1 = "5be3ddb88fc992a7d8ea96c3f10a49a7e98ebc7b"
 uuid = "e88e6eb3-aa80-5325-afca-941959d7151f"
-version = "0.6.61"
+version = "0.6.62"
 
     [deps.Zygote.extensions]
     ZygoteColorsExt = "Colors"
@@ -1620,48 +1459,22 @@ version = "1.4.1+0"
 """
 
 # ╔═╡ Cell order:
-# ╠═36635fd0-0546-11ee-2ad6-5deb0647e6c0
-# ╠═fb59c51e-d28b-41b3-855d-deb687876985
-# ╠═3bcfff73-6a44-4e4d-b1e7-4cb1d64b0f95
-# ╠═2fb4f03a-be80-40d5-9fd2-f40032992800
-# ╠═baf4034e-0dbf-4ac6-bec6-52e0dbbc9056
-# ╠═ecd30f8a-2d4d-4230-9e4d-b7eb6361df11
-# ╠═3bd88046-3620-4ae9-90de-31392045082d
-# ╠═07a7fa29-e7d7-4934-801b-40c2613cd8c8
-# ╠═f070bd11-5024-4094-97d4-331ea5120968
-# ╠═664a9e9a-c3ea-4044-bb50-1e2096e0b641
-# ╠═78a767cd-402b-4349-a8f2-725b9c7ea30b
-# ╠═a68a06ec-fbb5-47fc-88e7-1b1607b8c235
-# ╠═3076f255-15c3-41d7-a2ed-813d67b4c584
-# ╠═e430f1b6-1012-4215-84a4-f205fad0c816
-# ╠═05e7fe81-c515-4a2f-8573-9b421aeadef0
-# ╠═f1019e78-4a31-4c0e-9818-90efc22b7773
-# ╠═2eeff1fd-139b-46be-bdc6-df9010fc865a
-# ╠═281bee3f-802b-4dfa-8fd1-2db205f6ea53
-# ╠═ece06cfe-d7fb-4d3a-8237-5088c84591ae
-# ╠═13ecf2d5-4805-44b9-a63d-d38f299c8e3e
-# ╠═fc8db6fd-b71a-4a34-9a9d-f603cc90e75e
-# ╠═707adeee-f408-457f-953b-91ac7f7627a1
-# ╠═46f1414c-aa34-4ab8-b347-4f02eaaef428
-# ╠═0dadad81-b0e2-4d23-bf4f-152387f56537
-# ╠═0a5ee9af-fd19-440b-b510-62010cbce181
-# ╠═0ab284f9-8cf4-42ee-8b22-df3239b26161
-# ╠═0d8ecd12-0b80-4a56-8d8d-4aed9798ab04
-# ╠═68551d25-742d-4a37-9ce6-9fd1d63328d4
-# ╠═f0d3309a-8ee5-4758-83ba-6b48b392dbee
-# ╠═546a900a-3d9e-442f-991c-bebb06dc5da6
-# ╠═d22ea44d-6a62-472f-a276-446d5c2bbe19
-# ╠═9ca487fa-c00b-450b-8e09-bd9be49f0259
-# ╠═4179b011-9a6e-4add-8708-b4807e395503
-# ╠═8464a561-8c3a-417f-9836-608edf028576
-# ╠═e4e1fee2-979e-4dd8-b153-9f81eedfe938
-# ╠═1fb8855b-7748-49d6-88ea-cef2b9b42308
-# ╠═bb0a791a-49bd-42d0-b376-33fc35454f7f
-# ╠═31f7b29e-30dc-48b2-bd46-5d0079ebdff9
-# ╠═269ab8c1-aa7e-46ee-b526-9cc68dda0c3f
-# ╠═59042a26-be2d-436e-9293-d7965089b52c
-# ╠═70c137be-6ad0-4227-916b-0d8e3b18ef13
-# ╠═afa7a2de-c998-4cc0-85f2-a7d227b689aa
-# ╠═1c711be3-4556-436d-8ea7-2b745b680244
+# ╠═4b5efc22-05fb-11ee-0315-5d2682cde1a3
+# ╠═f4b35f17-723a-482e-88a7-2049722ed60c
+# ╠═50bbd615-6f2e-46ce-a855-ef6e1fa21597
+# ╠═d5e3443c-6753-4cca-8012-302e27ed6db4
+# ╠═69960dc0-5036-40d2-9319-69938dfd1e4b
+# ╠═d98b9aaf-49ce-4d0a-b0b3-21a41e5325ec
+# ╠═c1355ac7-3765-4b38-a765-45461e98ebcd
+# ╠═b54c6601-b724-4102-9183-50ad5bdbf820
+# ╠═59efc02e-b488-4f46-b818-027fe5307699
+# ╠═b81af36c-8ea9-4f26-a6c7-31d484e6f5c9
+# ╠═6e5809c6-aa10-4055-a9c2-36e8ab892473
+# ╠═b0e7c4ac-3ef9-4444-bc05-548b3051533b
+# ╠═72372d94-dd32-4c72-8e3d-3cbea3f39c12
+# ╠═296d0311-548a-4201-8acb-c97016b96056
+# ╠═c6ef86a0-e9f9-4258-a3b1-d3e4659c8a24
+# ╠═2d2c3fdb-540a-4cad-816a-8a2ef4a12586
+# ╠═18701629-596d-4d04-85da-dc90bfc10b34
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
