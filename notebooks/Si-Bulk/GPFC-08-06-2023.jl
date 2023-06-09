@@ -169,8 +169,8 @@ end
 
 # ╔═╡ 2eeff1fd-139b-46be-bdc6-df9010fc865a
 begin
-	σₒ = 1.0                   # Kernel Scale
-	l = 1.0 * sqrt(28.085/2)	   # Length Scale
+	σₒ = 0.05                   # Kernel Scale
+	l = 0.4	   # Length Scale
 	σₑ = 1e-5 					# Energy Gaussian noise
 	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
 		
@@ -301,12 +301,6 @@ end;
 # ╔═╡ 8464a561-8c3a-417f-9836-608edf028576
 @time FC22 = Posterior(Kₘₘ2, K₂ₙₘ2, Target);
 
-# ╔═╡ e4e1fee2-979e-4dd8-b153-9f81eedfe938
-heatmap(1:48, 1:48, FC2, c = cgrad([:blue, :white, :red, :yellow]))
-
-# ╔═╡ 1fb8855b-7748-49d6-88ea-cef2b9b42308
-heatmap(1:48, 1:48, FC22, c = cgrad([:blue, :white, :red, :yellow]))
-
 # ╔═╡ bb0a791a-49bd-42d0-b376-33fc35454f7f
 begin
 	CarTr2 = eigVecG * inv(mass) * sqrt(2)
@@ -317,9 +311,6 @@ begin
 		end
 	end
 end
-
-# ╔═╡ 31f7b29e-30dc-48b2-bd46-5d0079ebdff9
-heatmap(1:48, 1:48, FC22_Car,c = cgrad([:blue, :white, :red, :yellow]))
 
 # ╔═╡ 269ab8c1-aa7e-46ee-b526-9cc68dda0c3f
 begin
@@ -387,10 +378,31 @@ force_ph
 @time FC2_ph = Posterior(Kₘₘ_ph, K₂ₙₘ_ph, Target_ph);
 
 # ╔═╡ 34028b79-0bb1-4b8b-a58f-f71826cc60ea
-FC2_ph
+FC2_ph/28.085
 
 # ╔═╡ 89b9d837-fa20-4cf5-9735-9d63e776ffe6
-heatmap(1:6,1:6,FC2_ph)
+heatmap(1:6,1:6,FC2_ph/28.085, c =cgrad([:blue, :white, :red, :yellow]))
+
+
+# ╔═╡ 832b550a-f09c-4c6a-9c62-684074eddff3
+Dyna = [[ 4.67251785e-01  0.00000000e+00  0.00000000e+00 -4.67287390e-01 -3.95301143e-18  3.95301143e-18]
+       [ 0.00000000e+00  4.67251785e-01  0.00000000e+00 -3.95301143e-18 -4.67287390e-01  3.95301143e-18]
+       [ 0.00000000e+00  0.00000000e+00  4.67251785e-01 3.95301143e-18  3.95301143e-18 -4.67287390e-01]
+       [-4.67287390e-01 -3.95301143e-18  3.95301143e-18 4.67251785e-01  0.00000000e+00  0.00000000e+00]
+       [-3.95301143e-18 -4.67287390e-01  3.95301143e-18 0.00000000e+00  4.67251785e-01  0.00000000e+00]
+       [ 3.95301143e-18  3.95301143e-18 -4.67287390e-01 0.00000000e+00  0.00000000e+00  4.67251785e-01]];
+
+# ╔═╡ 137f458f-8193-4bca-8fe5-a57a3771e23a
+heatmap(1:6,1:6,Dyna,c = cgrad([:blue, :white, :red, :yellow]))
+
+# ╔═╡ 4efeeb84-da04-48bc-a446-09d6c8ca4f88
+
+
+# ╔═╡ dc041a97-9cc4-412b-9af8-b60e2631a6a8
+begin
+	dis = LinRange(-0.02, 0.02, 11)
+	Eph_dis = zeros((11))
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1695,10 +1707,7 @@ version = "1.4.1+0"
 # ╠═9ca487fa-c00b-450b-8e09-bd9be49f0259
 # ╠═4179b011-9a6e-4add-8708-b4807e395503
 # ╠═8464a561-8c3a-417f-9836-608edf028576
-# ╠═e4e1fee2-979e-4dd8-b153-9f81eedfe938
-# ╠═1fb8855b-7748-49d6-88ea-cef2b9b42308
 # ╠═bb0a791a-49bd-42d0-b376-33fc35454f7f
-# ╠═31f7b29e-30dc-48b2-bd46-5d0079ebdff9
 # ╠═269ab8c1-aa7e-46ee-b526-9cc68dda0c3f
 # ╠═59042a26-be2d-436e-9293-d7965089b52c
 # ╠═70c137be-6ad0-4227-916b-0d8e3b18ef13
@@ -1712,5 +1721,9 @@ version = "1.4.1+0"
 # ╠═c60cca8b-3f20-4f9b-99ee-4343af791b8d
 # ╠═34028b79-0bb1-4b8b-a58f-f71826cc60ea
 # ╠═89b9d837-fa20-4cf5-9735-9d63e776ffe6
+# ╠═832b550a-f09c-4c6a-9c62-684074eddff3
+# ╠═137f458f-8193-4bca-8fe5-a57a3771e23a
+# ╠═4efeeb84-da04-48bc-a446-09d6c8ca4f88
+# ╠═dc041a97-9cc4-412b-9af8-b60e2631a6a8
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
