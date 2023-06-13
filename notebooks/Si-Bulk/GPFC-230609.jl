@@ -100,7 +100,21 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 end
 
 # ╔═╡ 74a1502a-9f73-4ab1-9651-cfd0bab22e6e
-
+function Coveriance_energy(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
+	dim = size(X,1)
+	num = size(X,2)
+	
+	#Covariance matrix for Energy prediction
+	#building Covariance matrix containers
+	K₀ₙₘ= zeros(((1+dim)*num))
+	for j in 1:num
+		#Fillin convarian of Energy vs Energy
+		K₀ₙₘ[j] = kernelfunction(k, X[:,j], xₒ, 0)
+		#Fillin convarian of Force vs Energy
+		K₀ₙₘ[(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] =  kernelfunction(k, X[:,j], xₒ, 1)
+	end
+	return K₀ₙₘ
+end
 
 # ╔═╡ 6750c757-7273-4fb8-9d64-429c326039e5
 function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
@@ -155,7 +169,7 @@ function Posterior(Marginal, Covariance, Target)
 	return Meanₚ 
 end
 
-# ╔═╡ 58a9f1e6-036d-4159-9e3a-fbfbcdabbdd6
+# ╔═╡ b7f028ab-02d6-4f31-b853-bc03d9e597c1
 begin
 	σₒ = 0.05                  # Kernel Scale
 	l = 0.4 			       # Length Scale
@@ -199,6 +213,19 @@ begin
 	CarTr = eigVecG * inv(mass) 
 end;
 
+
+# ╔═╡ 7fd952f6-1977-4814-8b24-2404e1b65fe5
+begin
+	eigVecG2 = 
+[[-0.70710678 -0.         -0.   -0.70710678  0.          0.     ]
+[ 0.          0.         -0.70710678  0.          0.70710678  0.]
+[ 0.         -0.70710678  0.  0.          0.         -0.70710678]
+[-0.70710678  0.          0.  0.70710678  0.          0.        ]
+[ 0.          0.         -0.70710678 0.         -0.70710678  0. ]
+[ 0.         -0.70710678  0.   0.          0.      0.70710678]];
+	PhononTr2 = eigVecG2' * mass * 1/sqrt(2)
+	CarTr2 = eigVecG2 * inv(mass) 
+end
 
 # ╔═╡ e9df18e8-3a22-496a-a895-4da302920fc4
 begin
@@ -245,13 +272,13 @@ PhononTr' * feature[1:6,1]
 @time K₂ₙₘ_ph = Coveriance_fc2(feature_ph, equi_ph, kernel);
 
 # ╔═╡ 5566b263-9c63-4c1b-9ac3-f9fc801e81b0
+@time K₀ₙₘ_ph = Coveriance_energy(feature_ph, equi_ph, kernel);
 
+# ╔═╡ 8f93c57c-f603-4669-9bfd-3092062a20f4
+@time Energy_ph = Posterior(Kₘₘ_ph, K₀ₙₘ_ph, Target_ph)
 
 # ╔═╡ 32464caa-89fd-4afb-aa57-f1ae4bd59d7f
 @time FC2_ph = Posterior(Kₘₘ_ph, K₂ₙₘ_ph, Target_ph);
-
-# ╔═╡ fedbd022-b25a-49b5-adc9-284cfd5dab26
-FC2_car = CarTr' * FC2_ph * CarTr
 
 # ╔═╡ 1c1298ed-b9bf-4b1a-9203-9457a650d43a
 FC2_ph
@@ -259,8 +286,75 @@ FC2_ph
 # ╔═╡ d72e27ce-623c-4803-bbb4-7dc361b7c0c9
 heatmap(1:6,1:6,FC2_ph,c = cgrad([:blue, :white, :red, :yellow]))
 
+# ╔═╡ fedbd022-b25a-49b5-adc9-284cfd5dab26
+FC2_car = CarTr' * FC2_ph * CarTr
+
 # ╔═╡ 423d7f71-4b53-43cb-a673-32974350530e
 heatmap(1:6,1:6,FC2_car,c = cgrad([:blue, :white, :red, :yellow]))
+
+# ╔═╡ ff68281e-ab02-4f76-b140-ff5a08c60c3c
+begin
+feature_ph2 = zeros((6,100))
+for jj in 1:100
+	for kk in 1:8
+		if kk == 1
+			feature_ph2[1:6,jj] = PhononTr2' * feature[1:6,jj]
+		else
+			feature_ph2[1:6,jj] = feature_ph2[1:6,jj] + PhononTr2' * feature[6*(kk-1)+1:6*kk,jj]
+		end 
+	end
+end	
+equi_ph2 = feature_ph2[1:6,1]
+end
+
+# ╔═╡ 108fe9aa-086d-4458-87a2-375ac9d4cb23
+begin
+	begin
+	force_ph2 = zeros((6,100))
+	for jj in 1:100
+		for kk in 1:8
+			if kk == 1
+				force_ph2[1:6,jj] = PhononTr2' * force_r[1:6,jj]
+			else
+				force_ph2[1:6,jj] = force_ph2[1:6,jj] + PhononTr2' * force_r[6*(kk-1)+1:6*kk,jj]
+			end 
+		end
+	end
+	Target_ph2 = zeros((700))
+	Target_ph2[1:100] = Target[1:100]
+	Target_ph2[101:700] = reshape(force_ph2,(600,1))
+	end
+end;
+
+# ╔═╡ 7f59ca7e-4aa2-490a-ab78-160ae05ebc9f
+begin
+	σₒ2 = 0.05                 # Kernel Scale
+	l2 = 0.4 			       # Length Scale
+	σₑ2 = 1e-5 					# Energy Gaussian noise
+		
+	kernel2 = σₒ2^2 * SqExponentialKernel() ∘ ScaleTransform(l2)
+end;
+
+# ╔═╡ 8d801edc-020a-49d4-b1db-f8ccb9fd1d71
+@time Kₘₘ_ph2 = Marginal(feature_ph2, kernel2, l2, σₑ2, σₙ);
+
+# ╔═╡ cb1fdf31-f9dd-47ad-b8c0-9b54e5a1b989
+feature_ph2
+
+# ╔═╡ 49e01406-d4eb-4c34-856f-1446ebb9c40e
+@time K₂ₙₘ_ph2 = Coveriance_fc2(feature_ph2, equi_ph2, kernel2);
+
+# ╔═╡ 9d87537d-4120-4dac-b204-6c8b7599cd1f
+@time FC2_ph2 = Posterior(Kₘₘ_ph2, K₂ₙₘ_ph2, Target_ph2);
+
+# ╔═╡ d3de4360-e78a-40e2-b03d-8ee1202721c2
+heatmap(1:6,1:6,FC2_ph2,c = cgrad([:blue, :white, :red, :yellow]))
+
+# ╔═╡ e5fd956a-7e6a-4641-92ff-0bbea1660014
+heatmap(1:6,1:6, CarTr2' * FC2_ph2 * CarTr2, c = cgrad([:blue, :white, :red, :yellow]))
+
+# ╔═╡ 26c77e3d-09ce-466e-a88e-c06710f36b67
+CarTr2' * FC2_ph2 * CarTr2
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -292,7 +386,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.0-beta4"
 manifest_format = "2.0"
-project_hash = "c5bdba02590b96b8bb589e309379559caf1a066e"
+project_hash = "6a4a926c5f57802535603968139623986d5d8735"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -1570,20 +1664,32 @@ version = "1.4.1+0"
 # ╠═74a1502a-9f73-4ab1-9651-cfd0bab22e6e
 # ╠═6750c757-7273-4fb8-9d64-429c326039e5
 # ╠═530bba0f-b8f3-4fe9-8c2f-2d9cb0af4411
-# ╠═58a9f1e6-036d-4159-9e3a-fbfbcdabbdd6
+# ╠═b7f028ab-02d6-4f31-b853-bc03d9e597c1
 # ╠═c5dff585-db72-4b77-a871-8fa706f1ce8d
 # ╠═658f1d70-c0f5-4a12-970c-8b063f3c1af3
 # ╠═0499dfa0-7b8f-4b40-bbbf-1a6853f38a2b
+# ╠═7fd952f6-1977-4814-8b24-2404e1b65fe5
 # ╠═e9df18e8-3a22-496a-a895-4da302920fc4
 # ╠═4c0b77e6-3775-4ce4-b4d5-28c7e5b6a0ff
 # ╠═1c8dc757-fb67-4682-97a4-f472ce461d3c
 # ╠═c82a137a-9f02-4e30-97e2-5f09f141cf3a
 # ╠═4ec4161a-f6e2-4284-884a-bfd2f96f8d5f
 # ╠═5566b263-9c63-4c1b-9ac3-f9fc801e81b0
+# ╠═8f93c57c-f603-4669-9bfd-3092062a20f4
 # ╠═32464caa-89fd-4afb-aa57-f1ae4bd59d7f
-# ╠═fedbd022-b25a-49b5-adc9-284cfd5dab26
 # ╠═1c1298ed-b9bf-4b1a-9203-9457a650d43a
 # ╠═d72e27ce-623c-4803-bbb4-7dc361b7c0c9
+# ╠═fedbd022-b25a-49b5-adc9-284cfd5dab26
 # ╠═423d7f71-4b53-43cb-a673-32974350530e
+# ╠═ff68281e-ab02-4f76-b140-ff5a08c60c3c
+# ╠═108fe9aa-086d-4458-87a2-375ac9d4cb23
+# ╠═7f59ca7e-4aa2-490a-ab78-160ae05ebc9f
+# ╠═8d801edc-020a-49d4-b1db-f8ccb9fd1d71
+# ╠═cb1fdf31-f9dd-47ad-b8c0-9b54e5a1b989
+# ╠═49e01406-d4eb-4c34-856f-1446ebb9c40e
+# ╠═9d87537d-4120-4dac-b204-6c8b7599cd1f
+# ╠═d3de4360-e78a-40e2-b03d-8ee1202721c2
+# ╠═e5fd956a-7e6a-4641-92ff-0bbea1660014
+# ╠═26c77e3d-09ce-466e-a88e-c06710f36b67
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

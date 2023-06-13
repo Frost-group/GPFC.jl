@@ -167,6 +167,84 @@ begin
 	end 
 end
 
+# ╔═╡ 4d024c6f-b89b-4a82-bae9-3eeff38c9067
+begin
+	A1 = [1 2 1 2 1 2 1 2 1 2 1 2 1 2 1 2];
+	A2 = [1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1];
+	A3 = [1 2 1 2 1 2 1 2 1 2 1 2 1 2 1 2];
+	A4 = [1 2 1 2 1 2 1 2 1 2 1 2 1 2 1 2];
+	A5 = [1 2 1 2 1 2 1 2 1 2 1 2 1 2 1 2];
+	A6 = [1 2 1 2 1 2 1 2 1 2 1 2 1 2 1 2];
+	A7 = [1 2 1 2 1 2 1 2 1 2 1 2 1 2 1 2];
+	A8 = [1 2 1 2 1 2 1 2 1 2 1 2 1 2 1 2];
+	begin
+		MatrixTransA1 = zeros((3*n ,3*n));
+	end;
+	for i in 1:n
+		MatrixTransA1[3*(i-1)+1 : 3*i, 3*(A1[i]-1)+1 : 3*A1[i] ] = Matrix( I, 3 , 3)
+	end 
+	begin
+		MatrixTransA2 = zeros((3*n ,3*n));
+	end;
+	for i in 1:n
+		MatrixTransA2[3*(i-1)+1 : 3*i, 3*(A2[i]-1)+1 : 3*A2[i] ] = Matrix( I, 3 , 3)
+	end 
+end
+
+# ╔═╡ 2947b8a0-1f22-46eb-bbca-d14b77d0275a
+
+
+# ╔═╡ fa66f980-beef-41e4-af9c-965d4ff6564e
+
+
+# ╔═╡ 4e0d59d9-d523-40ec-a522-dce81ba218fb
+begin
+	A2x2 = [1 2];
+	begin
+		n1 = size(A2x2, 2)
+		M2x2 = zeros((3*n1 ,3*n1));
+	end;
+	for i in 1:n1
+		M2x2[3*(i-1)+1 : 3*i, 3*(A2x2[i]-1)+1 : 3*A2x2[i] ] = Matrix( I, 3 , 3)
+	end 
+end
+
+# ╔═╡ c68713bb-fcd7-4310-9c9c-3bcb6bc85d6b
+begin
+	e = [[ 1 0 0 ]
+		 [ 0 1 0 ]	
+		 [ 0 0 1 ]]
+	a = [[ 0 1 0 ]
+		 [ 0 0 1 ]	
+		 [ 1 0 0 ]]
+	b = [[ 1 0 0 ]
+		 [ 0 0 1 ]	
+		 [ 0 1 0 ]]
+	c = [[ 0 1 0 ]
+		 [ 1 0 0 ]	
+		 [ 0 0 1 ]]
+	d = [[ 0 0 1 ]
+		 [ 0 1 0 ]	
+		 [ 1 0 0 ]]
+	f = [[ 0 0 1 ]
+		 [ 1 0 0 ]	
+		 [ 0 1 0 ]]
+end;
+
+# ╔═╡ 8d300860-4f72-4e9f-b068-05725be4e7dc
+S = [e, a, b, c, d, f]
+
+# ╔═╡ 8e0648c7-a0c5-4b37-9e49-33ef03671287
+S[1]
+
+# ╔═╡ bfa601f2-6471-4bf0-846a-a202f31da2fe
+begin
+	i = 5
+	j = 4
+	k = 6
+	S[i]*S[j] == S[k]
+end
+
 # ╔═╡ 7b68fb82-5ca8-4327-a11c-a1f727014992
 function Posterior(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
@@ -205,41 +283,76 @@ heatmap(1:48, 1:48, FC2,c = cgrad([:blue, :white, :red, :yellow]))
 # ╔═╡ 3038bfed-eb1b-49ef-a60e-c61536649e76
 heatmap(1:48, 1:48, MatrixTrans * FC2 * MatrixTrans,c = cgrad([:blue, :white, :red, :yellow])) 
 
-# ╔═╡ 4d024c6f-b89b-4a82-bae9-3eeff38c9067
-begin
-	A1 = [1 2 1 2 1 2 1 2 1 2 1 2 1 2 1 2];
-	A2 = [1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1];
-	A3 = [1 2 1 2 1 2 1 2 1 2 1 2 1 2 1 2];
-	A4 = [1 2 1 2 1 2 1 2 1 2 1 2 1 2 1 2];
-	A5 = [1 2 1 2 1 2 1 2 1 2 1 2 1 2 1 2];
-	A6 = [1 2 1 2 1 2 1 2 1 2 1 2 1 2 1 2];
-	A7 = [1 2 1 2 1 2 1 2 1 2 1 2 1 2 1 2];
-	A8 = [1 2 1 2 1 2 1 2 1 2 1 2 1 2 1 2];
-	begin
-		MatrixTransA1 = zeros((3*n ,3*n));
-	end;
-	for i in 1:n
-		MatrixTransA1[3*(i-1)+1 : 3*i, 3*(A1[i]-1)+1 : 3*A1[i] ] = Matrix( I, 3 , 3)
-	end 
-	begin
-		MatrixTransA2 = zeros((3*n ,3*n));
-	end;
-	for i in 1:n
-		MatrixTransA2[3*(i-1)+1 : 3*i, 3*(A2[i]-1)+1 : 3*A2[i] ] = Matrix( I, 3 , 3)
-	end 
-end
-
 # ╔═╡ ee342859-8f4f-4c45-b603-1d27e835db21
 heatmap(1:48, 1:48, MatrixTransA1 * FC2  ,c = cgrad([:blue, :white, :red, :yellow])) 
 
-# ╔═╡ 996266ce-471f-4d28-8885-de55f9b5afbf
-heatmap(1:48, 1:48, MatrixTransA2 * FC2  ,c = cgrad([:blue, :white, :red, :yellow])) 
+# ╔═╡ 93478bfc-28e5-4ed2-8a1f-00fa7d456ec7
+ArrFC2 = MatrixTrans * MatrixTransA2 * FC2 * MatrixTrans;
 
-# ╔═╡ c575d9f7-c805-401e-9e42-9a44bc74bd35
+# ╔═╡ 9498ac76-138c-4097-a578-bcfac3f8b338
+AFC = MatrixTrans' * FC2 * MatrixTrans
 
+# ╔═╡ c8772b79-5096-4a0a-ab32-b2cb9bb08939
+Int(size(FC2,1)/3)
 
-# ╔═╡ 299515fa-3e0a-4068-a09c-39ae9e9087f7
+# ╔═╡ a4979ade-ce82-4118-a64d-8f3476770ba4
+M2x2*FC2[1:6,1:6]
 
+# ╔═╡ 0dc9a2fb-eef9-4559-a300-a20ff2e326a4
+begin
+	FC = FC2
+	natom = Int(size(FC,2)/3)
+	displ = zeros((natom,natom))
+	for jj in 1:natom
+		for ii in 1:natom
+			displ[ii, jj] = norm(equi[3*(ii-1)+1:3*ii] - equi[3*(jj-1)+1:3*jj])
+		end
+	end
+end
+
+# ╔═╡ fff71f5e-e680-4815-9f17-da1e64b57eee
+heatmap(1:16, 1:16, displ)
+
+# ╔═╡ 6cf4ccf1-4b72-425c-b8d5-873c27b484c8
+ displ
+
+# ╔═╡ 7bde0fdb-63e0-4f81-ba68-d14ff0eef7fe
+begin
+	ii = 4
+	jj = 6
+	FC2[1:3,3*(ii-1)+1:3*ii]
+end
+
+# ╔═╡ b9872285-2534-4086-97bb-d08313a26afd
+equi[3*(jj-1)+1:3*jj] 
+
+# ╔═╡ 047f184c-30a6-4bda-bec5-d2eeb0d76288
+a * equi[3*(jj-1)+1:3*jj] 
+
+# ╔═╡ 35887aee-bb62-4a60-b23b-dbf4e0624b74
+equi[3*(ii-1)+1:3*ii] 
+
+# ╔═╡ e2be1b13-afa6-4c5c-af7f-ad2ec904e343
+S[1] * equi[3*(jj-1)+1:3*jj] 
+
+# ╔═╡ 82939bf3-8014-48d2-8b01-ae20ec699662
+
+S[3]' * FC2[1:3,3*(jj-1)+1:3*jj] * S[3]
+
+# ╔═╡ c36b7214-4303-4e75-811f-cb2fe156e83c
+S[2]' * FC2[1:3,3*(jj-1)+1:3*jj] * S[2]
+
+# ╔═╡ 5d53f320-2306-4825-a5a1-59904feb91e5
+FC2[1:3,3*(ii-1)+1:3*ii]
+
+# ╔═╡ 6131edd9-32d3-48f2-8e8c-e8cb71859cc7
+FC2[1:3,3*(jj-1)+1:3*jj]
+
+# ╔═╡ d53d389d-a62a-4ae8-8c9c-13615d5e45b2
+S[1]' * FC2[1:3,3*(jj-1)+1:3*jj] * S[1]
+
+# ╔═╡ c194e753-d828-4bc7-992b-3eb887fc083c
+S[i]*S[j]
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1511,8 +1624,30 @@ version = "1.4.1+0"
 # ╠═3038bfed-eb1b-49ef-a60e-c61536649e76
 # ╠═4d024c6f-b89b-4a82-bae9-3eeff38c9067
 # ╠═ee342859-8f4f-4c45-b603-1d27e835db21
-# ╠═996266ce-471f-4d28-8885-de55f9b5afbf
-# ╠═c575d9f7-c805-401e-9e42-9a44bc74bd35
-# ╠═299515fa-3e0a-4068-a09c-39ae9e9087f7
+# ╠═2947b8a0-1f22-46eb-bbca-d14b77d0275a
+# ╠═93478bfc-28e5-4ed2-8a1f-00fa7d456ec7
+# ╠═9498ac76-138c-4097-a578-bcfac3f8b338
+# ╠═fa66f980-beef-41e4-af9c-965d4ff6564e
+# ╠═c8772b79-5096-4a0a-ab32-b2cb9bb08939
+# ╠═4e0d59d9-d523-40ec-a522-dce81ba218fb
+# ╠═a4979ade-ce82-4118-a64d-8f3476770ba4
+# ╠═0dc9a2fb-eef9-4559-a300-a20ff2e326a4
+# ╠═fff71f5e-e680-4815-9f17-da1e64b57eee
+# ╠═6cf4ccf1-4b72-425c-b8d5-873c27b484c8
+# ╠═7bde0fdb-63e0-4f81-ba68-d14ff0eef7fe
+# ╠═c68713bb-fcd7-4310-9c9c-3bcb6bc85d6b
+# ╠═8d300860-4f72-4e9f-b068-05725be4e7dc
+# ╠═8e0648c7-a0c5-4b37-9e49-33ef03671287
+# ╠═b9872285-2534-4086-97bb-d08313a26afd
+# ╠═047f184c-30a6-4bda-bec5-d2eeb0d76288
+# ╠═82939bf3-8014-48d2-8b01-ae20ec699662
+# ╠═c36b7214-4303-4e75-811f-cb2fe156e83c
+# ╠═35887aee-bb62-4a60-b23b-dbf4e0624b74
+# ╠═5d53f320-2306-4825-a5a1-59904feb91e5
+# ╠═6131edd9-32d3-48f2-8e8c-e8cb71859cc7
+# ╠═d53d389d-a62a-4ae8-8c9c-13615d5e45b2
+# ╠═e2be1b13-afa6-4c5c-af7f-ad2ec904e343
+# ╠═bfa601f2-6471-4bf0-846a-a202f31da2fe
+# ╠═c194e753-d828-4bc7-992b-3eb887fc083c
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
