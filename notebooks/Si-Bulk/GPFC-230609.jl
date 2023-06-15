@@ -140,6 +140,9 @@ function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	return K₂ₙₘ
 end
 
+# ╔═╡ 686d8f55-0986-4b67-a54a-b43e2a581df5
+
+
 # ╔═╡ 530bba0f-b8f3-4fe9-8c2f-2d9cb0af4411
 function Posterior(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
@@ -171,7 +174,7 @@ end
 
 # ╔═╡ b7f028ab-02d6-4f31-b853-bc03d9e597c1
 begin
-	σₒ = 0.01                  # Kernel Scale
+	σₒ = 0.05                  # Kernel Scale
 	l = 0.4 			       # Length Scale
 	σₑ = 1e-5 					# Energy Gaussian noise
 	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
@@ -292,7 +295,6 @@ FC2_car = CarTr' * FC2_ph * CarTr
 # ╔═╡ 423d7f71-4b53-43cb-a673-32974350530e
 heatmap(1:6,1:6,FC2_car,c = cgrad([:blue, :white, :red, :yellow]))
 
-<<<<<<< HEAD
 # ╔═╡ ff68281e-ab02-4f76-b140-ff5a08c60c3c
 begin
 feature_ph2 = zeros((6,100))
@@ -345,6 +347,9 @@ feature_ph2
 # ╔═╡ 49e01406-d4eb-4c34-856f-1446ebb9c40e
 @time K₂ₙₘ_ph2 = Coveriance_fc2(feature_ph2, equi_ph2, kernel2);
 
+# ╔═╡ efbb3a1b-8b24-44f0-88a1-7f11a69a6208
+
+
 # ╔═╡ 9d87537d-4120-4dac-b204-6c8b7599cd1f
 @time FC2_ph2 = Posterior(Kₘₘ_ph2, K₂ₙₘ_ph2, Target_ph2);
 
@@ -356,18 +361,6 @@ heatmap(1:6,1:6, CarTr2' * FC2_ph2 * CarTr2, c = cgrad([:blue, :white, :red, :ye
 
 # ╔═╡ 26c77e3d-09ce-466e-a88e-c06710f36b67
 CarTr2' * FC2_ph2 * CarTr2
-=======
-# ╔═╡ 81e13f44-3750-4948-9feb-3365196036b6
-Dyna = [[ 4.67251785e-01  0.00000000e+00  0.00000000e+00 -4.67287390e-01 -3.95301143e-18  3.95301143e-18]
-       [ 0.00000000e+00  4.67251785e-01  0.00000000e+00 -3.95301143e-18 -4.67287390e-01  3.95301143e-18]
-       [ 0.00000000e+00  0.00000000e+00  4.67251785e-01 3.95301143e-18  3.95301143e-18 -4.67287390e-01]
-       [-4.67287390e-01 -3.95301143e-18  3.95301143e-18 4.67251785e-01  0.00000000e+00  0.00000000e+00]
-       [-3.95301143e-18 -4.67287390e-01  3.95301143e-18 0.00000000e+00  4.67251785e-01  0.00000000e+00]
-       [ 3.95301143e-18  3.95301143e-18 -4.67287390e-01 0.00000000e+00  0.00000000e+00  4.67251785e-01]];
-
-# ╔═╡ cb84c398-9324-4432-b9d1-1512b29ca122
-heatmap(1:6,1:6,Dyna,c = cgrad([:blue, :white, :red, :yellow]))
->>>>>>> dc226063187061bb2f878f41b1c43b80dc26bc0e
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1676,6 +1669,7 @@ version = "1.4.1+0"
 # ╠═8b74e9b8-a9d6-4361-a8f5-fdaa1f3ddc63
 # ╠═74a1502a-9f73-4ab1-9651-cfd0bab22e6e
 # ╠═6750c757-7273-4fb8-9d64-429c326039e5
+# ╠═686d8f55-0986-4b67-a54a-b43e2a581df5
 # ╠═530bba0f-b8f3-4fe9-8c2f-2d9cb0af4411
 # ╠═b7f028ab-02d6-4f31-b853-bc03d9e597c1
 # ╠═c5dff585-db72-4b77-a871-8fa706f1ce8d
@@ -1694,20 +1688,16 @@ version = "1.4.1+0"
 # ╠═d72e27ce-623c-4803-bbb4-7dc361b7c0c9
 # ╠═fedbd022-b25a-49b5-adc9-284cfd5dab26
 # ╠═423d7f71-4b53-43cb-a673-32974350530e
-<<<<<<< HEAD
 # ╠═ff68281e-ab02-4f76-b140-ff5a08c60c3c
 # ╠═108fe9aa-086d-4458-87a2-375ac9d4cb23
 # ╠═7f59ca7e-4aa2-490a-ab78-160ae05ebc9f
 # ╠═8d801edc-020a-49d4-b1db-f8ccb9fd1d71
 # ╠═cb1fdf31-f9dd-47ad-b8c0-9b54e5a1b989
 # ╠═49e01406-d4eb-4c34-856f-1446ebb9c40e
+# ╠═efbb3a1b-8b24-44f0-88a1-7f11a69a6208
 # ╠═9d87537d-4120-4dac-b204-6c8b7599cd1f
 # ╠═d3de4360-e78a-40e2-b03d-8ee1202721c2
 # ╠═e5fd956a-7e6a-4641-92ff-0bbea1660014
 # ╠═26c77e3d-09ce-466e-a88e-c06710f36b67
-=======
-# ╠═81e13f44-3750-4948-9feb-3365196036b6
-# ╠═cb84c398-9324-4432-b9d1-1512b29ca122
->>>>>>> dc226063187061bb2f878f41b1c43b80dc26bc0e
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

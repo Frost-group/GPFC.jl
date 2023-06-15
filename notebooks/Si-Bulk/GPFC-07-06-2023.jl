@@ -157,7 +157,7 @@ equi, feature, energy, force, Target = ASEFeatureTarget(
 
 # ╔═╡ d912eb16-a1df-4bec-aa7f-b03e1b63197e
 begin
-	A = [1 9 5 13 3 11 7 15 2 10 6 14 4 12 8 16];
+	 A = [1 9 5 13 3 11 7 15 2 10 6 14 4 12 8 16];
 	begin
 		n = size(A, 2)
 		MatrixTrans = zeros((3*n ,3*n));
@@ -208,6 +208,34 @@ begin
 		M2x2[3*(i-1)+1 : 3*i, 3*(A2x2[i]-1)+1 : 3*A2x2[i] ] = Matrix( I, 3 , 3)
 	end 
 end
+
+# ╔═╡ 952799b4-3616-4d96-a97b-2af69065e360
+function get_number(A)
+	dis = []
+	for ii in 1:size(A, 1)
+		for jj in 1:size(A, 1)
+			if A[ii, jj] ∉ dis
+				append!(dis, A[ii, jj])
+			end
+		end
+	end
+	return dis
+end
+
+# ╔═╡ 5d3b64f8-60e6-405f-b269-2f625a69fa4f
+begin
+	aa = 16;
+	bb = 1;
+end;
+
+# ╔═╡ 90781192-f3ff-4af4-8c47-598a304effae
+equi[3*(aa-1)+1:3*aa] - equi[3*(bb-1)+1:3*bb] 
+
+# ╔═╡ 0de7d373-8b47-4cdf-8bef-91454f06681f
+
+
+# ╔═╡ a4bd563d-092c-4ae0-8704-2673622b0c50
+
 
 # ╔═╡ c68713bb-fcd7-4310-9c9c-3bcb6bc85d6b
 begin
@@ -274,8 +302,8 @@ function Posterior(Marginal, Covariance, Target)
 	return Meanₚ 
 end
 
-# ╔═╡ b5733c4d-3b02-4956-bfa3-507a4add5ef7
-@time FC2 = Posterior(Kₘₘ, K₂ₙₘ, Target);
+# ╔═╡ 84f57c05-1859-4c68-9b83-face53afc558
+FC2= Posterior(Kₘₘ, K₂ₙₘ, Target);
 
 # ╔═╡ 03ee8b0c-141c-4334-8d64-0f157b919bc2
 heatmap(1:48, 1:48, FC2,c = cgrad([:blue, :white, :red, :yellow]))
@@ -313,8 +341,17 @@ end
 # ╔═╡ fff71f5e-e680-4815-9f17-da1e64b57eee
 heatmap(1:16, 1:16, displ)
 
-# ╔═╡ 6cf4ccf1-4b72-425c-b8d5-873c27b484c8
- displ
+# ╔═╡ fa552779-4a90-414c-9286-9f71de488346
+list_d = get_number(displ);
+
+# ╔═╡ 44441aaa-120b-4937-9781-c91027563b5b
+list = findall(x->x==list_d[2], displ)
+
+# ╔═╡ 0cb3cbaf-58f5-4ba8-91f8-9eee3f6c0d58
+list[1][2]
+
+# ╔═╡ 82ea1a46-1ef4-483e-a661-4d4df17503a5
+FC2[3*(aa-1)+1:3*aa,3*(bb-1)+1:3*bb]
 
 # ╔═╡ 7bde0fdb-63e0-4f81-ba68-d14ff0eef7fe
 begin
@@ -328,6 +365,9 @@ equi[3*(jj-1)+1:3*jj]
 
 # ╔═╡ 047f184c-30a6-4bda-bec5-d2eeb0d76288
 a * equi[3*(jj-1)+1:3*jj] 
+
+# ╔═╡ dee21ad5-83d8-4b96-9cde-a6668584b346
+S[2]' * equi[3*(jj-1)+1:3*jj]
 
 # ╔═╡ 35887aee-bb62-4a60-b23b-dbf4e0624b74
 equi[3*(ii-1)+1:3*ii] 
@@ -1618,7 +1658,7 @@ version = "1.4.1+0"
 # ╠═04190ee4-be5b-4e55-b1f9-402fc5b66e67
 # ╠═2ebb17db-efa0-4888-861e-f5e51518d311
 # ╠═4bfd2f70-6053-49c1-b709-4a08662403cf
-# ╠═b5733c4d-3b02-4956-bfa3-507a4add5ef7
+# ╠═84f57c05-1859-4c68-9b83-face53afc558
 # ╠═03ee8b0c-141c-4334-8d64-0f157b919bc2
 # ╠═d912eb16-a1df-4bec-aa7f-b03e1b63197e
 # ╠═3038bfed-eb1b-49ef-a60e-c61536649e76
@@ -1633,7 +1673,15 @@ version = "1.4.1+0"
 # ╠═a4979ade-ce82-4118-a64d-8f3476770ba4
 # ╠═0dc9a2fb-eef9-4559-a300-a20ff2e326a4
 # ╠═fff71f5e-e680-4815-9f17-da1e64b57eee
-# ╠═6cf4ccf1-4b72-425c-b8d5-873c27b484c8
+# ╠═fa552779-4a90-414c-9286-9f71de488346
+# ╠═952799b4-3616-4d96-a97b-2af69065e360
+# ╠═5d3b64f8-60e6-405f-b269-2f625a69fa4f
+# ╠═90781192-f3ff-4af4-8c47-598a304effae
+# ╠═82ea1a46-1ef4-483e-a661-4d4df17503a5
+# ╠═0de7d373-8b47-4cdf-8bef-91454f06681f
+# ╠═44441aaa-120b-4937-9781-c91027563b5b
+# ╠═0cb3cbaf-58f5-4ba8-91f8-9eee3f6c0d58
+# ╠═a4bd563d-092c-4ae0-8704-2673622b0c50
 # ╠═7bde0fdb-63e0-4f81-ba68-d14ff0eef7fe
 # ╠═c68713bb-fcd7-4310-9c9c-3bcb6bc85d6b
 # ╠═8d300860-4f72-4e9f-b068-05725be4e7dc
@@ -1642,6 +1690,7 @@ version = "1.4.1+0"
 # ╠═047f184c-30a6-4bda-bec5-d2eeb0d76288
 # ╠═82939bf3-8014-48d2-8b01-ae20ec699662
 # ╠═c36b7214-4303-4e75-811f-cb2fe156e83c
+# ╠═dee21ad5-83d8-4b96-9cde-a6668584b346
 # ╠═35887aee-bb62-4a60-b23b-dbf4e0624b74
 # ╠═5d53f320-2306-4825-a5a1-59904feb91e5
 # ╠═6131edd9-32d3-48f2-8e8c-e8cb71859cc7
