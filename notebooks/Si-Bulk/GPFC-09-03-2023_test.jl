@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.22
+# v0.19.25
 
 using Markdown
 using InteractiveUtils
@@ -22,8 +22,8 @@ end
 
 # ╔═╡ 4d441983-27b6-41e3-8fa9-5701f216a958
 begin
-	σₒ = 1.                   # Kernel Scale
-	l = 2.                     # Length Scale
+	σₒ = 0.05                   # Kernel Scale
+	l = 0.4# Length Scale
 	σₑ = 1e-5                   # Energy Gaussian noise
 	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
 		
@@ -310,15 +310,15 @@ isposdef(Kₘₘcomp)
 
 # ╔═╡ 3bc0a784-8fe0-44c5-ab24-720272983ba0
 begin
-	P2 = zeros(( 48, 48, 10))
-	P3= zeros(( 48, 48, 10))
-	nd = [1,5,10,15,20,30,40,50,60,80]
-	SumRule2 = zeros((10))
-	SumRule3 = zeros((10))
+	P2 = zeros(( 48, 48, 11))
+	P3= zeros(( 48, 48, 11))
+	nd = [1,5,10,15,20,30,40,50,60,80,100]
+	SumRule2 = zeros((11))
+	SumRule3 = zeros((11))
 end
 
 # ╔═╡ 00b01e3d-c240-453f-8cd5-c689e2136568
-@time for i in 1:10
+@time for i in 1:11
 	numt1 = nd[i]
 	equi, feature, energy, force, Target = ASEFeatureTarget(
     Featurefile, Energyfile, Forcefile, numt1, DIM);
@@ -333,7 +333,7 @@ end
 end 
 
 # ╔═╡ 9876110f-87ef-4a22-809e-9ab3604b5d73
-@time for i in 1:10
+@time for i in 1:11
 	numt1 = nd[i]
 	equi, feature, energy, force, Target = ASEFeatureTarget(
     Featurefile, Energyfile, Forcefile, numt1, DIM);
@@ -357,11 +357,11 @@ SumRule2
 SumRule1 = [523.12, 223.24, 125.33, 80.23, 23.2, 15.233, 1.0444, 0.59823, 0.3332, 0.31268]
 
 # ╔═╡ 3dd7a431-9b24-4d75-97f8-30a0e84cee86
-anim = @animate for i in 1:10
+anim = @animate for i in 1:11
 	plot(nd[1:i], [SumRule3[1:i], SumRule2[1:i]],
 		xlabel="Training points",
 		ylabel="Sum of FC2 element",
-		xlim = (-1, 90), 
+		xlim = (-1, 105), 
 		ylim = (-20.0, 700.0),
 		labels = ["Symmetry" "without"],
 		linewidth=3,
@@ -372,18 +372,23 @@ end
 # ╔═╡ 840edf28-2caa-4a6d-a181-6a848b00e2da
 gif(anim, "Si_FC2_SR_symmetry.gif", fps=2)
 
+# ╔═╡ 994ddd69-3d7f-45f5-851b-54ff5e47d678
+pyplot( legend = true, dpi=300 ) 
+
 # ╔═╡ 46f75667-894a-464a-ad4e-68e9ee608c93
 begin
-	plot(nd, [SumRule1, SumRule2],
+	plot(nd, SumRule2,
 			xlabel="Training points",
-			ylabel="Sum of FC2 element",
-			xlim = (-1, 90), 
+			ylabel="Sum of FC2 elements",
+			xlim = (-1, 105), 
 			ylim = (-20.0, 700.0),
-			labels = ["w/ Symmetry" "w/o"],
+			labels = ["Sumrule"],
+			c = "#C64756",
 			linewidth=3,
-			title="Sum Rule relation (Traning Data = " * "80"*")"
+			title="Sum Rule relation (Traning Data = " * "100"*")"
+		; dpi =300
 		)
-	savefig("Si_FC2_SR_symmetry.png")
+	savefig("Si_FC2_100.png")
 end
 
 # ╔═╡ 4064199c-66f7-4a92-b0d1-78409f9a1852
@@ -1885,6 +1890,7 @@ version = "1.4.1+0"
 # ╠═3ed49ed9-cbfb-484c-b65a-bd88386492af
 # ╠═3dd7a431-9b24-4d75-97f8-30a0e84cee86
 # ╠═840edf28-2caa-4a6d-a181-6a848b00e2da
+# ╠═994ddd69-3d7f-45f5-851b-54ff5e47d678
 # ╠═46f75667-894a-464a-ad4e-68e9ee608c93
 # ╠═4064199c-66f7-4a92-b0d1-78409f9a1852
 # ╠═a509528d-5212-4dad-950b-ad8f6a28f0dd
