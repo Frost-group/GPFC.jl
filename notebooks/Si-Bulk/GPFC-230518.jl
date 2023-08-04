@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.25
+# v0.19.22
 
 using Markdown
 using InteractiveUtils
@@ -30,12 +30,6 @@ begin
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 	kernelph = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(lph)
 end;
-
-# ╔═╡ 5ced8228-2722-406d-b130-eb56200d9a54
-@time Posterior(Kmm_ph, K₀ₙₘph, Target_ph)
-
-# ╔═╡ 79cb74ea-624a-4c38-bd1f-b8d6b6676660
-@time FC2_ph1 = Posterior(Kmm_ph, K₂ₙₘ, Target_ph)
 
 # ╔═╡ b9fd44ac-5e46-4bcb-8f0a-1c3386fed261
 function kernelfunction(k, x₁, x₂::Vector{Float64}, grad::Int64)
@@ -349,6 +343,9 @@ end
 # ╔═╡ 69ce4ca8-3f9a-45b1-8d34-e082b2ded73c
  @time K₀ₙₘph = Coveriance_energy(feature_ph, equi_ph, kernelph);
 
+# ╔═╡ 5ced8228-2722-406d-b130-eb56200d9a54
+@time Posterior(Kmm_ph, K₀ₙₘph, Target_ph)
+
 # ╔═╡ 0c90871e-9547-42ae-828d-4b717042b1b7
 @time Posterior(Kmm_ph, K₀ₙₘph, Target_ph)
 
@@ -378,6 +375,9 @@ end
 
 # ╔═╡ 6a2c51e5-4b0e-4df8-bec2-2cde173e0675
 @time K₂ₙₘ = Coveriance_fc2(feature_ph, equi_ph, kernelph);
+
+# ╔═╡ 79cb74ea-624a-4c38-bd1f-b8d6b6676660
+@time FC2_ph1 = Posterior(Kmm_ph, K₂ₙₘ, Target_ph)
 
 # ╔═╡ 7c9f2484-5967-446c-b41d-0bd84aec6680
 
