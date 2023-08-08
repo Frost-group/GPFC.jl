@@ -288,12 +288,6 @@ anim = @animate for i in 1:10
 	)
 end
 
-# ╔═╡ 0bf7d3b2-c1c0-4951-bbf6-ee584536519e
-begin
-	logEcar = log.(Ecar)
-	logEph = log.(Eph_Norm)
-end;
-
 # ╔═╡ 58e4d306-e9ad-4392-adf2-8a755f5a0d49
 anim5 = @animate for i in 1:10
 	scatter(nd[1:i], Ecar[1:i],
@@ -310,6 +304,15 @@ end
 # ╔═╡ 3b92af19-f351-4218-ae5a-6e52d7d638bc
 gif(anim5, "Si_FC2_CartesianCoord.gif", fps=2)
 
+# ╔═╡ 9f8ff9bf-c733-429f-927a-7cc8661158df
+gif(anim, "Si_FC2_phononCoord.gif", fps=2)
+
+# ╔═╡ 0bf7d3b2-c1c0-4951-bbf6-ee584536519e
+begin
+	logEcar = log.(Ecar)
+	logEph = log.(Eph_Norm)
+end;
+
 # ╔═╡ eddc79ae-06f0-4888-96a9-34e7863cb4d6
 anim2 = @animate for i in 1:10
 	scatter(nd[1:i], [logEcar[1:i], logEph[1:i]],
@@ -323,11 +326,63 @@ anim2 = @animate for i in 1:10
 	)
 end
 
-# ╔═╡ 9f8ff9bf-c733-429f-927a-7cc8661158df
-gif(anim, "Si_FC2_phononCoord.gif", fps=2)
-
 # ╔═╡ e8d49ee0-5681-413a-bc18-02de697f748d
 gif(anim2, "Si_LogFC2_phononCoord.gif", fps=2)
+
+# ╔═╡ be43d2ce-6a56-42c4-885f-f19d32673889
+begin
+	nd1 = [56, 58, 60, 68, 76, 88, 100]
+	Ecar1 = zeros((size(nd1,1)))
+	Eph1 = zeros((size(nd1,1)))
+	FC2car1 = zeros(( 48, 48, size(nd1,1)))
+	FC2ph1 = zeros(( 6, 6, size(nd1,1)))
+end;
+
+# ╔═╡ 111e2f6b-6daf-4bb1-bc6c-fba110c00892
+size(nd1,1)
+
+# ╔═╡ dfdd3e0a-7881-41dd-9476-aa2129511295
+@time for k in 1:size(nd1,1)
+	numt1 = nd1[k]
+	equi, feature, energy, force, Target = ASEFeatureTarget(Featurefile, Energyfile, Forcefile, numt1, DIM);
+
+	
+	equi_ph, feature_ph, Target_ph = phonon_Γ(2, feature, force, Target);
+	
+	Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
+	Kₘₘph = Marginal(feature_ph, kernel, l, σₑ, σₙ);
+	
+	K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
+	K₂ₙₘph = Coveriance_fc2(feature_ph, equi_ph, kernel);
+
+	FC2car1[:,:,k] = Posterior(Kₘₘ, K₂ₙₘ, Target);
+	FC2ph1[:,:,k] = Posterior(Kₘₘph, K₂ₙₘph, Target_ph);
+	
+	Ecar1[k] = abs(sum(FC2car1[:,:,k]))
+	Eph1[k] = abs(sum(FC2ph1[:,:,k]))
+end;
+
+# ╔═╡ b394e959-9100-4b5a-85ef-81b8e418da88
+	Ecar1
+
+# ╔═╡ 0872e938-e6c9-4627-a49b-038384205ed0
+ Eph_Norm1 = Eph1/28.085
+
+# ╔═╡ 972b9ec3-2cfe-41d3-8233-2236786e4002
+anim6 = @animate for i in 1:size(nd1,1)
+	scatter(nd1[1:i], [Ecar1[1:i], Eph_Norm1[1:i]],
+		xlabel="Training points",
+		ylabel="Sum of FC2 element",
+		xlim = (55, 105), 
+		ylim = (-0.1, 3),
+		labels = ["Cartesian" "Phonon"],
+		linewidth=3,
+		title="Sum Rule relation (Traning Data = " *string(nd1[i]) *")"
+	)
+end
+
+# ╔═╡ 631481cf-46c1-4631-9791-3077baa44d3b
+gif(anim6, "Si_Phonon40.gif", fps=2)
 
 # ╔═╡ 1359ca9c-b660-4b10-b960-79c1c28ccaac
 animCar = @animate for i in 1:10
@@ -1586,12 +1641,19 @@ version = "1.4.1+0"
 # ╠═0423c103-f4d6-4f7d-a544-d900a7b2a5ce
 # ╠═de5dbdbd-b5a5-4897-959e-fff4ec80263c
 # ╠═1dc911b2-2a04-442f-9bc3-429efb86ca9f
-# ╠═0bf7d3b2-c1c0-4951-bbf6-ee584536519e
 # ╠═58e4d306-e9ad-4392-adf2-8a755f5a0d49
 # ╠═3b92af19-f351-4218-ae5a-6e52d7d638bc
-# ╠═eddc79ae-06f0-4888-96a9-34e7863cb4d6
 # ╠═9f8ff9bf-c733-429f-927a-7cc8661158df
+# ╠═0bf7d3b2-c1c0-4951-bbf6-ee584536519e
+# ╠═eddc79ae-06f0-4888-96a9-34e7863cb4d6
 # ╠═e8d49ee0-5681-413a-bc18-02de697f748d
+# ╠═111e2f6b-6daf-4bb1-bc6c-fba110c00892
+# ╠═be43d2ce-6a56-42c4-885f-f19d32673889
+# ╠═dfdd3e0a-7881-41dd-9476-aa2129511295
+# ╠═b394e959-9100-4b5a-85ef-81b8e418da88
+# ╠═0872e938-e6c9-4627-a49b-038384205ed0
+# ╠═972b9ec3-2cfe-41d3-8233-2236786e4002
+# ╠═631481cf-46c1-4631-9791-3077baa44d3b
 # ╠═1359ca9c-b660-4b10-b960-79c1c28ccaac
 # ╠═313c1bad-98ee-452e-9f21-898b02a2e182
 # ╠═05d5a42f-216e-44fd-8bfa-96ac45b9a34e
