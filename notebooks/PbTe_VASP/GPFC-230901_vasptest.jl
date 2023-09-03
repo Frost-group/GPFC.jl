@@ -103,19 +103,26 @@ function VASP_input(vasph5)
 		rev_forces[:, ii] = forceset[:, (datasize+1) - ii]
 		rev_energy[ii] = ETOTAL[(datasize+1) - ii]
 	end
+
+	equi = rev_feature[:,1]
 	
 	Target = zeros((1+3*number_ions, datasize))
 	Target[1,:] = rev_energy
 	Target[2:1+3*number_ions,:] = rev_forces
 
-	return rev_feature, rev_energy, rev_forces, Target 
+	
+	
+	return equi, rev_feature, rev_energy, rev_forces, Target 
 end;
 
 # ╔═╡ 54de44f9-3490-4eb4-bbb0-b865e3c2c551
- feature, ener, forceset, Target =  VASP_input("vaspout-Si.h5");
+ equi, feature, ener, forceset, Target1 =  VASP_input("vaspout.h5");
 
 # ╔═╡ c10ef1c2-0344-43ea-ac3c-ae551ef9d40c
 ener
+
+# ╔═╡ 7318fe5c-8699-4fc7-ac8a-b8daae037187
+feature[:,1:2]
 
 # ╔═╡ 88ad0fc0-88c1-4f2e-ba31-1c91ba37dc41
 begin
@@ -124,12 +131,18 @@ begin
 	rev_energy = zeros(datasize)
 end;
 
+# ╔═╡ 3508b9b4-0425-4bc6-a59e-d35617310478
+size(ener)
+
 # ╔═╡ ad0e0c99-03e1-4a48-9a6b-5b9f3c97f1e5
 for ii in 1:datasize
 	rev_feature[:, ii] = feature[:, (datasize+1) - ii]
 	rev_forces[:, ii] = forceset[:, (datasize+1) - ii]
 	rev_energy[ii] = ETOTAL[(datasize+1) - ii]
 end
+
+# ╔═╡ 47b9f6db-dd61-4667-ac86-c3f16fcd610e
+feature
 
 # ╔═╡ 7855c850-7052-4887-8182-1ff6dc94e530
 rev_feature[:,5000+1-5] == feature[:,5]
@@ -1369,8 +1382,11 @@ version = "1.4.1+0"
 # ╠═5baf8f58-63a9-46b7-8ab3-f264a3cedbbf
 # ╠═54de44f9-3490-4eb4-bbb0-b865e3c2c551
 # ╠═c10ef1c2-0344-43ea-ac3c-ae551ef9d40c
+# ╠═7318fe5c-8699-4fc7-ac8a-b8daae037187
 # ╠═88ad0fc0-88c1-4f2e-ba31-1c91ba37dc41
+# ╠═3508b9b4-0425-4bc6-a59e-d35617310478
 # ╠═ad0e0c99-03e1-4a48-9a6b-5b9f3c97f1e5
+# ╠═47b9f6db-dd61-4667-ac86-c3f16fcd610e
 # ╠═7855c850-7052-4887-8182-1ff6dc94e530
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

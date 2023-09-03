@@ -178,6 +178,9 @@ end;
 equi, feature, energy, force, Target = ASEFeatureTarget(
     Featurefile, Energyfile, Forcefile, Num, DIM);
 
+# ╔═╡ 34c623be-f575-4489-9a95-b12d51b72e9e
+Target 
+
 # ╔═╡ a4f30631-7e68-42c3-842f-88889cf1b96b
 function phonon_Γ(natom::Int64, feature, force, Target)
 	dim = 3 * natom
@@ -758,10 +761,10 @@ uuid = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
 version = "0.72.9"
 
 [[deps.GR_jll]]
-deps = ["Artifacts", "Bzip2_jll", "Cairo_jll", "FFMPEG_jll", "Fontconfig_jll", "GLFW_jll", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "Pixman_jll", "Qt6Base_jll", "Zlib_jll", "libpng_jll"]
-git-tree-sha1 = "f61f768bf090d97c532d24b64e07b237e9bb7b6b"
+deps = ["Artifacts", "Bzip2_jll", "Cairo_jll", "FFMPEG_jll", "Fontconfig_jll", "FreeType2_jll", "GLFW_jll", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "Pixman_jll", "Qt6Base_jll", "Zlib_jll", "libpng_jll"]
+git-tree-sha1 = "1596bab77f4f073a14c62424283e7ebff3072eca"
 uuid = "d2c73de3-f751-5644-a686-071e5b155ba9"
-version = "0.72.9+0"
+version = "0.72.9+1"
 
 [[deps.Gettext_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Libiconv_jll", "Pkg", "XML2_jll"]
@@ -1634,6 +1637,7 @@ version = "1.4.1+0"
 # ╠═f41bd4f2-ba83-478b-b58b-3ced8ce22305
 # ╠═0525603c-0217-4149-a8f2-696ad1b5a560
 # ╠═b987c7dc-1831-4193-b84e-28ad829e8057
+# ╠═34c623be-f575-4489-9a95-b12d51b72e9e
 # ╠═a4f30631-7e68-42c3-842f-88889cf1b96b
 # ╠═f12c0b3e-e110-415b-9ddc-45362e642a9d
 # ╠═876246d1-019a-4ac3-98d1-4456a4cc90d9
