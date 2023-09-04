@@ -185,9 +185,9 @@ end
 
 # ╔═╡ 62eed7d8-19d8-4fce-8fa2-01726bb2d09a
 begin
-	σₒ = 0.05                   # Kernel Scale
-	l = 0.4	   # Length Scale
-	σₑ = 1e-5 					# Energy Gaussian noise
+	σₒ = 0.1                   # Kernel Scale
+	l = 1.1                     # Length Scale
+	σₑ = 1e-5                 # Energy Gaussian noise
 	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
 		
 	Num = 100                   # Number of training points
@@ -216,9 +216,6 @@ Target
 # ╔═╡ bf6c364a-d611-4386-afaf-92e16c5e2035
 size(Target,2)
 
-# ╔═╡ 13e50036-4545-47ac-b9e4-35ce5b66a42a
-equi[46:48]
-
 # ╔═╡ 6197b235-f2d0-4f20-93e7-b2ffc390949c
 begin
 	equi2 = [0.250, 0.250, 0.250, 0.750, 0.250, 0.250, 0.250, 0.750, 0.250, 0.750, 0.750, 0.250, 0.250, 0.250, 0.750, 0.750, 0.250, 0.750, 0.250, 0.750, 0.750, 0.750,  0.750, 0.750, 0.000, 0.000, 0.000, 0.500, 0.000, 0.000, 0.000, 0.500, 0.000, 0.500,  0.500, 0.000, 0.000, 0.000, 0.500, 0.500, 0.000, 0.500, 0.000, 0.500, 0.500, 0.500, 0.500, 0.500]
@@ -241,7 +238,7 @@ end
 
 # ╔═╡ 52c6f8ae-a11e-46c6-881f-b50fc59caa14
 begin
-	ii = 20
+	ii = 50
 	Kₘₘ = Marginal(feature[:,1:ii], kernel, l, σₑ, σₙ)
 	Kₙₘ = Coveriance_fc2(feature[:,1:ii], equi2, kernel)
 	FC2 = Posterior(Kₘₘ , Kₙₘ , Set_Target(Target, ii))
@@ -251,7 +248,7 @@ end;
 Target_vec = zeros(((1+3*number_ions) * ii, 1));
 
 # ╔═╡ 820148c5-7536-4f4d-b5cb-a0e57ee81b2b
-Target_vec
+Target_vec;
 
 # ╔═╡ cbc683a9-a9b0-4ef9-896f-0bf77b376a7d
 Target[2:1+3*16, ii]
@@ -263,6 +260,9 @@ Target_vec[1:ii] = Target[1,1:ii]
 for jj in 1:ii
 	Target_vec[ii + 1 + ((jj - 1) * 3 * number_ions): ii + (jj * 3 * number_ions) ] = Target[2: 1 + 3 * number_ions, jj]
 end
+
+# ╔═╡ 8c2293af-a8b5-4c1f-8f3f-3fdcaaf71bb2
+sum(FC2)
 
 # ╔═╡ 00866a2d-bf6b-425c-a7ae-f2df8b1d7f5a
 heatmap(1:size(FC2[:,:],1),
@@ -1598,10 +1598,10 @@ version = "1.4.1+0"
 # ╠═5f098415-498a-4b93-bd4a-92d1332ba489
 # ╠═820148c5-7536-4f4d-b5cb-a0e57ee81b2b
 # ╠═bf6c364a-d611-4386-afaf-92e16c5e2035
-# ╠═13e50036-4545-47ac-b9e4-35ce5b66a42a
 # ╠═6197b235-f2d0-4f20-93e7-b2ffc390949c
 # ╠═fa5f9e8f-39f1-4909-8bfd-de5668f248e5
 # ╠═52c6f8ae-a11e-46c6-881f-b50fc59caa14
+# ╠═8c2293af-a8b5-4c1f-8f3f-3fdcaaf71bb2
 # ╠═00866a2d-bf6b-425c-a7ae-f2df8b1d7f5a
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
