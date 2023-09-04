@@ -276,6 +276,12 @@ heatmap(1:size(FC2[:,:],1),
 		    #title="FC2 (Traning Data = " *string(nd[i]) *")"
 )
 
+# ╔═╡ 15877111-ee84-4d32-9f5c-ac39dad5bfdb
+k1 = σₑ * exp(-l/norm(equi2-feature[:,100]))
+
+# ╔═╡ 3906cf72-daea-4386-958f-23c15a66dfde
+
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -1603,5 +1609,7 @@ version = "1.4.1+0"
 # ╠═52c6f8ae-a11e-46c6-881f-b50fc59caa14
 # ╠═8c2293af-a8b5-4c1f-8f3f-3fdcaaf71bb2
 # ╠═00866a2d-bf6b-425c-a7ae-f2df8b1d7f5a
+# ╠═15877111-ee84-4d32-9f5c-ac39dad5bfdb
+# ╠═3906cf72-daea-4386-958f-23c15a66dfde
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
