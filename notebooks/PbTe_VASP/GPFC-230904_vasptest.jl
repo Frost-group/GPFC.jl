@@ -185,10 +185,10 @@ end
 
 # ╔═╡ 62eed7d8-19d8-4fce-8fa2-01726bb2d09a
 begin
-	σₒ = 0.1                   # Kernel Scale
-	l = 1.1                     # Length Scale
-	σₑ = 1e-5                 # Energy Gaussian noise
-	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
+	σₒ = 0.1                  # Kernel Scale
+	l = 3.3      	           # Length Scale
+	σₑ = 1e-3                  # Energy Gaussian noise
+	σₙ = 1e-6                  # Force Gaussian noise for Model 2 (σₑ independent)
 		
 	Num = 100                   # Number of training points
 	DIM = 3                     # Dimension of Materials
@@ -199,7 +199,10 @@ begin
 end;
 
 # ╔═╡ 0ec90097-4c63-4d6a-9662-6d91c5f38ef9
- equi, feature, ener, forceset, Target =  VASP_input("vaspout.h5");
+ equi, feature, ener, forceset, Target =  VASP_input("vaspout_Lucius.h5");
+
+# ╔═╡ 9896f030-19a8-44f6-87c2-92623fad87b7
+
 
 # ╔═╡ b4745497-2d29-4c7b-b5d8-62648bd05f40
 Target[1,:]
@@ -212,6 +215,12 @@ Target
 
 # ╔═╡ 5f098415-498a-4b93-bd4a-92d1332ba489
 Target
+
+# ╔═╡ 352208aa-b2bb-4534-a038-161dfa006c8f
+feature[:,1]
+
+# ╔═╡ 0ae80efd-e5ed-43c1-8446-e0f17fde6df3
+feature[:,5000]
 
 # ╔═╡ bf6c364a-d611-4386-afaf-92e16c5e2035
 size(Target,2)
@@ -236,6 +245,9 @@ function Set_Target(Target, ii)
 	return Target_vec
 end 
 
+# ╔═╡ 8f7d5bc2-1e78-4c7b-9c1c-6627d6302fb1
+
+
 # ╔═╡ 52c6f8ae-a11e-46c6-881f-b50fc59caa14
 begin
 	ii = 50
@@ -243,6 +255,9 @@ begin
 	Kₙₘ = Coveriance_fc2(feature[:,1:ii], equi2, kernel)
 	FC2 = Posterior(Kₘₘ , Kₙₘ , Set_Target(Target, ii))
 end;
+
+# ╔═╡ e4d865c3-3d46-4701-b5c6-af62988a2eac
+sum(FC2)
 
 # ╔═╡ 3db6856c-8b64-41ee-ad66-a41628c6f2bc
 Target_vec = zeros(((1+3*number_ions) * ii, 1));
@@ -1593,7 +1608,9 @@ version = "1.4.1+0"
 # ╠═54231561-98ba-4a6d-b8ab-6980453fd424
 # ╠═5ace86b0-fb79-4f00-83e4-51b573e82a44
 # ╠═62eed7d8-19d8-4fce-8fa2-01726bb2d09a
+# ╠═e4d865c3-3d46-4701-b5c6-af62988a2eac
 # ╠═0ec90097-4c63-4d6a-9662-6d91c5f38ef9
+# ╠═9896f030-19a8-44f6-87c2-92623fad87b7
 # ╠═b4745497-2d29-4c7b-b5d8-62648bd05f40
 # ╠═0685ec22-0a96-4bf2-a858-5ccb0f73e90e
 # ╠═3db6856c-8b64-41ee-ad66-a41628c6f2bc
@@ -1602,10 +1619,13 @@ version = "1.4.1+0"
 # ╠═1169fc0b-5167-465a-9e02-8b6c975c05aa
 # ╠═fd9488fb-78a4-45b9-b368-2f3447fdbb2c
 # ╠═5f098415-498a-4b93-bd4a-92d1332ba489
+# ╠═352208aa-b2bb-4534-a038-161dfa006c8f
+# ╠═0ae80efd-e5ed-43c1-8446-e0f17fde6df3
 # ╠═820148c5-7536-4f4d-b5cb-a0e57ee81b2b
 # ╠═bf6c364a-d611-4386-afaf-92e16c5e2035
 # ╠═6197b235-f2d0-4f20-93e7-b2ffc390949c
 # ╠═fa5f9e8f-39f1-4909-8bfd-de5668f248e5
+# ╠═8f7d5bc2-1e78-4c7b-9c1c-6627d6302fb1
 # ╠═52c6f8ae-a11e-46c6-881f-b50fc59caa14
 # ╠═8c2293af-a8b5-4c1f-8f3f-3fdcaaf71bb2
 # ╠═00866a2d-bf6b-425c-a7ae-f2df8b1d7f5a
