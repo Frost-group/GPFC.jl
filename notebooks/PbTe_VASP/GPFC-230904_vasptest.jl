@@ -185,8 +185,8 @@ end
 
 # ╔═╡ 62eed7d8-19d8-4fce-8fa2-01726bb2d09a
 begin
-	σₒ = 0.1                  # Kernel Scale
-	l = 3.3      	           # Length Scale
+	σₒ = 1.0                  # Kernel Scale
+	l = 1.5     	           # Length Scale
 	σₑ = 1e-3                  # Energy Gaussian noise
 	σₙ = 1e-6                  # Force Gaussian noise for Model 2 (σₑ independent)
 		
@@ -250,7 +250,7 @@ end
 
 # ╔═╡ 52c6f8ae-a11e-46c6-881f-b50fc59caa14
 begin
-	ii = 50
+	ii = 25
 	Kₘₘ = Marginal(feature[:,1:ii], kernel, l, σₑ, σₙ)
 	Kₙₘ = Coveriance_fc2(feature[:,1:ii], equi2, kernel)
 	FC2 = Posterior(Kₘₘ , Kₙₘ , Set_Target(Target, ii))
@@ -295,7 +295,7 @@ heatmap(1:size(FC2[:,:],1),
 k1 = σₑ * exp(-l/norm(equi2-feature[:,100]))
 
 # ╔═╡ 3906cf72-daea-4386-958f-23c15a66dfde
-
+FC2
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
