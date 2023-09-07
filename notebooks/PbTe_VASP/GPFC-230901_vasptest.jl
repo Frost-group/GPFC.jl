@@ -46,11 +46,17 @@ begin
 
 end;
 
+# ╔═╡ 5e0d0404-d42a-4a52-8330-322e938b9cdf
+lattice_vectors 
+
 # ╔═╡ e86077f5-7f3e-409a-89f0-4d8599957d12
 energy 
 
 # ╔═╡ 775bf251-ecc9-4a9b-beb4-d2fed8eca3d1
 intermediate_position_ions
+
+# ╔═╡ e0cf15ba-81bb-4b33-8412-da689388d2bb
+sum(forces)
 
 # ╔═╡ b62d060c-63b6-4e3e-9e15-6f19b72f18a0
 sum(forces[:,:,5000])
@@ -1480,8 +1486,10 @@ version = "1.4.1+0"
 # ╔═╡ Cell order:
 # ╠═aa1bebd0-48ae-11ee-162f-1d0975006ab7
 # ╠═8f76c240-0b4a-4b7b-8be6-ff9f44e9845e
+# ╠═5e0d0404-d42a-4a52-8330-322e938b9cdf
 # ╠═e86077f5-7f3e-409a-89f0-4d8599957d12
 # ╠═775bf251-ecc9-4a9b-beb4-d2fed8eca3d1
+# ╠═e0cf15ba-81bb-4b33-8412-da689388d2bb
 # ╠═b62d060c-63b6-4e3e-9e15-6f19b72f18a0
 # ╠═11dae893-03f9-4619-ba29-ddf3223e2a5a
 # ╠═bcd177ba-76f3-429a-9bb8-e2eaa87912bc
