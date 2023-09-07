@@ -187,7 +187,7 @@ end
 begin
 	σₒ = 0.1               # Kernel Scale
 	l = 1.0  					# Length Scale
-	σₑ = 1.0                  # Energy Gaussian noise
+	σₑ = 1e-5                 # Energy Gaussian noise
 	σₙ = 1e-6                  # Force Gaussian noise for Model 2 (σₑ independent)
 		
 	Num = 100                   # Number of training points
