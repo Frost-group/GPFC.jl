@@ -185,9 +185,9 @@ end
 
 # ╔═╡ 62eed7d8-19d8-4fce-8fa2-01726bb2d09a
 begin
-	σₒ = 0.05                 # Kernel Scale
-	l = 0.4  					# Length Scale
-	σₑ = 1e-5                  # Energy Gaussian noise
+	σₒ = 0.1               # Kernel Scale
+	l = 1.0  					# Length Scale
+	σₑ = 1.0                  # Energy Gaussian noise
 	σₙ = 1e-6                  # Force Gaussian noise for Model 2 (σₑ independent)
 		
 	Num = 100                   # Number of training points
@@ -303,21 +303,40 @@ for k in 1:size(Num1,1)
 	ll = Num1[k]
 	Kₘₘ = Marginal(feature[:,1:ll], kernel, l, σₑ, σₙ)
 	Kₙₘ = Coveriance_fc2(feature[:,1:ll], equi2, kernel)
-	FC2[:,:,k] = Posterior(Kₘₘ , Kₙₘ , Set_Target(Target, ll))
-	Sumrule[k] = sum(FC2[:,:,k])
+	FC2Matrix[:,:,k] = Posterior(Kₘₘ , Kₙₘ , Set_Target(Target, ll))
+	Sumrule[k] = sum(FC2Matrix[:,:,k])
 end;
 
 # ╔═╡ 1e6904aa-0c4f-4ea6-a3ee-a0d650a65417
-
+anim1= @animate for i in 1:size(Num1,1)
+	scatter(Num1[1:i], Sumrule[1:i],
+		xlabel="Training points",
+		ylabel="Sum of FC2 element",
+		xlim = (1, 205), 
+		ylim = (-0.1, 1000),
+		labels = "Cartesian",
+		linewidth=3,
+		title="Sum Rule relation (Traning Data = " *string(Num1[i]) *")"
+	)
+end
 
 # ╔═╡ 5a699dcb-640f-4ca0-9f54-d31063943d0b
-
+gif(anim1, "PbTe_Sum.gif", fps=2)
 
 # ╔═╡ bf5e644a-9e34-4274-85fe-d97fa552aad5
-
+anim2 = @animate for i in 1:size(Num1,1)
+	heatmap(1:size(FC2Matrix[:,:,i],1),
+		    1:size(FC2Matrix[:,:,i],2), FC2Matrix[:,:,i],
+		    c=cgrad([:blue, :white, :red, :yellow]),
+			aspectratio=:equal,
+			size=(700, 700),
+		    xlabel="feature coord. (n x d)",
+			ylabel="feature coord. (n x d)",
+		    title="FC2 (Traning Data = " *string(Num1[i]) *")")
+end
 
 # ╔═╡ cb9e7305-7405-4e6c-9eae-1a9eae9b2f69
-
+gif(anim2, "PbTe_FC2.gif", fps=2)
 
 # ╔═╡ 15877111-ee84-4d32-9f5c-ac39dad5bfdb
 k1 = σₑ * exp(-l/norm(equi2-feature[:,100]))
