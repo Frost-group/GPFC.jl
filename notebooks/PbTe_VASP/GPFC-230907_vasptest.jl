@@ -17,7 +17,7 @@ end
 
 # ╔═╡ fcd73375-6a50-4f3e-b6f2-4b30966ca34b
 begin
-	path = "2023Sep\\08\\vaspout_230907_ISIF3_1.h5"
+	path = "2023Sep\\08\\vaspout_230907_ISIF2_2.h5"
 	file = h5open(path, "r")
 
 	# Ionic info
