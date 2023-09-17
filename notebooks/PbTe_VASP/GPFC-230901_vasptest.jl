@@ -17,7 +17,7 @@ end
 
 # ╔═╡ 8f76c240-0b4a-4b7b-8be6-ff9f44e9845e
 begin
-	path = "2023Sep/13/vaspout_230913_ISIF2_GS.h5"
+	path = "2023Sep/15/vaspout_2.h5"
 	file = h5open(path, "r")
 
 	# Ionic info
@@ -46,20 +46,17 @@ begin
 
 end;
 
-# ╔═╡ 4ac0e5a3-ed03-4f6a-a6f1-4df176feeeb4
-forces
-
 # ╔═╡ e86077f5-7f3e-409a-89f0-4d8599957d12
 energy 
+
+# ╔═╡ 4ac0e5a3-ed03-4f6a-a6f1-4df176feeeb4
+forces
 
 # ╔═╡ 775bf251-ecc9-4a9b-beb4-d2fed8eca3d1
 intermediate_position_ions
 
 # ╔═╡ b62d060c-63b6-4e3e-9e15-6f19b72f18a0
 sum(forces[:,:,28])
-
-# ╔═╡ 11dae893-03f9-4619-ba29-ddf3223e2a5a
-intermediate_position_ions
 
 # ╔═╡ bcd177ba-76f3-429a-9bb8-e2eaa87912bc
 begin
@@ -1508,11 +1505,10 @@ version = "1.4.1+0"
 # ╔═╡ Cell order:
 # ╠═aa1bebd0-48ae-11ee-162f-1d0975006ab7
 # ╠═8f76c240-0b4a-4b7b-8be6-ff9f44e9845e
-# ╠═4ac0e5a3-ed03-4f6a-a6f1-4df176feeeb4
 # ╠═e86077f5-7f3e-409a-89f0-4d8599957d12
+# ╠═4ac0e5a3-ed03-4f6a-a6f1-4df176feeeb4
 # ╠═775bf251-ecc9-4a9b-beb4-d2fed8eca3d1
 # ╠═b62d060c-63b6-4e3e-9e15-6f19b72f18a0
-# ╠═11dae893-03f9-4619-ba29-ddf3223e2a5a
 # ╠═bcd177ba-76f3-429a-9bb8-e2eaa87912bc
 # ╠═5baf8f58-63a9-46b7-8ab3-f264a3cedbbf
 # ╠═54de44f9-3490-4eb4-bbb0-b865e3c2c551
