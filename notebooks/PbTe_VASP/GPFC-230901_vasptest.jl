@@ -55,6 +55,12 @@ energy
 # ╔═╡ b77427fc-3804-46e7-8930-755eb59960e9
 energiesXML = [-66.12410588 , -66.12414728,	-66.12421967, -66.12432280, -66.05386191, -66.05386444,- 66.05386692, -66.05386802]
 
+# ╔═╡ e39015dd-7df4-4aaf-8458-c0f8a3814787
+
+
+# ╔═╡ 08acfc94-d941-48bd-ab29-cb760b8bae49
+datasize2 =size(intermediate_position_ions,3)
+
 # ╔═╡ 4ac0e5a3-ed03-4f6a-a6f1-4df176feeeb4
 forces
 
@@ -62,7 +68,10 @@ forces
 intermediate_position_ions
 
 # ╔═╡ b62d060c-63b6-4e3e-9e15-6f19b72f18a0
-sum(forces[:,:,10])
+sum(forces[2,1:16,10])
+
+# ╔═╡ 591d63b2-1491-4224-b1b6-fa759ad87310
+forces[1,1:16,1]
 
 # ╔═╡ bcd177ba-76f3-429a-9bb8-e2eaa87912bc
 begin
@@ -1404,9 +1413,12 @@ version = "1.4.1+0"
 # ╠═8f76c240-0b4a-4b7b-8be6-ff9f44e9845e
 # ╠═e86077f5-7f3e-409a-89f0-4d8599957d12
 # ╠═b77427fc-3804-46e7-8930-755eb59960e9
+# ╠═e39015dd-7df4-4aaf-8458-c0f8a3814787
+# ╠═08acfc94-d941-48bd-ab29-cb760b8bae49
 # ╠═4ac0e5a3-ed03-4f6a-a6f1-4df176feeeb4
 # ╠═775bf251-ecc9-4a9b-beb4-d2fed8eca3d1
 # ╠═b62d060c-63b6-4e3e-9e15-6f19b72f18a0
+# ╠═591d63b2-1491-4224-b1b6-fa759ad87310
 # ╠═bcd177ba-76f3-429a-9bb8-e2eaa87912bc
 # ╠═5baf8f58-63a9-46b7-8ab3-f264a3cedbbf
 # ╠═54de44f9-3490-4eb4-bbb0-b865e3c2c551
