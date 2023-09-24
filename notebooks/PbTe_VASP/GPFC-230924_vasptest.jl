@@ -74,11 +74,241 @@ function VASP_input(vasph5)
 	return equi, rev_feature, rev_energy, rev_forces, Target 
 end;
 
-# ╔═╡ 2deb3823-7721-4ecb-9887-58e0af5c48b0
-equi, feature, energy, forces, Target = VASP_input("2023Sep/22/vaspout_1.h5");
+# ╔═╡ e0de4224-d7d6-45c8-a08f-7feee96ebaec
+function kernelfunction(k, x₁, x₂, grad::Int64)
+	function f1st(x₁, x₂) 
+		Zygote.gradient( a -> k(a, x₂), x₁)[1]
+	end	
+	function f2nd(x₁, x₂)
+		Zygote.hessian(a -> k(a, x₂), x₁)
+	end
+	function f3rd(x₁, x₂) 
+		ForwardDiff.jacobian( a -> f2nd(a, x₂), x₁)
+	end 
+	function f4th(x₁, x₂)
+		ForwardDiff.jacobian( a -> f3rd(a, x₂), x₁)
+	end
 
-# ╔═╡ 0e14f7fb-2bf7-4fd9-bedf-48042ebe1e5d
-equi
+	if grad == 0
+		return k(x₁, x₂)
+	elseif grad == 1
+		return f1st(x₁, x₂)
+	elseif grad == 2
+		return f2nd(x₁, x₂)	
+	elseif grad == 3
+		return f3rd(x₁, x₂)
+	elseif grad == 4
+		return f4th(x₁, x₂)
+	else
+		println("Grad in btw [0, 4]")
+	end
+end
+
+# ╔═╡ fb453dd0-131e-4938-b808-22c67f0f4086
+function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
+	dim = size(X,1)
+	num = size(X,2)
+	#building Marginal Likelihood containers
+	#For Energy + Force
+	KK = zeros(((1+dim)*num, (1+dim)*num))
+	#For Energy
+	K₀₀ = zeros(((1)*num, (1)*num))
+	#For Force
+	K₁₁ = zeros(((dim)*num, (dim)*num))
+	
+	for i in 1:num 
+		for j in 1:num 
+		#Fillin convarian of Energy vs Energy
+			KK[i, j] = kernelfunction(k, X[:,i], X[:,j], 0)
+		#Fillin convarian of Force vs Energy
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction(k, X[:,i], X[:,j], 1)
+		#Fillin convarian of Energy vs Force	
+			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]
+		#Fillin convarian of Energy vs Force
+			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -kernelfunction(k, X[:,i], X[:,j], 2)
+		end
+	end
+
+	Iee = σₑ^2 * Matrix(I, num, num)
+	Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
+	Ief = zeros(num, dim * num)
+	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
+
+	Kₘₘ = KK + II
+	
+	return Kₘₘ
+end
+
+# ╔═╡ 07bbeb52-89de-44db-ab2c-0e29823aaecc
+function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
+	dim = size(X,1)
+	num = size(X,2)
+	
+	#Covariance matrix for FC2 prediction
+	#building Covariance matrix containers	
+	K₂ₙₘ= zeros((dim, dim, (1+dim)*num))
+		
+	for j in 1:num
+		#Fillin convarian of Energy vs FC2
+		K₂ₙₘ[:,:,j] = reshape(
+					 kernelfunction(k, X[:,j], xₒ, 2)
+					, (dim, dim)
+				)
+		#Fillin convarian of Force vs FC2
+		K₂ₙₘ[:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
+					 kernelfunction(k, X[:,j], xₒ, 3)
+					, (dim, dim, dim)
+				)
+	end
+	return K₂ₙₘ
+end
+
+# ╔═╡ ab743413-e93d-4a47-9409-89ed7dc069c1
+function Posterior(Marginal, Covariance, Target)
+	dimₚ = size(Covariance, 1)
+	dimₜ = size(Marginal, 1)
+	Kₘₘ⁻¹ = inv(Marginal)   #
+	Kₙₘ = Covariance
+	
+	MarginalTar = zeros(dimₜ)
+	@einsum MarginalTar[m] = Kₘₘ⁻¹[m, n] * Target[n]
+
+	if size(Kₙₘ) == (dimₜ,)
+		Meanₚ = Kₙₘ'  * MarginalTar
+		
+	elseif size(Kₙₘ) == (dimₚ, dimₜ)
+		Meanₚ = zeros(dimₚ)
+		@einsum Meanₚ[i] = Kₙₘ[i, m] * MarginalTar[m]
+	
+	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₜ)
+		Meanₚ = zeros(dimₚ, dimₚ)
+		@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * MarginalTar[m]
+
+	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₚ, dimₜ)
+		Meanₚ = zeros(dimₚ, dimₚ, dimₚ)
+		@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * MarginalTar[m]
+	end
+
+	return Meanₚ 
+end
+
+# ╔═╡ 23369f07-d139-4f7d-b3d9-1971dc832bc3
+begin
+	σₒ = 0.005               # Kernel Scale
+	l = 0.3					# Length Scale
+	σₑ = 1e-6              # Energy Gaussian noise
+	σₙ = 1e-6                  # Force Gaussian noise for Model 2 (σₑ independent)
+		
+	Num = 10                   # Number of training points
+	DIM = 3                     # Dimension of Materials
+	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
+	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
+		
+	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
+end;
+
+# ╔═╡ 2deb3823-7721-4ecb-9887-58e0af5c48b0
+equi1, feature1, energy1, forces1, Target1 = VASP_input("2023Sep/24/vaspout_1.h5");
+
+# ╔═╡ 1a54aeb5-eef7-400f-8e18-3bbad4dd48b7
+equi2, feature2, energy2, forces2, Target2 = VASP_input("2023Sep/24/vaspout_2.h5");
+
+# ╔═╡ 1e89be6b-816e-4ced-8fde-461c370a4f4c
+function Set_Target(Target, ii)
+	number_ions = Int((size(Target, 1) - 1)/3)
+	datasize = size(Target,2)
+
+	Target_vec = zeros(((1+3*number_ions) * ii, 1))
+
+	Target_vec[1:ii] = Target[1,1:ii]
+	for jj in 1:ii
+		Target_vec[ii + 1 + ((jj - 1) * 3 * number_ions): ii + (jj * 3 * number_ions) ] = Target[2: 1 + 3 * number_ions, jj]
+	end
+	return Target_vec
+end 
+
+# ╔═╡ 76b2a8cd-c0f8-43fe-b036-2a5f0f2e1e5c
+begin
+	equi = [0.250, 0.250, 0.250, 0.750, 0.250, 0.250, 0.250, 0.750, 0.250, 0.750, 0.750, 0.250, 0.250, 0.250, 0.750, 0.750, 0.250, 0.750, 0.250, 0.750, 0.750, 0.750,  0.750, 0.750, 0.000, 0.000, 0.000, 0.500, 0.000, 0.000, 0.000, 0.500, 0.000, 0.500,  0.500, 0.000, 0.000, 0.000, 0.500, 0.500, 0.000, 0.500, 0.000, 0.500, 0.500, 0.500, 0.500, 0.500]
+	size(equi)
+	GSEner = vcat([-65.92692329404781], zeros((48,1)))
+end;
+
+# ╔═╡ efe39879-0518-45c2-9c9f-5a5479eaf725
+Target =hcat(hcat(GSEner, Target1),Target2);
+
+# ╔═╡ c3a5d1df-a9d0-424b-a18e-0afc15f88c5b
+feature = hcat(hcat(equi, feature1),feature2);
+
+# ╔═╡ 6f8046f3-6499-4a16-a679-15510efa604b
+begin
+	ii = 77
+	Kₘₘ = Marginal(feature[:,1:ii], kernel, l, σₑ, σₙ)
+	Kₙₘ = Coveriance_fc2(feature[:,1:ii], equi, kernel)
+	FC2 = Posterior(Kₘₘ , Kₙₘ , Set_Target(Target, ii))
+end;
+
+# ╔═╡ cc9d8470-173d-4f3e-bf2e-ca2f32cb30dd
+heatmap(1:size(FC2[:,:],1),
+		    1:size(FC2[:,:],2), 
+			FC2[:,:],
+		    c=cgrad([:blue, :white, :red, :yellow]),
+			aspectratio=:equal,
+			size=(700, 700),
+		    xlabel="feature coord. (n x d)",
+			ylabel="feature coord. (n x d)",
+		    #title="FC2 (Traning Data = " *string(nd[i]) *")"
+)
+
+# ╔═╡ 4030b1b4-1e9f-4d87-b3b8-6cc0434d45c3
+begin
+	Num1 = [1,5,10,15,20,25,30,35,45,50,55,60,65,70,77]
+	Sumrule = zeros((size(Num1)))
+	FC2Matrix = zeros((48,48,size(Num1,1)))
+end;
+
+# ╔═╡ 3b814197-5324-48d7-95d4-291b4a2ad917
+for k in 1:size(Num1,1)
+	ll = Num1[k]
+	Kₘₘ = Marginal(feature[:,1:ll], kernel, l, σₑ, σₙ)
+	Kₙₘ = Coveriance_fc2(feature[:,1:ll], equi, kernel)
+	FC2Matrix[:,:,k] = Posterior(Kₘₘ , Kₙₘ , Set_Target(Target, ll))
+	Sumrule[k] = sum(FC2Matrix[:,:,k])
+end;
+
+# ╔═╡ 86e78c9f-b141-4e7d-9371-01a75876d4b8
+Sumrule
+
+# ╔═╡ 91192a88-4189-4235-bd4d-73e6d1c1db29
+anim1= @animate for i in 1:size(Num1,1)
+	scatter(Num1[1:i], Sumrule[1:i],
+		xlabel="Training points",
+		ylabel="Sum of FC2 element",
+		xlim = (0, 88), 
+		ylim = (25, 33),
+		labels = "Cartesian",
+		linewidth=3,
+		title="Sum Rule relation (Traning Data = " *string(Num1[i]) *")"
+	)
+end
+
+# ╔═╡ e2e22e7d-b832-4f53-83cb-e0ed9ea31f90
+anim2 = @animate for i in 1:size(Num1,1)
+	heatmap(1:size(FC2Matrix[:,:,i],1),
+		    1:size(FC2Matrix[:,:,i],2), FC2Matrix[:,:,i],
+		    c=cgrad([:blue, :white, :red, :yellow]),
+			aspectratio=:equal,
+			size=(700, 700),
+		    xlabel="feature coord. (n x d)",
+			ylabel="feature coord. (n x d)",
+		    title="FC2 (Traning Data = " *string(Num1[i]) *")")
+end
+
+# ╔═╡ 7da87135-ee1c-4a89-b774-c8571f75921c
+gif(anim1, "PbTe_Sum.gif", fps=2)
+
+# ╔═╡ 1f5131ae-152e-40c7-b855-5bf761e3a6eb
+gif(anim2, "PbTe_FC2.gif", fps=2)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1385,7 +1615,25 @@ version = "1.4.1+1"
 # ╔═╡ Cell order:
 # ╠═66260cb2-5aee-11ee-2d12-6bca3cf88d5e
 # ╠═f91bceb9-c9eb-4ed9-9141-047f2c00e98f
+# ╠═e0de4224-d7d6-45c8-a08f-7feee96ebaec
+# ╠═fb453dd0-131e-4938-b808-22c67f0f4086
+# ╠═07bbeb52-89de-44db-ab2c-0e29823aaecc
+# ╠═ab743413-e93d-4a47-9409-89ed7dc069c1
+# ╠═23369f07-d139-4f7d-b3d9-1971dc832bc3
 # ╠═2deb3823-7721-4ecb-9887-58e0af5c48b0
-# ╠═0e14f7fb-2bf7-4fd9-bedf-48042ebe1e5d
+# ╠═1a54aeb5-eef7-400f-8e18-3bbad4dd48b7
+# ╠═1e89be6b-816e-4ced-8fde-461c370a4f4c
+# ╠═76b2a8cd-c0f8-43fe-b036-2a5f0f2e1e5c
+# ╠═efe39879-0518-45c2-9c9f-5a5479eaf725
+# ╠═c3a5d1df-a9d0-424b-a18e-0afc15f88c5b
+# ╠═6f8046f3-6499-4a16-a679-15510efa604b
+# ╠═cc9d8470-173d-4f3e-bf2e-ca2f32cb30dd
+# ╠═4030b1b4-1e9f-4d87-b3b8-6cc0434d45c3
+# ╠═3b814197-5324-48d7-95d4-291b4a2ad917
+# ╠═86e78c9f-b141-4e7d-9371-01a75876d4b8
+# ╠═91192a88-4189-4235-bd4d-73e6d1c1db29
+# ╠═e2e22e7d-b832-4f53-83cb-e0ed9ea31f90
+# ╠═7da87135-ee1c-4a89-b774-c8571f75921c
+# ╠═1f5131ae-152e-40c7-b855-5bf761e3a6eb
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

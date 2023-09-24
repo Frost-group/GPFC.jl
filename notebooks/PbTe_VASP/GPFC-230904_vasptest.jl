@@ -257,9 +257,6 @@ function Set_Target(Target, ii)
 	return Target_vec
 end 
 
-# ╔═╡ 8f7d5bc2-1e78-4c7b-9c1c-6627d6302fb1
-
-
 # ╔═╡ 52c6f8ae-a11e-46c6-881f-b50fc59caa14
 begin
 	ii = 10
@@ -1681,7 +1678,6 @@ version = "1.4.1+1"
 # ╠═bf6c364a-d611-4386-afaf-92e16c5e2035
 # ╠═6197b235-f2d0-4f20-93e7-b2ffc390949c
 # ╠═fa5f9e8f-39f1-4909-8bfd-de5668f248e5
-# ╠═8f7d5bc2-1e78-4c7b-9c1c-6627d6302fb1
 # ╠═52c6f8ae-a11e-46c6-881f-b50fc59caa14
 # ╠═8c2293af-a8b5-4c1f-8f3f-3fdcaaf71bb2
 # ╠═00866a2d-bf6b-425c-a7ae-f2df8b1d7f5a
