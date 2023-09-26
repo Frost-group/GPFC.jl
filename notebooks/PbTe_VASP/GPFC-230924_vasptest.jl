@@ -12,6 +12,7 @@ begin
 	using DataFrames
 	using DelimitedFiles
 	using Plots
+	using Kronecker
 	using HDF5
 end
 
@@ -33,7 +34,7 @@ function VASP_input(vasph5)
 	forces2 = read(file["intermediate/ion_dynamics/forces"])
 	
 	intermediate_position_ions = read(file["intermediate/ion_dynamics/position_ions"])
-	lattice_vectors = read(file["intermediate/ion_dynamics/lattice_vectors"])#
+	lattice_vectors = read(file["intermediate/ion_dynamics/lattice_vectors"])[:,:,1]
 
 	
 	
@@ -49,9 +50,9 @@ function VASP_input(vasph5)
 	#EPS = energy[6,:] #nose kinetic
 	ETOTAL = energy[3,:] #total energy
 
+	Iden = 1.0 * Matrix(I, number_ions, number_ions)
+	F2C = kronecker(Iden, lattice_vectors)
 
-
-	
 	feature = reshape(intermediate_position_ions, (3 * number_ions, datasize))
 	forceset = reshape(forces, (3 * number_ions, datasize))
 
@@ -60,8 +61,8 @@ function VASP_input(vasph5)
 	rev_energy = zeros(datasize)
 
 	for ii in 1:datasize
-		rev_feature[:, ii] = feature[:, (datasize+1) - ii]
-		rev_forces[:, ii] = forceset[:, (datasize+1) - ii]
+		rev_feature[:, ii] = F2C*feature[:, (datasize+1) - ii]
+		rev_forces[:, ii] = -forceset[:, (datasize+1) - ii]
 		rev_energy[ii] = ETOTAL[(datasize+1) - ii]
 	end
 
@@ -71,7 +72,7 @@ function VASP_input(vasph5)
 	Target[1,:] = rev_energy
 	Target[2:1+3*number_ions,:] = rev_forces
  #rev_energy
-	return equi, rev_feature, rev_energy, rev_forces, Target 
+	return equi, F2C, rev_feature, rev_energy, rev_forces, Target 
 end;
 
 # ╔═╡ e0de4224-d7d6-45c8-a08f-7feee96ebaec
@@ -194,10 +195,10 @@ end
 
 # ╔═╡ 23369f07-d139-4f7d-b3d9-1971dc832bc3
 begin
-	σₒ = 0.1           # Kernel Scale
-	l = 0.032			 # Length Scale
-	σₑ = 1e-5              # Energy Gaussian noise
-	σₙ = 1e-6                  # Force Gaussian noise for Model 2 (σₑ independent)
+	σₒ = 0.05                  # Kernel Scale
+	l = 0.4  				  # Length Scale
+	σₑ = 1e-5                # Energy Gaussian noise
+	σₙ = 1e-6                 # Force Gaussian noise for Model 2 (σₑ independent)
 		
 	Num = 10                   # Number of training points
 	DIM = 3                     # Dimension of Materials
@@ -208,16 +209,12 @@ begin
 end;
 
 # ╔═╡ 2deb3823-7721-4ecb-9887-58e0af5c48b0
-equi1, feature1, energy1, forces1, Target1 = VASP_input("2023Sep/24/vaspout_1.h5");
-
-# ╔═╡ 1a54aeb5-eef7-400f-8e18-3bbad4dd48b7
-equi2, feature2, energy2, forces2, Target2 = VASP_input("2023Sep/24/vaspout_2.h5");
-
-# ╔═╡ c44b7aed-e021-45ed-8b8a-8764990f434c
-equi3, feature3, energy3, forces3, Target3 = VASP_input("2023Sep/24/vaspout_3.h5");
-
-# ╔═╡ c518dd20-8447-4d51-8dc2-d2743dc54061
-equi4, feature4, energy4, forces4, Target4 = VASP_input("2023Sep/24/vaspout_4.h5");
+begin
+	equi1, F2C1, feature1, energy1, forces1, Target1 = VASP_input("2023Sep/24/vaspout_1.h5")
+	equi2, F2C2, feature2, energy2, forces2, Target2 = VASP_input("2023Sep/24/vaspout_2.h5")
+	equi3, F2C3, feature3, energy3, forces3, Target3 = VASP_input("2023Sep/24/vaspout_3.h5")
+	equi4, F2C4, feature4, energy4, forces4, Target4 = VASP_input("2023Sep/24/vaspout_4.h5")
+end;
 
 # ╔═╡ 1e89be6b-816e-4ced-8fde-461c370a4f4c
 function Set_Target(Target, ii)
@@ -235,10 +232,10 @@ end
 
 # ╔═╡ 76b2a8cd-c0f8-43fe-b036-2a5f0f2e1e5c
 begin
-	equi = [0.24991, 0.24997, 0.25031, 0.74991, 0.24997, 0.25031, 0.24991, 0.74997, 0.25031, 0.74991, 0.74997, 0.25031, 0.24991, 0.24997, 0.75031, 0.74991, 0.24997, 0.75031, 0.24991, 0.74997, 0.75031, 0.74991, 0.74997, 0.75031, 0.99989, 0.99988, 0.00035, 0.49989, 0.99988, 0.00035, 0.99989, 0.49989, 0.00035, 0.49989, 0.49989, 0.00035, 0.99989, 0.99988, 0.50035, 0.49989, 0.99988, 0.50035, 0.99989, 0.49989, 0.50035, 0.49989, 0.49989, 0.50035]
+	equi = F2C1*[0.24991, 0.24997, 0.25031, 0.74991, 0.24997, 0.25031, 0.24991, 0.74997, 0.25031, 0.74991, 0.74997, 0.25031, 0.24991, 0.24997, 0.75031, 0.74991, 0.24997, 0.75031, 0.24991, 0.74997, 0.75031, 0.74991, 0.74997, 0.75031, 0.99989, 0.99988, 0.00035, 0.49989, 0.99988, 0.00035, 0.99989, 0.49989, 0.00035, 0.49989, 0.49989, 0.00035, 0.99989, 0.99988, 0.50035, 0.49989, 0.99988, 0.50035, 0.99989, 0.49989, 0.50035, 0.49989, 0.49989, 0.50035]
 	size(equi)
 	GSEner = Target4[:,1]
-		#vcat([-65.92692329404781], zeros((48,1)))
+	#vcat([-65.92692329404781], zeros((48,1)))
 end;
 
 # ╔═╡ efe39879-0518-45c2-9c9f-5a5479eaf725
@@ -307,7 +304,7 @@ anim1= @animate for i in 1:size(Num1,1)
 		xlabel="Training points",
 		ylabel="Sum of FC2 element",
 		xlim = (0, 120), 
-		ylim = (3.3, 3.9),
+		#ylim = (3.3, 3.9),
 		labels = "Cartesian",
 		linewidth=3,
 		title="Sum Rule relation (Traning Data = " *string(Num1[i]) *")"
@@ -342,9 +339,22 @@ Einsum = "b7d42ee7-0b51-5a75-98ca-779d3107e4c0"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
 KernelFunctions = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
+Kronecker = "2c470bb0-bcc8-11e8-3dad-c9649493f05e"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
+
+[compat]
+CSV = "~0.10.11"
+DataFrames = "~1.6.1"
+DelimitedFiles = "~1.9.1"
+Einsum = "~0.4.1"
+ForwardDiff = "~0.10.36"
+HDF5 = "~0.16.16"
+KernelFunctions = "~0.10.56"
+Kronecker = "~0.5.4"
+Plots = "~1.39.0"
+Zygote = "~0.6.64"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -353,7 +363,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.0-beta4"
 manifest_format = "2.0"
-project_hash = "e5bac5bd57d73dd0b316c6a1bd35fff21470b098"
+project_hash = "c4f9dcce515cde0c3829131736ac6b9f9b2ff525"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -504,6 +514,12 @@ version = "2.2.1"
 git-tree-sha1 = "d05d9e7b7aedff4e5b51a029dced05cfb6125781"
 uuid = "d38c429a-6771-53c6-b99e-75d170b6e991"
 version = "0.6.2"
+
+[[deps.CovarianceEstimation]]
+deps = ["LinearAlgebra", "Statistics", "StatsBase"]
+git-tree-sha1 = "6711ad240bb8861dda376bad332d3f89e2ac5f30"
+uuid = "587fd27a-f159-11e8-2dae-1979310e6154"
+version = "0.2.9"
 
 [[deps.Crayons]]
 git-tree-sha1 = "249fe38abf76d48563e2f4556bebd215aa317e15"
@@ -819,6 +835,12 @@ git-tree-sha1 = "d7f3c99f7b00e36bdb6d47f5796eff9087327771"
 uuid = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
 version = "0.10.56"
 
+[[deps.Kronecker]]
+deps = ["LinearAlgebra", "NamedDims", "SparseArrays", "StatsBase"]
+git-tree-sha1 = "bd47e8074c6bd478abf7efa6d504f6c1c38a487c"
+uuid = "2c470bb0-bcc8-11e8-3dad-c9649493f05e"
+version = "0.5.4"
+
 [[deps.LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "f6250b16881adf048549549fba48b1161acdac8c"
@@ -1021,6 +1043,12 @@ deps = ["OpenLibm_jll"]
 git-tree-sha1 = "0877504529a3e5c3343c6f8b4c0381e57e4387e4"
 uuid = "77ba4419-2d1f-58cd-9bb1-8ffee604a2e3"
 version = "1.0.2"
+
+[[deps.NamedDims]]
+deps = ["AbstractFFTs", "ChainRulesCore", "CovarianceEstimation", "LinearAlgebra", "Pkg", "Requires", "Statistics"]
+git-tree-sha1 = "cb8ebcee2b4e07b72befb9def593baef8aa12f07"
+uuid = "356022a1-0364-5f58-8944-0da4b18d706f"
+version = "0.2.50"
 
 [[deps.NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
@@ -1668,9 +1696,6 @@ version = "1.4.1+0"
 # ╠═ab743413-e93d-4a47-9409-89ed7dc069c1
 # ╠═23369f07-d139-4f7d-b3d9-1971dc832bc3
 # ╠═2deb3823-7721-4ecb-9887-58e0af5c48b0
-# ╠═1a54aeb5-eef7-400f-8e18-3bbad4dd48b7
-# ╠═c44b7aed-e021-45ed-8b8a-8764990f434c
-# ╠═c518dd20-8447-4d51-8dc2-d2743dc54061
 # ╠═1e89be6b-816e-4ced-8fde-461c370a4f4c
 # ╠═76b2a8cd-c0f8-43fe-b036-2a5f0f2e1e5c
 # ╠═efe39879-0518-45c2-9c9f-5a5479eaf725

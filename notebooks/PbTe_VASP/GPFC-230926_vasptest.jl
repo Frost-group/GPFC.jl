@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 5e3b51f8-5b91-11ee-097e-41cb6031e18b
+# ╔═╡ 16870ddc-5c77-11ee-3c6f-7d5ff45d8d25
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum
@@ -16,7 +16,7 @@ begin
 	using HDF5
 end
 
-# ╔═╡ 5c03ce74-b3fe-4dec-beb0-f569fb9614ae
+# ╔═╡ bd449d7f-462f-44a2-9aab-817b054c5068
 function VASP_input(vasph5)
 	path = vasph5  # string, Name of vasp out put vas output files (HDF5)
 	file = h5open(path, "r")
@@ -76,7 +76,7 @@ function VASP_input(vasph5)
 	return equi, F2C, rev_feature, rev_energy, rev_forces, Target 
 end;
 
-# ╔═╡ 0860b47a-6296-4dbd-a6f2-d6857abfe9e3
+# ╔═╡ cad7f2c2-bfad-4fa6-9dc9-f65789bb4043
 function kernelfunction(k, x₁, x₂, grad::Int64)
 	function f1st(x₁, x₂) 
 		Zygote.gradient( a -> k(a, x₂), x₁)[1]
@@ -106,7 +106,7 @@ function kernelfunction(k, x₁, x₂, grad::Int64)
 	end
 end
 
-# ╔═╡ 6efdbe70-ae02-4b75-b050-e5a9d95c980a
+# ╔═╡ 70e41e20-b557-496a-9f38-62e91e23ad46
 function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
 	num = size(X,2)
@@ -142,7 +142,7 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 end
 
 
-# ╔═╡ 280f8da1-b44d-4a49-825b-f80753b8934f
+# ╔═╡ bc61b0a7-65f1-4905-8fd2-9cc09de82771
 function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	dim = size(X,1)
 	num = size(X,2)
@@ -166,7 +166,7 @@ function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	return K₂ₙₘ
 end
 
-# ╔═╡ d9c8a416-3630-421b-becc-8be55e16c65c
+# ╔═╡ 3c237249-dfd6-4493-97c5-2f05cc9b8101
 function Posterior(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
 	dimₜ = size(Marginal, 1)
@@ -195,7 +195,7 @@ function Posterior(Marginal, Covariance, Target)
 	return Meanₚ 
 end
 
-# ╔═╡ 449acc9c-6a4a-4325-a113-e898d89bdb81
+# ╔═╡ 79039d3a-4f31-4dda-8446-5dd5c07d674e
 function Set_Target(Target, ii)
 	number_ions = Int((size(Target, 1) - 1)/3)
 	datasize = size(Target,2)
@@ -209,7 +209,7 @@ function Set_Target(Target, ii)
 	return Target_vec
 end 
 
-# ╔═╡ 6211ca02-8853-44fd-8f91-253313daf7bc
+# ╔═╡ 7986470d-fcc9-4597-b333-975213d5e539
 begin
 	equi1, F2C1, feature1, energy1, forces1, Target1 = VASP_input("2023Sep/24/vaspout_1.h5")
 	equi2, F2C2, feature2, energy2, forces2, Target2 = VASP_input("2023Sep/24/vaspout_2.h5")
@@ -217,22 +217,7 @@ begin
 	equi4, F2C4, feature4, energy4, forces4, Target4 = VASP_input("2023Sep/24/vaspout_4.h5")
 end
 
-# ╔═╡ 1cf3fc5a-daca-434b-a847-284cd539f97e
-begin
-	σₒ = 0.8             # Kernel Scale
-	l = 0.01  				# Length Scale
-	σₑ = 8.70e-7              # Energy Gaussian noise
-	σₙ = 1e-6                  # Force Gaussian noise for Model 2 (σₑ independent)
-		
-	Num = 10                   # Number of training points
-	DIM = 3                     # Dimension of Materials
-	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
-	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
-		
-	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
-end;
-
-# ╔═╡ c8aa8b2c-33ef-47c3-b238-4976a81d40a8
+# ╔═╡ 41e02c04-e10e-4ffd-8e67-411c0d687e18
 begin
 	equi = F2C1*[0.24991, 0.24997, 0.25031, 0.74991, 0.24997, 0.25031, 0.24991, 0.74997, 0.25031, 0.74991, 0.74997, 0.25031, 0.24991, 0.24997, 0.75031, 0.74991, 0.24997, 0.75031, 0.24991, 0.74997, 0.75031, 0.74991, 0.74997, 0.75031, 0.99989, 0.99988, 0.00035, 0.49989, 0.99988, 0.00035, 0.99989, 0.49989, 0.00035, 0.49989, 0.49989, 0.00035, 0.99989, 0.99988, 0.50035, 0.49989, 0.99988, 0.50035, 0.99989, 0.49989, 0.50035, 0.49989, 0.49989, 0.50035]
 	size(equi)
@@ -240,7 +225,7 @@ begin
 	#vcat([-65.92692329404781], zeros((48,1)))
 end;
 
-# ╔═╡ 8260a0bf-1071-4d72-b544-7771cf041e72
+# ╔═╡ 64f34abd-b633-44e9-bbd6-6f92d7d3c0d9
 begin
 	Target = hcat(
 		hcat(
@@ -258,25 +243,22 @@ begin
 		,feature4);
 end;
 
-# ╔═╡ 67120528-5e19-4358-884b-9717887c696b
-feature
-
-# ╔═╡ fca9fee0-2d9e-47e5-9511-d3a231d6ad11
+# ╔═╡ 896c6e93-beac-413b-b360-785838d437e9
 begin
-	path = "2023Sep/24/vaspout_1.h5"  # string, Name of vasp out put vas output files (HDF5)
-	file = h5open(path, "r")
-	number_iontypes = read(file["input/poscar/number_ion_types"])
-	number_ions = sum(number_iontypes)
-	intermediate_position_ions = read(file["intermediate/ion_dynamics/position_ions"])
-	lattice_vectors = read(file["intermediate/ion_dynamics/lattice_vectors"])[:,:,1]
-	Iden = 1.0 * Matrix(I, number_ions, number_ions)
-	V = kronecker(Iden, lattice_vectors)
+	σₒ = 0.8             # Kernel Scale
+	l = 0.0695  				# Length Scale
+	σₑ = 8.875e-7              # Energy Gaussian noise
+	σₙ = 1e-6                  # Force Gaussian noise for Model 2 (σₑ independent)
+		
+	Num = 10                   # Number of training points
+	DIM = 3                     # Dimension of Materials
+	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
+	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
+		
+	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
 
-# ╔═╡ 71aeb543-7756-47da-9850-f53cac742577
-lattice_vectors
-
-# ╔═╡ 3203cc0f-c938-48a5-95ea-21d35dd6695b
+# ╔═╡ 04a351b8-2da0-462d-a9cf-b6d0584950cd
 begin
 	ii = 113
 	Kₘₘ = Marginal(feature[:,1:ii], kernel, l, σₑ, σₙ)
@@ -284,7 +266,10 @@ begin
 	FC2 = Posterior(Kₘₘ , Kₙₘ , Set_Target(Target, ii))
 end;
 
-# ╔═╡ b0aa9382-6829-47bd-8343-d770e00db8e9
+# ╔═╡ 836c7145-9a0f-4c6f-8bb4-6550c9e0bd94
+sum(FC2)
+
+# ╔═╡ 9a681f66-9dd5-401f-9665-1a3ea904eb7f
 heatmap(1:size(FC2[:,:],1),
 		    1:size(FC2[:,:],2), 
 			FC2[:,:],
@@ -295,6 +280,98 @@ heatmap(1:size(FC2[:,:],1),
 			ylabel="feature coord. (n x d)",
 		    #title="FC2 (Traning Data = " *string(nd[i]) *")"
 )
+
+# ╔═╡ f6e8373e-b75a-409e-b1f5-40bb1fefac7f
+begin
+	L = LinRange(0.068, 0.090, 17)
+	Sumrule_L = zeros((size(L)))
+	FC2_L = zeros((48,48,size(L,1)))
+end;
+
+# ╔═╡ 596f8289-eb10-47f5-89b9-d470b8cfb217
+L
+
+# ╔═╡ 685b4209-055b-4dd6-93c1-61aa93ae5cdb
+for k in 1:size(L,1)
+	ll = 113
+	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(L[k])
+	Kₘₘ = Marginal(feature[:,1:ll], kernel, L[k], σₑ, σₙ)
+	Kₙₘ = Coveriance_fc2(feature[:,1:ll], equi, kernel)
+	FC2_L[:,:,k] = Posterior(Kₘₘ , Kₙₘ , Set_Target(Target, ll))
+	Sumrule_L[k] = sum(FC2_L[:,:,k])
+end;
+
+# ╔═╡ cfd113bc-f971-406d-b19e-5eaae420d403
+scatter(L, Sumrule_L,
+		xlabel="Length scale",
+		ylabel="Sum of FC2 element",
+		#xlim = (0, 120), 
+		#ylim = (3.3, 3.9),
+		labels = "Cartesian",
+		linewidth=3,
+		title="Sum Rule relation (l) "
+	)
+
+# ╔═╡ eb52493a-ea5f-49b4-b43e-3114ad9c6bb9
+anim_L = @animate for i in 1:size(L,1)
+	heatmap(1:size(FC2_L[:,:,i],1),
+		    1:size(FC2_L[:,:,i],2), FC2_L[:,:,i],
+		    c=cgrad([:blue, :white, :red, :yellow]),
+			aspectratio=:equal,
+			size=(700, 700),
+		    xlabel="feature coord. (n x d)",
+			ylabel="feature coord. (n x d)",
+		    title="FC2 (Traning Data = " *string(L[i]) *")")
+end
+
+# ╔═╡ 165f0158-fea6-4716-8817-26c0ed9636c6
+gif(anim_L, "PbTe_FC2_L.gif", fps=1)
+
+# ╔═╡ 29315441-7956-4bff-9a93-227e851ff9e0
+
+
+# ╔═╡ c44f7c7e-b192-4e5b-9826-a969094a329d
+begin
+	GN = LinRange(8.870e-7, 8.910e-7, 19)
+	Sumrule_GN = zeros((size(GN)))
+	FC2_GN = zeros((48,48,size(GN,1)))
+end;
+
+# ╔═╡ 7c70c33e-839d-478d-adab-57fefe5b9140
+
+
+# ╔═╡ 9b3215ac-0f58-4d7a-a865-f6e0d6cc42f7
+for k in 1:size(GN,1)
+	ll = 113
+	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
+	Kₘₘ = Marginal(feature[:,1:ll], kernel, l, GN[k], σₙ)
+	Kₙₘ = Coveriance_fc2(feature[:,1:ll], equi, kernel)
+	FC2Matrix[:,:,k] = Posterior(Kₘₘ , Kₙₘ , Set_Target(Target, ll))
+	Sumrule[k] = sum(FC2Matrix[:,:,k])
+end;
+
+# ╔═╡ f57ad375-54d0-4d2e-aba8-7e687975a420
+scatter(GN, Sumrule,
+		xlabel="Gaussian Noices",
+		ylabel="Sum of FC2 element",
+		#xlim = (0, 120), 
+		#ylim = (3.3, 3.9),
+		labels = "Cartesian",
+		linewidth=3,
+		title="Sum Rule relation (σₑ) "
+	)
+
+# ╔═╡ f27781a3-4fd8-4267-af99-3b15d0b3cd19
+anim_GN = @animate for i in 1:size(Sigma,1)
+	heatmap(1:size(FC2Matrix[:,:,i],1),
+		    1:size(FC2Matrix[:,:,i],2), FC2Matrix[:,:,i],
+		    c=cgrad([:blue, :white, :red, :yellow]),
+			aspectratio=:equal,
+			size=(700, 700),
+		    xlabel="feature coord. (n x d)",
+			ylabel="feature coord. (n x d)",
+		    title="FC2 (Traning Data = " *string(Sigma[i]) *")")
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1311,9 +1388,9 @@ version = "1.7.0"
 
 [[deps.StatsBase]]
 deps = ["DataAPI", "DataStructures", "LinearAlgebra", "LogExpFunctions", "Missings", "Printf", "Random", "SortingAlgorithms", "SparseArrays", "Statistics", "StatsAPI"]
-git-tree-sha1 = "75ebe04c5bed70b91614d684259b661c9e6274a4"
+git-tree-sha1 = "1d77abd07f617c4868c33d4f5b9e1dbb2643c9cf"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
-version = "0.34.0"
+version = "0.34.2"
 
 [[deps.StringManipulation]]
 deps = ["PrecompileTools"]
@@ -1742,21 +1819,31 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═5e3b51f8-5b91-11ee-097e-41cb6031e18b
-# ╠═5c03ce74-b3fe-4dec-beb0-f569fb9614ae
-# ╠═0860b47a-6296-4dbd-a6f2-d6857abfe9e3
-# ╠═6efdbe70-ae02-4b75-b050-e5a9d95c980a
-# ╠═280f8da1-b44d-4a49-825b-f80753b8934f
-# ╠═d9c8a416-3630-421b-becc-8be55e16c65c
-# ╠═449acc9c-6a4a-4325-a113-e898d89bdb81
-# ╠═6211ca02-8853-44fd-8f91-253313daf7bc
-# ╠═8260a0bf-1071-4d72-b544-7771cf041e72
-# ╠═1cf3fc5a-daca-434b-a847-284cd539f97e
-# ╠═c8aa8b2c-33ef-47c3-b238-4976a81d40a8
-# ╠═67120528-5e19-4358-884b-9717887c696b
-# ╠═fca9fee0-2d9e-47e5-9511-d3a231d6ad11
-# ╠═71aeb543-7756-47da-9850-f53cac742577
-# ╠═3203cc0f-c938-48a5-95ea-21d35dd6695b
-# ╠═b0aa9382-6829-47bd-8343-d770e00db8e9
+# ╠═16870ddc-5c77-11ee-3c6f-7d5ff45d8d25
+# ╠═bd449d7f-462f-44a2-9aab-817b054c5068
+# ╠═cad7f2c2-bfad-4fa6-9dc9-f65789bb4043
+# ╠═70e41e20-b557-496a-9f38-62e91e23ad46
+# ╠═bc61b0a7-65f1-4905-8fd2-9cc09de82771
+# ╠═3c237249-dfd6-4493-97c5-2f05cc9b8101
+# ╠═79039d3a-4f31-4dda-8446-5dd5c07d674e
+# ╠═7986470d-fcc9-4597-b333-975213d5e539
+# ╠═41e02c04-e10e-4ffd-8e67-411c0d687e18
+# ╠═64f34abd-b633-44e9-bbd6-6f92d7d3c0d9
+# ╠═896c6e93-beac-413b-b360-785838d437e9
+# ╠═04a351b8-2da0-462d-a9cf-b6d0584950cd
+# ╠═836c7145-9a0f-4c6f-8bb4-6550c9e0bd94
+# ╠═9a681f66-9dd5-401f-9665-1a3ea904eb7f
+# ╠═f6e8373e-b75a-409e-b1f5-40bb1fefac7f
+# ╠═596f8289-eb10-47f5-89b9-d470b8cfb217
+# ╠═685b4209-055b-4dd6-93c1-61aa93ae5cdb
+# ╠═cfd113bc-f971-406d-b19e-5eaae420d403
+# ╠═eb52493a-ea5f-49b4-b43e-3114ad9c6bb9
+# ╠═165f0158-fea6-4716-8817-26c0ed9636c6
+# ╠═29315441-7956-4bff-9a93-227e851ff9e0
+# ╠═c44f7c7e-b192-4e5b-9826-a969094a329d
+# ╠═7c70c33e-839d-478d-adab-57fefe5b9140
+# ╠═9b3215ac-0f58-4d7a-a865-f6e0d6cc42f7
+# ╠═f57ad375-54d0-4d2e-aba8-7e687975a420
+# ╠═f27781a3-4fd8-4267-af99-3b15d0b3cd19
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
