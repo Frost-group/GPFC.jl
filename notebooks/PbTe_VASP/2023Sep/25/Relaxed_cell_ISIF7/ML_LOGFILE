@@ -1,0 +1,431 @@
+ML_LOGFILE version 0.1.0
+
+
+* MEMORY INFORMATION ***********************************************************************************************************************
+
+Estimated memory consumption for ML force field generation (MB):
+
+Persistent allocations for force field        :    212.7
+|
+|-- CMAT for basis                            :     72.6
+|-- FMAT for basis                            :     15.9
+|-- DESC for basis                            :     17.5
+|-- DESC product matrix                       :      0.3
+
+Persistent allocations for ab initio data     :      2.4
+|
+|-- Ab initio data                            :      2.3
+|-- Ab initio data (new)                      :      0.1
+
+Temporary allocations for sparsification      :      8.2
+|
+|-- SVD matrices                              :      8.1
+
+Other temporary allocations                   :      4.4
+|
+|-- Descriptors                               :      1.5
+|-- Regression                                :      1.1
+|-- Prediction                                :      1.7
+
+Total memory consumption                      :    227.6
+
+********************************************************************************************************************************************
+
+
+* MACHINE LEARNING SETTINGS ****************************************************************************************************************
+
+This section lists the available machine-learning related settings with a short description, their
+selected values and the INCAR tags. The column between the value and the INCAR tag may contain a
+"state indicator" highlighting the origin of the value. Here is a list of possible indicators:
+
+ *     : (empty) Tag was not provided in the INCAR file, a default value was chosen automatically.
+ * (I) : Value was provided in the INCAR file.
+ * (i) : Value was provided in the INCAR file, deprecated tag.
+ * (!) : A value found in the INCAR file was overwritten by the contents of the ML_FF or ML_AB file.
+ * (?) : The value for this tag was never set (please report this to the VASP developers).
+
+Tag values with associated units are given here in Angstrom/eV, if not specified otherwise.
+
+Please refer to the VASP online manual for a detailed description of available INCAR tags.
+
+
+General settings
+--------------------------------------------------------------------------------------------------------------------------------------------
+Machine learning operation mode                                                                       :             0 (I) ML_ISTART               
+
+
+Descriptor settings
+--------------------------------------------------------------------------------------------------------------------------------------------
+Radial descriptors:
+-------------------
+Cutoff radius of radial descriptors                                                                   :   5.00000E+00     ML_RCUT1                
+Gaussian width for broadening the atomic distribution for radial descriptors                          :   5.00000E-01     ML_SION1                
+Number of radial basis functions for atomic distribution for radial descriptors                       :             8     ML_MRB1                 
+
+Angular descriptors:
+--------------------
+Cutoff radius of angular descriptors                                                                  :   5.00000E+00     ML_RCUT2                
+Gaussian width for broadening the atomic distribution for angular descriptors                         :   5.00000E-01     ML_SION2                
+Number of radial basis functions for atomic distribution for angular descriptors                      :             8     ML_MRB2                 
+Maximum angular momentum quantum number of spherical harmonics used to expand atomic distributions    :             4     ML_LMAX2                
+Angular filtering enabled                                                                             :             T     ML_LAFILT2              
+Angular filtering parameter a_FILT                                                                    :   2.00000E-03     ML_AFILT2               
+Angular filtering function type                                                                       :             2     ML_IAFILT2              
+Enable sparsification of angular descriptors                                                          :             F     ML_LSPARSDES            
+Number of highest eigenvalues relevant in the sparsification algorithm of the angular descriptors     :             5     ML_NRANK_SPARSDES       
+Desired ratio of selected to all descriptors resulting from the angular descriptor sparsification     :   5.00000E-01     ML_RDES_SPARSDES        
+
+
+Kernel settings
+--------------------------------------------------------------------------------------------------------------------------------------------
+Weight of radial descriptors in the kernel (the angular counterpart is chosen so that the sum is 1.0) :   1.00000E-01     ML_W1                   
+Power of the polynomial kernel                                                                        :             4     ML_NHYP                 
+
+
+Bayesian error estimation
+--------------------------------------------------------------------------------------------------------------------------------------------
+Enable automatic updating of the Bayesian error estimation threshold during on-the-fly training       :             1     ML_ICRITERIA            
+Decides whether update of threshold is done in the same MD step or the next MD step                   :             1     ML_IUPDATE_CRITERIA     
+Read Bayesian error estimation threshold from ML_AB file                                              :             T     ML_LCTIFOR_USE_FROM_FILE
+Bayesian error estimation threshold (initial or static value depending on other settings)             :   2.00000E-03     ML_CTIFOR               
+Scaling factor for ML_CTIFOR. The interval 0<ML_SCLC_CTIFOR<1 increases num. of local configurations  :   1.00000E+00     ML_SCLC_CTIFOR          
+Standard error parameter required for the automatic update of the Bayesian error estimation threshold :   4.00000E-01     ML_CSIG                 
+Slope parameter required for the automatic update of the Bayesian error estimation threshold          :   2.00000E-01     ML_CSLOPE               
+Additional parameter controlling the update of the Bayesian error estimation threshold                :   0.00000E+00     ML_CX                   
+Factor controlling the occurence of enforced first principle calculations                             :   2.00000E+00     ML_CDOUB                
+
+
+Sparsification and regression
+--------------------------------------------------------------------------------------------------------------------------------------------
+Threshold for the CUR algorithm used in the sparsification of local reference configurations          :   1.00000E-10     ML_EPS_LOW              
+Convergence criterion for the optimization of parameters within the Bayesian linear regression        :   1.00000E-14     ML_EPS_REG              
+Linear regression algorithm                                                                           :             1     ML_IALGO_LINREG         
+Leverage scoring calculation mode (for sparsification of local configurations)                        :             1     ML_ISVD                 
+Time dependency of regularization parameters                                                          :             2     ML_IREG                 
+Initial regularization parameter (noise, reversed and squared)                                        :   1.00000E+00     ML_SIGV0                
+Initial regularization parameter (precision, reversed and squared)                                    :   1.00000E+00     ML_SIGW0                
+
+
+Weighting and sampling
+--------------------------------------------------------------------------------------------------------------------------------------------
+Scaling weight for total energies in the training data                                                :   1.00000E+00     ML_WTOTEN               
+Scaling weight for forces in the training data                                                        :   1.00000E+00     ML_WTIFOR               
+Scaling weight for stresses in the training data                                                      :   1.00000E+00     ML_WTSIF                
+Number of estimated errors stored to determine the threshold for the Bayesian error                   :            10     ML_MHIS                 
+Minimum number of MD steps between potential training samples                                         :            10     ML_NMDINT               
+Weighting method for energies, forces and stresses                                                    :             3     ML_IWEIGHT              
+
+
+Static array sizes
+--------------------------------------------------------------------------------------------------------------------------------------------
+Maximum number of local configurations stored in memory                                               :          1540     ML_MB                   
+Maximum number of structures stored for training                                                      :          1505     ML_MCONF                
+Maximum number of configurations stored temporarily as training candidates                            :             5     ML_MCONF_NEW            
+
+
+Special features
+--------------------------------------------------------------------------------------------------------------------------------------------
+Enable heat flux calculation (output written to ML_HEAT)                                              :             F     ML_LHEAT                
+Enable thermodynamic integration (t.i.)                                                               :             F     ML_LCOUPLE              
+Number of atoms whose interaction is controlled by the t.i. coupling parameter                        :             0     ML_NATOM_COUPLED        
+List of atoms whose interaction is controlled by the t.i. coupling parameter                          :             0     SIZE( ML_ICOUPLE )
+Thermodynamic integration coupling parameter                                                          :   1.00000E+00     ML_RCOUPLE              
+
+
+Reference energies
+--------------------------------------------------------------------------------------------------------------------------------------------
+Scaling mode of energies                                                                              :             2     ML_ISCALE_TOTEN         
+List of reference energies of isolated atoms for each species in the system                           :             2     SIZE( ML_EATOM_REF )
+                                                                                           Element Pb :   0.00000E+00     ML_EATOM_REF(1)
+                                                                                           Element Te :   0.00000E+00     ML_EATOM_REF(2)
+
+
+Output options
+--------------------------------------------------------------------------------------------------------------------------------------------
+Enable output of kin. and pot. energy for each atom at each MD time step (written to ML_EATOM)        :             F     ML_LEATOM               
+
+********************************************************************************************************************************************
+
+
+* AVAILABLE AB INITIO DATA *****************************************************************************************************************
+
+Number of stored (maximum) ab initio structures:         0 (     1500)
+ * System   1 :         0 , name: "generated by phonopy"
+Maximum number of atoms per element:
+ * Element Pb :         0
+ * Element Te :         0
+
+********************************************************************************************************************************************
+
+
+* MAIN LOOP ********************************************************************************************************************************
+
+# STATUS ###############################################################
+# STATUS This line describes the overall status of each step.
+# STATUS 
+# STATUS nstep ..... MD time step or input structure counter
+# STATUS state ..... One-word description of step action
+# STATUS             - "accurate"  (1) : Errors are low, force field is used
+# STATUS             - "threshold" (2) : Errors exceeded threshold, structure is sampled from ab initio
+# STATUS             - "learning"  (3) : Stored configurations are used for training force field
+# STATUS             - "critical"  (4) : Errors are high, ab initio sampling and learning is enforced
+# STATUS             - "predict"   (5) : Force field is used in prediction mode only, no error checking
+# STATUS is ........ Integer representation of above one-word description (integer in parenthesis)
+# STATUS doabin .... Perform ab initio calculation (T/F)
+# STATUS iff ....... Force field available (T/F, False after startup hints to possible convergence problems)
+# STATUS nsample ... Number of steps since last reference structure collection (sample = T)
+# STATUS ngenff .... Number of steps since last force field generation (genff = T)
+# STATUS ###############################################################
+# STATUS            nstep     state is doabin    iff   nsample    ngenff
+# STATUS                2         3  4      5      6         7         8
+# STATUS ###############################################################
+
+# STDAB ####################################################################
+# STDAB This line contains the standard deviation of the collected ab initio reference data.
+# STDAB 
+# STDAB nstep ........ MD time step or input structure counter
+# STDAB std_energy ... Standard deviation in energy (eV atom^-1)
+# STDAB std_force .... Standard deviation in forces (eV Angst^-1)
+# STDAB std_stress ... Standard deviation in stress (kB)
+# STDAB ####################################################################
+# STDAB             nstep       std_energy        std_force       std_stress
+# STDAB                 2                3                4                5
+# STDAB ####################################################################
+
+# ERR ######################################################################
+# ERR This line contains the RMSEs of the predictions with respect to ab initio results for the training data.
+# ERR 
+# ERR nstep ......... MD time step or input structure counter
+# ERR rmse_energy ... RMSE of energies (eV atom^-1)
+# ERR rmse_force .... RMSE of forces (eV Angst^-1)
+# ERR rmse_stress ... RMSE of stress (kB)
+# ERR ######################################################################
+# ERR               nstep      rmse_energy       rmse_force      rmse_stress
+# ERR                   2                3                4                5
+# ERR ######################################################################
+
+# LASTE ####################################################################
+# LASTE This line contains the RMSEs of the predictions with respect to ab initio results for the last configuration in the training data.
+# LASTE 
+# LASTE nstep ......... MD time step or input structure counter
+# LASTE last_energy ... RMSE of energy for last configuration (eV atom^-1)
+# LASTE last_force .... RMSE of forces for last configuration (eV Angst^-1)
+# LASTE last_stress ... RMSE of stress for last configuration (kB)
+# LASTE ####################################################################
+# LASTE             nstep      last_energy       last_force      last_stress
+# LASTE                 2                3                4                5
+# LASTE ####################################################################
+
+# CFE ######################################################################
+# CFE This line contains errors on forces with respect to ab initio results for the current structure.
+# CFE 
+# CFE nstep .......... MD time step or input structure counter
+# CFE cur_for_mae .... Mean absolute error of forces (eV Angst^-1)
+# CFE cur_for_rmse ... Root mean square error of forces (eV Angst^-1)
+# CFE cur_for_maxe ... Maximum error of forces (eV Angst^-1)
+# CFE ######################################################################
+# CFE               nstep      cur_for_mae     cur_for_rmse     cur_for_maxe
+# CFE                   2                3                4                5
+# CFE ######################################################################
+
+# THRHIST #####################################
+# THRHIST This line contains the last ML_MHIS entries of the Bayesian errors of the forces for training structures.
+# THRHIST Entries are listed from newest to oldest, i.e. the most recent addition is listed first.
+# THRHIST 
+# THRHIST nstep ... MD time step or input structure counter
+# THRHIST nhis .... Number of the Bayesian error of the force in the history
+# THRHIST behis ... Bayesian error of the force (eV Angst^-1)
+# THRHIST #####################################
+# THRHIST           nstep nhis            behis
+# THRHIST               2    3                4
+# THRHIST #####################################
+
+# THRUPD ####################################################################################
+# THRUPD This line contains the new and old threshold for the maximum Bayesian error of forces.
+# THRUPD 
+# THRUPD nstep ......... MD time step or input structure counter
+# THRUPD ctifor_prev ... Previous threshold for the maximum Bayesian error of forces (eV Angst^-1)
+# THRUPD ctifor_new .... New threshold for the maximum Bayesian error of forces (eV Angst^-1)
+# THRUPD std_sig ....... Standard deviation of the collected Bayesion errors of forces (eV Angst^-1)
+# THRUPD slope_sig ..... Slope of the collected Bayesian errors of forces
+# THRUPD ####################################################################################
+# THRUPD            nstep      ctifor_prev       ctifor_new          std_sig        slope_sig
+# THRUPD                2                3                4                5                6
+# THRUPD ####################################################################################
+
+# REGR ################################################################################################
+# REGR This line contains results for each step of linear regression before the last step.
+# REGR 
+# REGR nstep ......... MD time step or input structure counter
+# REGR linreg ........ Linear regression method (ML_IALGO_LINREG)
+# REGR ite ........... Number of iteration
+# REGR sigma_w_sqr ... Square of sigma_w (precision parameter) in evidence approximation
+# REGR sigma_v_sqr ... Square of sigma_v (noise parameter) in evidence approximation
+# REGR regratio ...... Ratio between (sigma_v_sqr/sigma_w_sqr) and the highest eigenvalue (wmax)
+# REGR error.......... 0.5 times squared norm of vector containing combined errors of force field
+# REGR ################################################################################################
+# REGR              nstep linr  ite      sigma_w_sqr      sigma_v_sqr         regratio            error
+# REGR                  2    3    4                5                6                7                8
+# REGR ################################################################################################
+
+# REGRF #################################################################################################################################
+# REGRF This line contains results of the last step of linear regression.
+# REGRF 
+# REGRF nstep ......... MD time step or input structure counter
+# REGRF linreg ........ Linear regression method (ML_IALGO_LINREG)
+# REGRF ite ........... Number of iteration
+# REGRF sigma_w_sqr ... Square of sigma_w (precision parameter) in evidence approximation
+# REGRF sigma_v_sqr ... Square of sigma_v (noise parameter) in evidence approximation
+# REGRF regratio ...... Ratio between (sigma_v_sqr/sigma_w_sqr) and the highest eigenvalue (wmax)
+# REGRF error.......... 0.5 times squared norm of vector containing combined errors of force field
+# REGRF wratio ........ Ratio between the highest (wmax) and lowest (wmin) eigenvalue/singular value (wmax/wmin)
+# REGRF wmax .......... Highest eigenvalue/singular value (wmax)
+# REGRF #################################################################################################################################
+# REGRF             nstep linr  ite      sigma_w_sqr      sigma_v_sqr         regratio            error           wratio             wmax
+# REGRF                 2    3    4                5                6                7                8                9               10
+# REGRF #################################################################################################################################
+
+# BEE #########################################################################################################################
+# BEE This line shows the Bayesian error estimations and the current threshold criterion,
+# BEE immediately before re-training the force field.
+# BEE 
+# BEE nstep ............ MD time step or input structure counter
+# BEE bee_energy ....... BEE of energy per atom (eV atom^-1)
+# BEE bee_max_force .... BEE of forces (max) (eV Angst^-1)
+# BEE bee_ave_force .... BEE of forces (average) (kB)
+# BEE threshold ........ Current value of threshold criterion (eV Angst^-1)
+# BEE bee_max_stress ... BEE of stresses (max) (kB)
+# BEE bee_ave_stress ... BEE of stresses (average) (kB)
+# BEE #########################################################################################################################
+# BEE               nstep       bee_energy    bee_max_force    bee_ave_force        threshold   bee_max_stress   bee_ave_stress
+# BEE                   2                3                4                5                6                7                8
+# BEE #########################################################################################################################
+
+# BEEF ########################################################################################################################
+# BEEF This line shows the Bayesian error estimations and the current threshold criterion.
+# BEEF 
+# BEEF nstep ............ MD time step or input structure counter
+# BEEF bee_energy ....... BEE of energy per atom (eV atom^-1)
+# BEEF bee_max_force .... BEE of forces (max) (eV Angst^-1)
+# BEEF bee_ave_force .... BEE of forces (average) (kB)
+# BEEF threshold ........ Current value of threshold criterion (eV Angst^-1)
+# BEEF bee_max_stress ... BEE of stresses (max) (kB)
+# BEEF bee_ave_stress ... BEE of stresses (average) (kB)
+# BEEF ########################################################################################################################
+# BEEF              nstep       bee_energy    bee_max_force    bee_ave_force        threshold   bee_max_stress   bee_ave_stress
+# BEEF                  2                3                4                5                6                7                8
+# BEEF ########################################################################################################################
+
+# DCOUPLE ################################
+# DCOUPLE This line shows the derivative of the Hamiltonian with respect to coupling constant (dH/dlambda).
+# DCOUPLE 
+# DCOUPLE nstep .......... MD time step or input structure counter
+# DCOUPLE der_H_lambda ... dH/dlambda
+# DCOUPLE ################################
+# DCOUPLE           nstep     der_H_lambda
+# DCOUPLE               2                3
+# DCOUPLE ################################
+
+# LCONF ###############################################################
+# LCONF This line shows the number of local configurations
+# LCONF which were sampled from ab initio reference calculations.
+# LCONF 
+# LCONF nstep ...... MD time step or input structure counter
+# LCONF el ......... Element symbol
+# LCONF nlrc_old ... Previous number of local reference configurations for this element
+# LCONF nlrc_new ... Current number of local reference configurations for this element
+# LCONF ###############################################################
+# LCONF             nstep el  nlrc_old  nlrc_new el  nlrc_old  nlrc_new
+# LCONF                 2  3         4         5  6         7         8
+# LCONF ###############################################################
+
+# SPRSC #######################################################################################################
+# SPRSC This line shows the results of sparsification regarding the number
+# SPRSC of reference structures and local reference configurations.
+# SPRSC 
+# SPRSC nstep ....... MD time step or input structure counter
+# SPRSC nstr_prev ... Number of reference structures before sparsification
+# SPRSC nstr_spar ... Number of reference structures after sparsification
+# SPRSC el .......... Element symbol
+# SPRSC nlrc_prev ... Number of local reference configurations before sparsification for this element
+# SPRSC nlrc_spar ... Number of local reference configurations after sparsification for this element
+# SPRSC #######################################################################################################
+# SPRSC             nstep nstr_prev nstr_spar el nlrc_prev nlrc_spar nstr_prev nstr_spar el nlrc_prev nlrc_spar
+# SPRSC                 2  3         4         5         6         7  8         9        10        11        12
+# SPRSC #######################################################################################################
+
+********************************************************************************************************************************************
+--------------------------------------------------------------------------------
+STATUS                  0 threshold  2      T      F         0         0
+--------------------------------------------------------------------------------
+STATUS                  1 critical   4      T      F         0         1
+LCONF                   1 Pb         0         8 Te         0         8
+SPRSC                   1         1         1 Pb         8         1 Te         8         1
+BEEF                    1   0.00000000E+00   3.46410162E-02   2.00000000E-02   2.00000000E-03   0.00000000E+00   0.00000000E+00
+--------------------------------------------------------------------------------
+STATUS                  2 critical   4      T      F         0         2
+LCONF                   2 Pb         1         9 Te         1         9
+SPRSC                   2         2         2 Pb         9         2 Te         9         2
+REGR                    2    1    1   3.46697373E-05   5.56054376E-02   4.82128322E-13   3.00644778E+00 
+REGR                    2    1    2   3.06567841E-05   5.56875208E-02   5.46043474E-13   3.00798589E+00 
+REGRF                   2    1    3   3.04688587E-05   5.56932473E-02   5.49467851E-13   3.00840466E+00   -7.56473353E+15   3.32662669E+15
+STDAB                   2   6.67216057E-07   1.60375609E-29   1.33621783E-01
+ERR                     2   3.51668968E-09   6.98318497E-18   1.33808209E-01
+CFE                     2   0.00000000E+00   0.00000000E+00   0.00000000E+00
+LASTE                   2   3.51928045E-09   5.84157228E-20   1.27078838E-01
+BEE                     2   0.00000000E+00   3.46410162E-02   2.00000000E-02   2.00000000E-03   0.00000000E+00   0.00000000E+00
+BEEF                    2   8.92592493E-09   2.56752958E-19   7.41174249E-20   2.00000000E-03   1.03001586E-02   7.28331202E-03
+--------------------------------------------------------------------------------
+STATUS                  3 accurate   1      F      T         1         1
+BEEF                    3   7.29604598E-09   3.20893498E-19   8.73710894E-20   2.00000000E-03   1.02973221E-02   7.28130631E-03
+--------------------------------------------------------------------------------
+STATUS                  4 accurate   1      F      T         2         2
+BEEF                    4   7.85936977E-09   3.77666512E-16   1.34802323E-16   2.00000000E-03   1.02985457E-02   7.28217153E-03
+--------------------------------------------------------------------------------
+STATUS                  5 accurate   1      F      T         3         3
+BEEF                    5   8.35379605E-09   2.24970189E-16   6.94040658E-17   2.00000000E-03   1.02993537E-02   7.28274284E-03
+--------------------------------------------------------------------------------
+STATUS                  6 accurate   1      F      T         4         4
+BEEF                    6   8.63090311E-09   3.49745450E-16   1.31876131E-16   2.00000000E-03   1.02997565E-02   7.28302770E-03
+--------------------------------------------------------------------------------
+STATUS                  7 accurate   1      F      T         5         5
+BEEF                    7   8.77642850E-09   2.19617480E-16   8.27510910E-17   2.00000000E-03   1.02999577E-02   7.28316992E-03
+--------------------------------------------------------------------------------
+STATUS                  8 accurate   1      F      T         6         6
+BEEF                    8   8.85060737E-09   2.46472039E-16   8.89378282E-17   2.00000000E-03   1.03000582E-02   7.28324099E-03
+--------------------------------------------------------------------------------
+STATUS                  9 accurate   1      F      T         7         7
+BEEF                    9   8.88836657E-09   3.93823672E-19   1.12999260E-19   2.00000000E-03   1.03001084E-02   7.28327650E-03
+--------------------------------------------------------------------------------
+STATUS                 10 accurate   1      F      T         8         8
+BEEF                   10   8.90700097E-09   3.17398952E-16   1.10717206E-16   2.00000000E-03   1.03001335E-02   7.28329426E-03
+--------------------------------------------------------------------------------
+STATUS                 11 accurate   1      F      T         9         9
+BEEF                   11   8.91668119E-09   2.15492229E-16   8.25042571E-17   2.00000000E-03   1.03001461E-02   7.28330314E-03
+--------------------------------------------------------------------------------
+STATUS                 12 accurate   1      F      T        10        10
+BEEF                   12   8.92130105E-09   1.65954310E-19   6.93425619E-20   2.00000000E-03   1.03001524E-02   7.28330758E-03
+--------------------------------------------------------------------------------
+STATUS                 13 accurate   1      F      T        11        11
+BEEF                   13   8.92366896E-09   3.10360945E-19   1.05044748E-19   2.00000000E-03   1.03001555E-02   7.28330980E-03
+--------------------------------------------------------------------------------
+STATUS                 14 accurate   1      F      T        12        12
+BEEF                   14   8.92474035E-09   4.39249605E-16   1.48275157E-16   2.00000000E-03   1.03001571E-02   7.28331091E-03
+--------------------------------------------------------------------------------
+STATUS                 15 accurate   1      F      T        13        13
+BEEF                   15   8.92521969E-09   1.40384931E-16   5.36661114E-17   2.00000000E-03   1.03001578E-02   7.28331146E-03
+--------------------------------------------------------------------------------
+STATUS                 16 accurate   1      F      T        14        14
+BEEF                   16   8.92551585E-09   3.38279746E-16   1.17264322E-16   2.00000000E-03   1.03001582E-02   7.28331174E-03
+--------------------------------------------------------------------------------
+STATUS                 17 accurate   1      F      T        15        15
+BEEF                   17   8.92566393E-09   2.66406719E-16   9.62664863E-17   2.00000000E-03   1.03001584E-02   7.28331188E-03
+--------------------------------------------------------------------------------
+STATUS                 18 accurate   1      F      T        16        16
+BEEF                   18   8.92573797E-09   1.69083443E-16   5.43896625E-17   2.00000000E-03   1.03001585E-02   7.28331195E-03
+--------------------------------------------------------------------------------
+STATUS                 19 accurate   1      F      T        17        17
+BEEF                   19   8.92577500E-09   2.48704492E-16   1.02021461E-16   2.00000000E-03   1.03001586E-02   7.28331198E-03
+--------------------------------------------------------------------------------
+STATUS                 20 accurate   1      F      T        18        18
+BEEF                   20   8.92592493E-09   4.25277517E-16   1.64263791E-16   2.00000000E-03   1.02906803E-02   7.27660979E-03

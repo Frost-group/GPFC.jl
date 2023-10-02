@@ -1,0 +1,187 @@
+ ----------------------------------------------------
+    OOO  PPPP  EEEEE N   N M   M PPPP
+   O   O P   P E     NN  N MM MM P   P
+   O   O PPPP  EEEEE N N N M M M PPPP   -- VERSION
+   O   O P     E     N  NN M   M P
+    OOO  P     EEEEE N   N M   M P
+ ----------------------------------------------------
+ running  128 mpi-ranks, with    1 threads/rank
+ distrk:  each k-point on  128 cores,    1 groups
+ distr:  one band on   16 cores,    8 groups
+ vasp.6.3.0 20Jan22 (build Feb 21 2022 11:18:28) complex                         
+ POSCAR found type information on POSCAR PbTe
+ POSCAR found :  2 types and      16 ions
+ Reading from existing POTCAR
+ scaLAPACK will be used
+ Reading from existing POTCAR
+ -----------------------------------------------------------------------------
+|                                                                             |
+|               ----> ADVICE to this user running VASP <----                  |
+|                                                                             |
+|     You enforced a specific xc type in the INCAR file but a different       |
+|     type was found in the POTCAR file.                                      |
+|     I HOPE YOU KNOW WHAT YOU ARE DOING!                                     |
+|                                                                             |
+ -----------------------------------------------------------------------------
+
+ LDA part: xc-table for Pade appr. of Perdew
+ Machine learning selected
+ Setting communicators for machine learning
+ Initializing machine learning
+ POSCAR, INCAR and KPOINTS ok, starting setup
+ FFT: planning ... GRIDC
+ FFT: planning ... GRID_SOFT
+ FFT: planning ... GRID
+ WAVECAR not read
+ WARNING: random wavefunctions but no delay for mixing, default for NELMDL
+ entering main loop
+       N       E                     dE             d eps       ncg     rms          rms(c)
+DAV:   1     0.187947462181E+04    0.18795E+04   -0.73876E+04  3072   0.184E+03
+DAV:   2     0.212190757476E+03   -0.16673E+04   -0.16245E+04  3080   0.482E+02
+DAV:   3    -0.463820035935E+02   -0.25857E+03   -0.24448E+03  3712   0.214E+02
+DAV:   4    -0.660430200750E+02   -0.19661E+02   -0.19283E+02  3680   0.573E+01
+DAV:   5    -0.669763816034E+02   -0.93336E+00   -0.93008E+00  3816   0.117E+01    0.986E+00
+RMM:   6    -0.661058684889E+02    0.87051E+00   -0.16482E+00  3123   0.366E+00    0.572E+00
+RMM:   7    -0.661086968275E+02   -0.28283E-02   -0.18255E+00  3272   0.292E+00    0.153E+00
+RMM:   8    -0.660871775475E+02    0.21519E-01   -0.38181E-01  3171   0.373E+00    0.464E-01
+RMM:   9    -0.660740857724E+02    0.13092E-01   -0.88207E-02  3498   0.172E+00    0.352E-01
+RMM:  10    -0.660770691042E+02   -0.29833E-02   -0.28052E-02  3609   0.680E-01    0.242E-01
+RMM:  11    -0.660769544298E+02    0.11467E-03   -0.64485E-03  4291   0.355E-01    0.241E-01
+RMM:  12    -0.660786433871E+02   -0.16890E-02   -0.16565E-03  3198   0.128E-01    0.341E-01
+RMM:  13    -0.660752026854E+02    0.34407E-02   -0.12604E-02  3977   0.397E-01    0.585E-02
+RMM:  14    -0.660752549164E+02   -0.52231E-04   -0.68739E-04  3145   0.818E-02    0.635E-02
+RMM:  15    -0.660752937924E+02   -0.38876E-04   -0.25890E-04  3930   0.444E-02    0.916E-02
+RMM:  16    -0.660752867531E+02    0.70393E-05   -0.38623E-05  4471   0.216E-02    0.874E-02
+RMM:  17    -0.660753962928E+02   -0.10954E-03   -0.17045E-04  3751   0.366E-02    0.162E-01
+RMM:  18    -0.660752478897E+02    0.14840E-03   -0.30319E-04  3931   0.480E-02    0.387E-02
+RMM:  19    -0.660752402448E+02    0.76449E-05   -0.86553E-05  3366   0.174E-02    0.546E-02
+RMM:  20    -0.660752395429E+02    0.70189E-06   -0.12587E-05  3219   0.223E-02    0.178E-02
+RMM:  21    -0.660752406560E+02   -0.11131E-05   -0.45116E-06  3416   0.890E-03    0.650E-03
+RMM:  22    -0.660752412596E+02   -0.60359E-06   -0.12997E-06  3545   0.484E-03    0.594E-03
+RMM:  23    -0.660752416161E+02   -0.35645E-06   -0.51099E-07  3642   0.236E-03    0.560E-03
+RMM:  24    -0.660752412850E+02    0.33111E-06   -0.35723E-07  2594   0.165E-03    0.237E-03
+RMM:  25    -0.660752413438E+02   -0.58826E-07   -0.10007E-07  2987   0.123E-03    0.193E-03
+RMM:  26    -0.660752413503E+02   -0.64629E-08   -0.10413E-08  1815   0.618E-04
+   1 F= -.66075241E+02 E0= -.66075241E+02  d E =-.660752E+02
+ curvature:   0.00 expect dE= 0.000E+00 dE for cont linesearch  0.000E+00
+ trial: gam= 0.00000 g(F)=  0.000E+00 g(S)=  0.766E-04 ort = 0.000E+00 (trialstep = 0.100E+01)
+ search vector abs. value=  0.766E-04
+ bond charge predicted
+       N       E                     dE             d eps       ncg     rms          rms(c)
+DAV:   1    -0.660762593781E+02   -0.10180E-02   -0.32920E-02  3976   0.134E+00    0.173E-01
+RMM:   2    -0.660753922013E+02    0.86718E-03   -0.17394E-03  3176   0.281E-01    0.672E-02
+RMM:   3    -0.660752393432E+02    0.15286E-03   -0.85320E-04  3072   0.164E-01    0.808E-03
+RMM:   4    -0.660752572739E+02   -0.17931E-04   -0.15215E-04  4025   0.547E-02    0.142E-02
+RMM:   5    -0.660752585060E+02   -0.12321E-05   -0.14372E-05  3372   0.204E-02    0.154E-02
+RMM:   6    -0.660752594296E+02   -0.92360E-06   -0.62920E-06  4151   0.115E-02    0.198E-02
+RMM:   7    -0.660752694456E+02   -0.10016E-04   -0.48154E-05  3647   0.451E-02    0.133E-02
+RMM:   8    -0.660752666350E+02    0.28106E-05   -0.24017E-06  3091   0.115E-02    0.974E-03
+RMM:   9    -0.660752635011E+02    0.31340E-05   -0.46658E-06  3076   0.137E-02    0.347E-03
+RMM:  10    -0.660752636275E+02   -0.12643E-06   -0.24927E-07  3351   0.333E-03    0.408E-03
+RMM:  11    -0.660752636405E+02   -0.13039E-07   -0.96020E-08  2723   0.140E-03    0.395E-03
+RMM:  12    -0.660752632735E+02    0.36701E-06   -0.25316E-07  3067   0.309E-03    0.279E-03
+RMM:  13    -0.660752631213E+02    0.15221E-06   -0.26247E-07  3132   0.287E-03    0.161E-03
+RMM:  14    -0.660752630997E+02    0.21591E-07   -0.54911E-07  3744   0.437E-03    0.155E-03
+RMM:  15    -0.660752632178E+02   -0.11810E-06   -0.13241E-07  3008   0.206E-03    0.245E-03
+RMM:  16    -0.660752631168E+02    0.10101E-06   -0.21148E-08  1781   0.115E-03    0.202E-03
+RMM:  17    -0.660752631022E+02    0.14585E-07   -0.38002E-09  1738   0.416E-04    0.196E-03
+RMM:  18    -0.660752631140E+02   -0.11791E-07   -0.37003E-09  1727   0.430E-04    0.188E-03
+RMM:  19    -0.660752631479E+02   -0.33842E-07   -0.14144E-08  1724   0.849E-04    0.214E-03
+RMM:  20    -0.660752628829E+02    0.26494E-06   -0.10655E-07  2903   0.214E-03    0.121E-03
+RMM:  21    -0.660752625581E+02    0.32482E-06   -0.15517E-07  2921   0.226E-03    0.756E-04
+RMM:  22    -0.660752625694E+02   -0.11341E-07   -0.61815E-09  1715   0.605E-04    0.543E-04
+RMM:  23    -0.660752626692E+02   -0.99790E-07   -0.16277E-08  1708   0.901E-04    0.538E-04
+RMM:  24    -0.660752626977E+02   -0.28489E-07   -0.22206E-09  1637   0.364E-04    0.472E-04
+RMM:  25    -0.660752627012E+02   -0.34579E-08   -0.41528E-09  1635   0.446E-04
+   2 F= -.66075263E+02 E0= -.66075263E+02  d E =-.213509E-04
+ trial-energy change:   -0.000021  1 .order   -0.000024   -0.000077    0.000028
+ step:   0.6962(harm=  0.7290)  dis= 0.00000  next Energy=   -66.075267 (dE=-0.258E-04)
+   3 F= -.66075256E+02 E0= -.66075256E+02  d E =-.148868E-04
+ curvature:  -0.36 expect dE=-0.216E-05 dE for cont linesearch -0.216E-05
+ ZBRENT: interpolating
+ opt :   0.8268  next Energy=   -66.075258 (dE=-0.163E-04)
+   4 F= -.66075259E+02 E0= -.66075259E+02  d E =-.176890E-04
+ curvature:  -0.23 expect dE=-0.140E-05 dE for cont linesearch -0.140E-05
+ ZBRENT: bisectioning
+ opt :   0.9134  next Energy=   -66.075261 (dE=-0.195E-04)
+   5 F= -.66075261E+02 E0= -.66075261E+02  d E =-.195481E-04
+ curvature:  -0.31 expect dE=-0.186E-05 dE for cont linesearch -0.186E-05
+ ZBRENT: bisectioning
+ opt :   0.9567  next Energy=   -66.075262 (dE=-0.205E-04)
+   6 F= -.66075262E+02 E0= -.66075262E+02  d E =-.204776E-04
+ curvature:  -0.15 expect dE=-0.929E-06 dE for cont linesearch -0.929E-06
+ ZBRENT: bisectioning
+ opt :   0.9783  next Energy=   -66.075262 (dE=-0.209E-04)
+   7 F= -.66075262E+02 E0= -.66075262E+02  d E =-.209424E-04
+ curvature:  -0.08 expect dE=-0.465E-06 dE for cont linesearch -0.465E-06
+ ZBRENT: bisectioning
+ opt :   0.9892  next Energy=   -66.075263 (dE=-0.212E-04)
+   8 F= -.66075263E+02 E0= -.66075263E+02  d E =-.211748E-04
+ curvature:  -0.04 expect dE=-0.232E-06 dE for cont linesearch -0.232E-06
+ ZBRENT: bisectioning
+ opt :   0.9946  next Energy=   -66.075263 (dE=-0.213E-04)
+   9 F= -.66075263E+02 E0= -.66075263E+02  d E =-.212910E-04
+ curvature:  -0.02 expect dE=-0.116E-06 dE for cont linesearch -0.116E-06
+ ZBRENT: bisectioning
+ opt :   0.9973  next Energy=   -66.075263 (dE=-0.213E-04)
+  10 F= -.66075263E+02 E0= -.66075263E+02  d E =-.213491E-04
+ curvature:  -0.01 expect dE=-0.581E-07 dE for cont linesearch -0.581E-07
+ ZBRENT: bisectioning
+ opt :   0.9986  next Energy=   -66.075263 (dE=-0.214E-04)
+  11 F= -.66075263E+02 E0= -.66075263E+02  d E =-.213782E-04
+ curvature:  -0.00 expect dE=-0.290E-07 dE for cont linesearch -0.290E-07
+ ZBRENT: bisectioning
+ opt :   0.9993  next Energy=   -66.075263 (dE=-0.214E-04)
+  12 F= -.66075263E+02 E0= -.66075263E+02  d E =-.213927E-04
+ curvature:  -0.00 expect dE=-0.145E-07 dE for cont linesearch -0.145E-07
+ ZBRENT: bisectioning
+ opt :   0.9997  next Energy=   -66.075263 (dE=-0.214E-04)
+  13 F= -.66075263E+02 E0= -.66075263E+02  d E =-.214000E-04
+ curvature:  -0.00 expect dE=-0.726E-08 dE for cont linesearch -0.726E-08
+ ZBRENT: bisectioning
+ opt :   0.9998  next Energy=   -66.075263 (dE=-0.214E-04)
+  14 F= -.66075263E+02 E0= -.66075263E+02  d E =-.214036E-04
+ curvature:  -0.00 expect dE=-0.363E-08 dE for cont linesearch -0.363E-08
+ ZBRENT: bisectioning
+ opt :   0.9999  next Energy=   -66.075263 (dE=-0.214E-04)
+  15 F= -.66075263E+02 E0= -.66075263E+02  d E =-.214054E-04
+ curvature:  -0.00 expect dE=-0.182E-08 dE for cont linesearch -0.182E-08
+ ZBRENT: bisectioning
+ opt :   1.0000  next Energy=   -66.075263 (dE=-0.214E-04)
+  16 F= -.66075263E+02 E0= -.66075263E+02  d E =-.214063E-04
+ curvature:  -0.00 expect dE=-0.908E-09 dE for cont linesearch -0.908E-09
+ ZBRENT: bisectioning
+ opt :   1.0000  next Energy=   -66.075263 (dE=-0.214E-04)
+  17 F= -.66075263E+02 E0= -.66075263E+02  d E =-.214068E-04
+ curvature:  -0.00 expect dE=-0.454E-09 dE for cont linesearch -0.454E-09
+ ZBRENT: bisectioning
+ opt :   1.0000  next Energy=   -66.075263 (dE=-0.214E-04)
+  18 F= -.66075263E+02 E0= -.66075263E+02  d E =-.214070E-04
+ curvature:  -0.00 expect dE=-0.227E-09 dE for cont linesearch -0.227E-09
+ ZBRENT: bisectioning
+ opt :   1.0000  next Energy=   -66.075263 (dE=-0.214E-04)
+  19 F= -.66075263E+02 E0= -.66075263E+02  d E =-.214071E-04
+ curvature:  -0.00 expect dE=-0.113E-09 dE for cont linesearch -0.113E-09
+ ZBRENT:  can not reach accuracy
+ opt :   0.0000  next Energy=     0.000000 (dE= 0.661E+02)
+  20 F= -.66075241E+02 E0= -.66075241E+02  d E =0.562255E-07
+ curvature:   0.00 expect dE= 0.206-319 dE for cont linesearch  0.206-319
+ -----------------------------------------------------------------------------
+|                                                                             |
+|     EEEEEEE  RRRRRR   RRRRRR   OOOOOOO  RRRRRR      ###     ###     ###     |
+|     E        R     R  R     R  O     O  R     R     ###     ###     ###     |
+|     E        R     R  R     R  O     O  R     R     ###     ###     ###     |
+|     EEEEE    RRRRRR   RRRRRR   O     O  RRRRRR       #       #       #      |
+|     E        R   R    R   R    O     O  R   R                               |
+|     E        R    R   R    R   O     O  R    R      ###     ###     ###     |
+|     EEEEEEE  R     R  R     R  OOOOOOO  R     R     ###     ###     ###     |
+|                                                                             |
+|     ZBRENT: fatal error in bracketing                                       |
+|      please rerun with smaller EDIFF, or copy CONTCAR                       |
+|      to POSCAR and continue                                                 |
+|                                                                             |
+|       ---->  I REFUSE TO CONTINUE WITH THIS SICK JOB ... BYE!!! <----       |
+|                                                                             |
+ -----------------------------------------------------------------------------
+
+For us, there is only the trying. The rest is not our business. ~T.S.Eliot
