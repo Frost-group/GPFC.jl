@@ -13,12 +13,8 @@ function VASP_input(vasph5)
 
 	energy = read(file["intermediate/ion_dynamics/energies"])
 	TOTEN = energy[1,:] #ion-electron
-	EKIN = energy[2,:] #kinetic energy
-	EKIN_LAT = energy[3,:] #kinetic of lattice
-	TEIN = energy[4,:] #temperature
-	ES = energy[5,:] #nose potential
-	EPS = energy[6,:] #nose kinetic
-	ETOTAL = energy[7,:] #total energy
+	ES = energy[2,:] #nose potential
+	ETOTAL = energy[3,:] #total energy
 	
 	datasize = size(energy,2) #iteration
 	forces = read(file["intermediate/ion_dynamics/forces"])

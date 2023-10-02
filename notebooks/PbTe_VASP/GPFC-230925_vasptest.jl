@@ -132,7 +132,7 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 	end
 
 	Iee = σₑ^2 * Matrix(I, num, num)
-	Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
+	Iff = (σₑ/l)^2 * Matrix(I, dim * num, dim * num)
 	Ief = zeros(num, dim * num)
 	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
 
@@ -219,10 +219,10 @@ end
 
 # ╔═╡ 1cf3fc5a-daca-434b-a847-284cd539f97e
 begin
-	σₒ = 0.8             # Kernel Scale
-	l = 0.01  				# Length Scale
-	σₑ = 8.70e-7              # Energy Gaussian noise
-	σₙ = 1e-6                  # Force Gaussian noise for Model 2 (σₑ independent)
+	σₒ = 0.05             # Kernel Scale
+	l = 0.05  				# Length Scale
+	σₑ = 9e-7              # Energy Gaussian noise
+	σₙ = 4e-8                 # Force Gaussian noise for Model 2 (σₑ independent)
 		
 	Num = 10                   # Number of training points
 	DIM = 3                     # Dimension of Materials
@@ -258,6 +258,9 @@ begin
 		,feature4);
 end;
 
+# ╔═╡ c5fe61cf-e064-41b6-8266-0132e2307e05
+Target
+
 # ╔═╡ 67120528-5e19-4358-884b-9717887c696b
 feature
 
@@ -278,11 +281,14 @@ lattice_vectors
 
 # ╔═╡ 3203cc0f-c938-48a5-95ea-21d35dd6695b
 begin
-	ii = 113
+	ii = 51
 	Kₘₘ = Marginal(feature[:,1:ii], kernel, l, σₑ, σₙ)
 	Kₙₘ = Coveriance_fc2(feature[:,1:ii], equi, kernel)
 	FC2 = Posterior(Kₘₘ , Kₙₘ , Set_Target(Target, ii))
 end;
+
+# ╔═╡ ce32af1b-658c-4758-b8eb-c9fe4dfb76af
+sum(FC2)
 
 # ╔═╡ b0aa9382-6829-47bd-8343-d770e00db8e9
 heatmap(1:size(FC2[:,:],1),
@@ -295,6 +301,45 @@ heatmap(1:size(FC2[:,:],1),
 			ylabel="feature coord. (n x d)",
 		    #title="FC2 (Traning Data = " *string(nd[i]) *")"
 )
+
+# ╔═╡ 45843c8e-4da2-4641-a1e7-6734865804c0
+begin
+	Dim_feature = 48
+	L = zeros((Dim_feature))
+	atomicnumber_ions = [82 , 52]
+	l2 = 9.5
+	for ii in 1:size(atomicnumber_ions,1)
+		Dim_atom = Int(Dim_feature/size(atomicnumber_ions,1))
+		L[1+Dim_atom*(ii-1):Dim_atom*ii] = l2*ones(Dim_atom)*(1/atomicnumber_ions[ii])
+	end
+	kernel_ARD = σₒ^2 * SqExponentialKernel() ∘ ARDTransform(L)
+end
+
+# ╔═╡ 0b049134-513d-41d9-982d-47b8f8feb1ea
+L
+
+# ╔═╡ 0bed9cd8-f088-4b9e-9be3-1fe7a4b311d7
+begin
+	ii_ARD = 51
+	Kₘₘ_ARD = Marginal(feature[:,1:ii], kernel_ARD, l, σₑ, σₙ)
+	Kₙₘ_ARD = Coveriance_fc2(feature[:,1:ii], equi, kernel_ARD)
+	FC2_ARD = Posterior(Kₘₘ_ARD , Kₙₘ_ARD , Set_Target(Target, ii))
+end;
+
+# ╔═╡ 28d02ccc-2ffe-4294-aa34-0540aac64a9e
+heatmap(1:size(FC2_ARD[:,:],1),
+		    1:size(FC2_ARD[:,:],2), 
+			FC2_ARD[:,:],
+		    c=cgrad([:blue, :white, :red, :yellow]),
+			aspectratio=:equal,
+			size=(700, 700),
+		    xlabel="feature coord. (n x d)",
+			ylabel="feature coord. (n x d)",
+		    #title="FC2 (Traning Data = " *string(nd[i]) *")"
+)
+
+# ╔═╡ 99caa5a2-4c46-40ef-bcb5-c98de092b6b7
+sum(FC2_ARD)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -317,11 +362,11 @@ DataFrames = "~1.6.1"
 DelimitedFiles = "~1.9.1"
 Einsum = "~0.4.1"
 ForwardDiff = "~0.10.36"
-HDF5 = "~0.17.0"
-KernelFunctions = "~0.10.56"
+HDF5 = "~0.17.1"
+KernelFunctions = "~0.10.57"
 Kronecker = "~0.5.4"
 Plots = "~1.39.0"
-Zygote = "~0.6.64"
+Zygote = "~0.6.65"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -739,9 +784,9 @@ version = "1.0.2"
 
 [[deps.HDF5]]
 deps = ["Compat", "HDF5_jll", "Libdl", "MPIPreferences", "Mmap", "Preferences", "Printf", "Random", "Requires", "UUIDs"]
-git-tree-sha1 = "ec7df74b7b2022e8252a8bfd4ec23411491adc3b"
+git-tree-sha1 = "26407bd1c60129062cec9da63dc7d08251544d53"
 uuid = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
-version = "0.17.0"
+version = "0.17.1"
 
     [deps.HDF5.extensions]
     MPIExt = "MPI"
@@ -824,9 +869,9 @@ version = "2.1.91+0"
 
 [[deps.KernelFunctions]]
 deps = ["ChainRulesCore", "Compat", "CompositionsBase", "Distances", "FillArrays", "Functors", "IrrationalConstants", "LinearAlgebra", "LogExpFunctions", "Random", "Requires", "SpecialFunctions", "Statistics", "StatsBase", "TensorCore", "Test", "ZygoteRules"]
-git-tree-sha1 = "d7f3c99f7b00e36bdb6d47f5796eff9087327771"
+git-tree-sha1 = "d1e34d1ae87ac280a0cfca85ea3d610f25ea6a5f"
 uuid = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
-version = "0.10.56"
+version = "0.10.57"
 
 [[deps.Kronecker]]
 deps = ["LinearAlgebra", "NamedDims", "SparseArrays", "StatsBase"]
@@ -848,15 +893,15 @@ version = "3.0.0+1"
 
 [[deps.LLVM]]
 deps = ["CEnum", "LLVMExtra_jll", "Libdl", "Printf", "Unicode"]
-git-tree-sha1 = "a9d2ce1d5007b1e8f6c5b89c5a31ff8bd146db5c"
+git-tree-sha1 = "4ea2928a96acfcf8589e6cd1429eff2a3a82c366"
 uuid = "929cbde3-209d-540e-8aea-75f648917ca0"
-version = "6.2.1"
+version = "6.3.0"
 
 [[deps.LLVMExtra_jll]]
 deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
-git-tree-sha1 = "7ca6850ae880cc99b59b88517545f91a52020afa"
+git-tree-sha1 = "e7c01b69bcbcb93fd4cbc3d0fea7d229541e18d2"
 uuid = "dad2f222-ce93-54a1-a47d-0025e8a3acab"
-version = "0.0.25+0"
+version = "0.0.26+0"
 
 [[deps.LLVMOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1311,9 +1356,9 @@ version = "1.7.0"
 
 [[deps.StatsBase]]
 deps = ["DataAPI", "DataStructures", "LinearAlgebra", "LogExpFunctions", "Missings", "Printf", "Random", "SortingAlgorithms", "SparseArrays", "Statistics", "StatsAPI"]
-git-tree-sha1 = "75ebe04c5bed70b91614d684259b661c9e6274a4"
+git-tree-sha1 = "1d77abd07f617c4868c33d4f5b9e1dbb2643c9cf"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
-version = "0.34.0"
+version = "0.34.2"
 
 [[deps.StringManipulation]]
 deps = ["PrecompileTools"]
@@ -1448,9 +1493,9 @@ version = "1.6.1"
 
 [[deps.XML2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Zlib_jll"]
-git-tree-sha1 = "04a51d15436a572301b5abbb9d099713327e9fc4"
+git-tree-sha1 = "24b81b59bd35b3c42ab84fa589086e19be919916"
 uuid = "02c8fc9c-b97f-50b9-bbe4-9be30ff0a78a"
-version = "2.10.4+0"
+version = "2.11.5+0"
 
 [[deps.XSLT_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgcrypt_jll", "Libgpg_error_jll", "Libiconv_jll", "Pkg", "XML2_jll", "Zlib_jll"]
@@ -1621,9 +1666,9 @@ version = "1.5.5+0"
 
 [[deps.Zygote]]
 deps = ["AbstractFFTs", "ChainRules", "ChainRulesCore", "DiffRules", "Distributed", "FillArrays", "ForwardDiff", "GPUArrays", "GPUArraysCore", "IRTools", "InteractiveUtils", "LinearAlgebra", "LogExpFunctions", "MacroTools", "NaNMath", "PrecompileTools", "Random", "Requires", "SparseArrays", "SpecialFunctions", "Statistics", "ZygoteRules"]
-git-tree-sha1 = "b97c927497c1de55a78dc9030f6068be5d83ef80"
+git-tree-sha1 = "16848c23e7961e099a4152ba0d10db887f412ee9"
 uuid = "e88e6eb3-aa80-5325-afca-941959d7151f"
-version = "0.6.64"
+version = "0.6.65"
 
     [deps.Zygote.extensions]
     ZygoteColorsExt = "Colors"
@@ -1751,12 +1796,19 @@ version = "1.4.1+1"
 # ╠═449acc9c-6a4a-4325-a113-e898d89bdb81
 # ╠═6211ca02-8853-44fd-8f91-253313daf7bc
 # ╠═8260a0bf-1071-4d72-b544-7771cf041e72
+# ╠═c5fe61cf-e064-41b6-8266-0132e2307e05
 # ╠═1cf3fc5a-daca-434b-a847-284cd539f97e
 # ╠═c8aa8b2c-33ef-47c3-b238-4976a81d40a8
 # ╠═67120528-5e19-4358-884b-9717887c696b
 # ╠═fca9fee0-2d9e-47e5-9511-d3a231d6ad11
 # ╠═71aeb543-7756-47da-9850-f53cac742577
 # ╠═3203cc0f-c938-48a5-95ea-21d35dd6695b
+# ╠═ce32af1b-658c-4758-b8eb-c9fe4dfb76af
 # ╠═b0aa9382-6829-47bd-8343-d770e00db8e9
+# ╠═45843c8e-4da2-4641-a1e7-6734865804c0
+# ╠═0b049134-513d-41d9-982d-47b8f8feb1ea
+# ╠═0bed9cd8-f088-4b9e-9be3-1fe7a4b311d7
+# ╠═28d02ccc-2ffe-4294-aa34-0540aac64a9e
+# ╠═99caa5a2-4c46-40ef-bcb5-c98de092b6b7
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

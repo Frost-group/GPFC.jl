@@ -1,0 +1,455 @@
++ export OMP_NUM_THREADS=1
++ OMP_NUM_THREADS=1
++ module load PrgEnv-cray
+++ /usr/share/lmod/lmod/libexec/lmod bash load PrgEnv-cray
++ eval 'CRAYPE_DIR=/opt/cray/pe/craype/2.7.19;' export 'CRAYPE_DIR;' 'CRAYPE_VERSION=2.7.19;' export 'CRAYPE_VERSION;' 'CRAY_DSMML_BASEDIR=/opt/cray/pe/dsmml/0.2.2;' export 'CRAY_DSMML_BASEDIR;' 'CRAY_DSMML_DIR=/opt/cray/pe/dsmml/0.2.2/dsmml;' export 'CRAY_DSMML_DIR;' 'CRAY_DSMML_PREFIX=/opt/cray/pe/dsmml/0.2.2/dsmml;' export 'CRAY_DSMML_PREFIX;' 'CRAY_DSMML_ROOTDIR=/opt/cray/pe/dsmml/0.2.2;' export 'CRAY_DSMML_ROOTDIR;' 'CRAY_DSMML_VER=0.2.2;' export 'CRAY_DSMML_VER;' 'CRAY_DSMML_VERSION=0.2.2;' export 'CRAY_DSMML_VERSION;' '__LMOD_REF_COUNT_CRAY_LD_LIBRARY_PATH=/opt/cray/pe/libsci/22.12.1.1/CRAY/9.0/x86_64/lib:2\;/opt/cray/pe/mpich/8.1.23/ofi/crayclang/10.0/lib:1\;/opt/cray/pe/mpich/8.1.23/gtl/lib:1\;/opt/cray/pe/dsmml/0.2.2/dsmml/lib:1\;/opt/cray/pe/cce/15.0.0/cce-clang/x86_64/lib:1\;/opt/cray/pe/cce/15.0.0/cce/x86_64/lib:1\;/opt/cray/pe/perftools/22.12.0/lib64:1;' export '__LMOD_REF_COUNT_CRAY_LD_LIBRARY_PATH;' 'CRAY_LD_LIBRARY_PATH=/opt/cray/pe/libsci/22.12.1.1/CRAY/9.0/x86_64/lib:/opt/cray/pe/mpich/8.1.23/ofi/crayclang/10.0/lib:/opt/cray/pe/mpich/8.1.23/gtl/lib:/opt/cray/pe/dsmml/0.2.2/dsmml/lib:/opt/cray/pe/cce/15.0.0/cce-clang/x86_64/lib:/opt/cray/pe/cce/15.0.0/cce/x86_64/lib:/opt/cray/pe/perftools/22.12.0/lib64;' export 'CRAY_LD_LIBRARY_PATH;' 'CRAY_LIBSCI_BASE_DIR=/opt/cray/pe/libsci/22.12.1.1;' export 'CRAY_LIBSCI_BASE_DIR;' 'CRAY_LIBSCI_DIR=/opt/cray/pe/libsci/22.12.1.1;' export 'CRAY_LIBSCI_DIR;' 'CRAY_LIBSCI_PREFIX_DIR=/opt/cray/pe/libsci/22.12.1.1/CRAY/9.0/x86_64;' export 'CRAY_LIBSCI_PREFIX_DIR;' 'CRAY_LIBSCI_VERSION=22.12.1.1;' export 'CRAY_LIBSCI_VERSION;' 'CRAY_LMOD_MPI=cray-mpich/8.0;' export 'CRAY_LMOD_MPI;' 'CRAY_MPICH_BASEDIR=/opt/cray/pe/mpich/8.1.23/ofi;' export 'CRAY_MPICH_BASEDIR;' 'CRAY_MPICH_DIR=/opt/cray/pe/mpich/8.1.23/ofi/crayclang/10.0;' export 'CRAY_MPICH_DIR;' 'CRAY_MPICH_PREFIX=/opt/cray/pe/mpich/8.1.23/ofi/crayclang/10.0;' export 'CRAY_MPICH_PREFIX;' 'CRAY_MPICH_ROOTDIR=/opt/cray/pe/mpich/8.1.23;' export 'CRAY_MPICH_ROOTDIR;' 'CRAY_MPICH_VER=8.1.23;' export 'CRAY_MPICH_VER;' 'CRAY_MPICH_VERSION=8.1.23;' export 'CRAY_MPICH_VERSION;' 'LIBSCI_BASE_DIR=/opt/cray/pe/libsci/22.12.1.1;' export 'LIBSCI_BASE_DIR;' 'LIBSCI_VERSION=22.12.1.1;' export 'LIBSCI_VERSION;' 'LMOD_FAMILY_CRAYPE=craype;' export 'LMOD_FAMILY_CRAYPE;' 'LMOD_FAMILY_CRAYPE_VERSION=2.7.19;' export 'LMOD_FAMILY_CRAYPE_VERSION;' 'LMOD_FAMILY_MPI=cray-mpich;' export 'LMOD_FAMILY_MPI;' 'LMOD_FAMILY_MPI_VERSION=8.1.23;' export 'LMOD_FAMILY_MPI_VERSION;' 'LMOD_FAMILY_PRGENV=PrgEnv-cray;' export 'LMOD_FAMILY_PRGENV;' 'LMOD_FAMILY_PRGENV_VERSION=8.3.3;' export 'LMOD_FAMILY_PRGENV_VERSION;' '__LMOD_REF_COUNT_LOADEDMODULES=craype-x86-rome:1\;libfabric/1.12.1.2.2.0.0:1\;craype-network-ofi:1\;perftools-base/22.12.0:1\;xpmem/2.5.2-2.4_3.30__gd0f7936.shasta:1\;cce/15.0.0:1\;bolt/0.8:1\;epcc-setup-env:1\;load-epcc-module:1\;craype/2.7.19:1\;cray-dsmml/0.2.2:1\;cray-mpich/8.1.23:1\;cray-libsci/22.12.1.1:1\;PrgEnv-cray/8.3.3:1;' export '__LMOD_REF_COUNT_LOADEDMODULES;' 'LOADEDMODULES=craype-x86-rome:libfabric/1.12.1.2.2.0.0:craype-network-ofi:perftools-base/22.12.0:xpmem/2.5.2-2.4_3.30__gd0f7936.shasta:cce/15.0.0:bolt/0.8:epcc-setup-env:load-epcc-module:craype/2.7.19:cray-dsmml/0.2.2:cray-mpich/8.1.23:cray-libsci/22.12.1.1:PrgEnv-cray/8.3.3;' export 'LOADEDMODULES;' 'MANPATH=/opt/cray/pe/libsci/22.12.1.1/man:/opt/cray/pe/man/csmlversion:/opt/cray/pe/mpich/8.1.23/ofi/man:/opt/cray/pe/mpich/8.1.23/man/mpich:/opt/cray/pe/dsmml/0.2.2/dsmml/man:/opt/cray/pe/craype/2.7.19/man:/opt/cray/pe/cce/15.0.0/cce-clang/x86_64/share/man:/opt/cray/pe/cce/15.0.0/man:/opt/cray/pe/perftools/22.12.0/man:/opt/cray/pe/papi/6.0.0.17/share/pdoc/man:/opt/cray/libfabric/1.12.1.2.2.0.0/share/man:/usr/share/lmod/lmod/share/man:/usr/local/man:/usr/share/man:/usr/man;' export 'MANPATH;' '__LMOD_REF_COUNT_MODULEPATH=/opt/cray/pe/lmod/modulefiles/mpi/crayclang/14.0/ofi/1.0/cray-mpich/8.0:1\;/work/y07/shared/archer2-lmod/utils/compiler/crayclang/10.0:1\;/work/y07/shared/archer2-lmod/training/core:1\;/work/y07/shared/archer2-lmod/python/pyenvs:1\;/work/y07/shared/archer2-lmod/python/core:1\;/work/y07/shared/archer2-lmod/libs/core:1\;/work/y07/shared/archer2-lmod/apps/core:1\;/work/y07/shared/archer2-lmod/utils/core:1\;/opt/cray/pe/lmod/modulefiles/comnet/crayclang/14.0/ofi/1.0:1\;/opt/cray/pe/lmod/modulefiles/compiler/crayclang/14.0:1\;/opt/cray/pe/lmod/modulefiles/mix_compilers:1\;/opt/cray/pe/lmod/modulefiles/perftools/22.12.0:1\;/opt/cray/pe/lmod/modulefiles/net/ofi/1.0:1\;/opt/cray/pe/lmod/modulefiles/cpu/x86-rome/1.0:1\;/usr/share/modulefiles/Linux:1\;/usr/share/modulefiles/Core:1\;/usr/share/lmod/lmod/modulefiles/Core:1\;/opt/cray/pe/lmod/modulefiles/core:1\;/opt/cray/pe/lmod/modulefiles/craype-targets/default:1\;/usr/local/share/modulefiles:1\;/opt/cray/modulefiles:1;' export '__LMOD_REF_COUNT_MODULEPATH;' 'MODULEPATH=/opt/cray/pe/lmod/modulefiles/mpi/crayclang/14.0/ofi/1.0/cray-mpich/8.0:/work/y07/shared/archer2-lmod/utils/compiler/crayclang/10.0:/work/y07/shared/archer2-lmod/training/core:/work/y07/shared/archer2-lmod/python/pyenvs:/work/y07/shared/archer2-lmod/python/core:/work/y07/shared/archer2-lmod/libs/core:/work/y07/shared/archer2-lmod/apps/core:/work/y07/shared/archer2-lmod/utils/core:/opt/cray/pe/lmod/modulefiles/comnet/crayclang/14.0/ofi/1.0:/opt/cray/pe/lmod/modulefiles/compiler/crayclang/14.0:/opt/cray/pe/lmod/modulefiles/mix_compilers:/opt/cray/pe/lmod/modulefiles/perftools/22.12.0:/opt/cray/pe/lmod/modulefiles/net/ofi/1.0:/opt/cray/pe/lmod/modulefiles/cpu/x86-rome/1.0:/usr/share/modulefiles/Linux:/usr/share/modulefiles/Core:/usr/share/lmod/lmod/modulefiles/Core:/opt/cray/pe/lmod/modulefiles/core:/opt/cray/pe/lmod/modulefiles/craype-targets/default:/usr/local/share/modulefiles:/opt/cray/modulefiles;' export 'MODULEPATH;' 'MPICH_DIR=/opt/cray/pe/mpich/8.1.23/ofi/crayclang/10.0;' export 'MPICH_DIR;' '__LMOD_REF_COUNT_PATH=/opt/cray/pe/mpich/8.1.23/ofi/crayclang/10.0/bin:1\;/opt/cray/pe/mpich/8.1.23/bin:1\;/opt/cray/pe/craype/2.7.19/bin:1\;/work/y07/shared/utils/core/bolt/0.8/bin:1\;/work/y07/shared/utils/core/bin:1\;/opt/cray/pe/cce/15.0.0/binutils/x86_64/x86_64-pc-linux-gnu/bin:1\;/opt/cray/pe/cce/15.0.0/binutils/cross/x86_64-aarch64/aarch64-linux-gnu/../bin:1\;/opt/cray/pe/cce/15.0.0/utils/x86_64/bin:1\;/opt/cray/pe/cce/15.0.0/bin:1\;/opt/cray/pe/cce/15.0.0/cce-clang/x86_64/bin:1\;/opt/cray/pe/perftools/22.12.0/bin:1\;/opt/cray/pe/papi/6.0.0.17/bin:1\;/opt/cray/libfabric/1.12.1.2.2.0.0/bin:1\;/usr/local/bin:1\;/usr/bin:1\;/bin:1\;/usr/lib/mit/bin:1\;/opt/cray/pe/bin:1;' export '__LMOD_REF_COUNT_PATH;' 'PATH=/opt/cray/pe/mpich/8.1.23/ofi/crayclang/10.0/bin:/opt/cray/pe/mpich/8.1.23/bin:/opt/cray/pe/craype/2.7.19/bin:/work/y07/shared/utils/core/bolt/0.8/bin:/work/y07/shared/utils/core/bin:/opt/cray/pe/cce/15.0.0/binutils/x86_64/x86_64-pc-linux-gnu/bin:/opt/cray/pe/cce/15.0.0/binutils/cross/x86_64-aarch64/aarch64-linux-gnu/../bin:/opt/cray/pe/cce/15.0.0/utils/x86_64/bin:/opt/cray/pe/cce/15.0.0/bin:/opt/cray/pe/cce/15.0.0/cce-clang/x86_64/bin:/opt/cray/pe/perftools/22.12.0/bin:/opt/cray/pe/papi/6.0.0.17/bin:/opt/cray/libfabric/1.12.1.2.2.0.0/bin:/usr/local/bin:/usr/bin:/bin:/usr/lib/mit/bin:/opt/cray/pe/bin;' export 'PATH;' 'PE_CRAYCLANG_FIXED_PKGCONFIG_PATH=/opt/cray/pe/libsci/22.12.1.1/CRAY/9.0/x86_64/lib/pkgconfig:/opt/cray/pe/mpich/8.1.23/ofi/crayclang/10.0/lib/pkgconfig;' export 'PE_CRAYCLANG_FIXED_PKGCONFIG_PATH;' 'PE_DSMML_MODULE_NAME=cray-dsmml;' export 'PE_DSMML_MODULE_NAME;' 'PE_DSMML_PKGCONFIG_LIBS=dsmml;' export 'PE_DSMML_PKGCONFIG_LIBS;' 'PE_ENV=CRAY;' export 'PE_ENV;' 'PE_FORTRAN_PKGCONFIG_LIBS=mpichf90;' export 'PE_FORTRAN_PKGCONFIG_LIBS;' 'PE_LIBSCI_FIXED_PRGENV=CRAYCLANG;' export 'PE_LIBSCI_FIXED_PRGENV;' 'PE_LIBSCI_GENCOMPILERS_AOCC_x86_64=2.0;' export 'PE_LIBSCI_GENCOMPILERS_AOCC_x86_64;' 'PE_LIBSCI_GENCOMPILERS_CRAY_x86_64=9.0;' export 'PE_LIBSCI_GENCOMPILERS_CRAY_x86_64;' 'PE_LIBSCI_GENCOMPILERS_GNU_x86_64=9.1;' export 'PE_LIBSCI_GENCOMPILERS_GNU_x86_64;' 'PE_LIBSCI_GENCOMPS_AOCC_x86_64=20;' export 'PE_LIBSCI_GENCOMPS_AOCC_x86_64;' 'PE_LIBSCI_GENCOMPS_CRAY_x86_64=90;' export 'PE_LIBSCI_GENCOMPS_CRAY_x86_64;' 'PE_LIBSCI_GENCOMPS_GNU_x86_64=91;' export 'PE_LIBSCI_GENCOMPS_GNU_x86_64;' 'PE_LIBSCI_MODULE_NAME=cray-libsci/22.12.1.1;' export 'PE_LIBSCI_MODULE_NAME;' 'PE_LIBSCI_OMP_REQUIRES=;' export 'PE_LIBSCI_OMP_REQUIRES;' 'PE_LIBSCI_OMP_REQUIRES_openmp=_mp;' export 'PE_LIBSCI_OMP_REQUIRES_openmp;' 'PE_LIBSCI_PKGCONFIG_LIBS=libsci_mpi:libsci;' export 'PE_LIBSCI_PKGCONFIG_LIBS;' 'PE_LIBSCI_PKGCONFIG_VARIABLES=PE_LIBSCI_OMP_REQUIRES_@openmp@:PE_SCI_EXT_LIBPATH:PE_SCI_EXT_LIBNAME;' export 'PE_LIBSCI_PKGCONFIG_VARIABLES;' 'PE_LIBSCI_REQUIRED_PRODUCTS=PE_MPICH;' export 'PE_LIBSCI_REQUIRED_PRODUCTS;' 'PE_LIBSCI_VOLATILE_PKGCONFIG_PATH=/opt/cray/pe/libsci/22.12.1.1/@PRGENV@/@PE_LIBSCI_GENCOMPS@/@PE_LIBSCI_TARGET@/lib/pkgconfig;' export 'PE_LIBSCI_VOLATILE_PKGCONFIG_PATH;' 'PE_LIBSCI_VOLATILE_PRGENV=AOCC\' 'CRAY\' 'GNU;' export 'PE_LIBSCI_VOLATILE_PRGENV;' 'PE_MPICH_FIXED_PRGENV=CRAYCLANG;' export 'PE_MPICH_FIXED_PRGENV;' 'PE_MPICH_FORTRAN_PKGCONFIG_LIBS=mpichf90;' export 'PE_MPICH_FORTRAN_PKGCONFIG_LIBS;' 'PE_MPICH_GENCOMPILERS_CRAYCLANG=10.0;' export 'PE_MPICH_GENCOMPILERS_CRAYCLANG;' 'PE_MPICH_GTL_DIR_amd_gfx906=-L/opt/cray/pe/mpich/8.1.23/gtl/lib;' export 'PE_MPICH_GTL_DIR_amd_gfx906;' 'PE_MPICH_GTL_DIR_amd_gfx908=-L/opt/cray/pe/mpich/8.1.23/gtl/lib;' export 'PE_MPICH_GTL_DIR_amd_gfx908;' 'PE_MPICH_GTL_DIR_amd_gfx90a=-L/opt/cray/pe/mpich/8.1.23/gtl/lib;' export 'PE_MPICH_GTL_DIR_amd_gfx90a;' 'PE_MPICH_GTL_DIR_nvidia70=-L/opt/cray/pe/mpich/8.1.23/gtl/lib;' export 'PE_MPICH_GTL_DIR_nvidia70;' 'PE_MPICH_GTL_DIR_nvidia80=-L/opt/cray/pe/mpich/8.1.23/gtl/lib;' export 'PE_MPICH_GTL_DIR_nvidia80;' 'PE_MPICH_GTL_LIBS_amd_gfx906=-lmpi_gtl_hsa;' export 'PE_MPICH_GTL_LIBS_amd_gfx906;' 'PE_MPICH_GTL_LIBS_amd_gfx908=-lmpi_gtl_hsa;' export 'PE_MPICH_GTL_LIBS_amd_gfx908;' 'PE_MPICH_GTL_LIBS_amd_gfx90a=-lmpi_gtl_hsa;' export 'PE_MPICH_GTL_LIBS_amd_gfx90a;' 'PE_MPICH_GTL_LIBS_nvidia70=-lmpi_gtl_cuda;' export 'PE_MPICH_GTL_LIBS_nvidia70;' 'PE_MPICH_GTL_LIBS_nvidia80=-lmpi_gtl_cuda;' export 'PE_MPICH_GTL_LIBS_nvidia80;' 'PE_MPICH_MODULE_NAME=cray-mpich;' export 'PE_MPICH_MODULE_NAME;' 'PE_MPICH_PKGCONFIG_LIBS=mpich;' export 'PE_MPICH_PKGCONFIG_LIBS;' 'PE_MPICH_PKGCONFIG_VARIABLES=PE_MPICH_GTL_DIR_@accelerator@:PE_MPICH_GTL_LIBS_@accelerator@;' export 'PE_MPICH_PKGCONFIG_VARIABLES;' 'PE_PERFTOOLS_MPICH_LIBDIR=/opt/cray/pe/mpich/8.1.23/ofi/crayclang/10.0/lib;' export 'PE_PERFTOOLS_MPICH_LIBDIR;' 'PE_PKGCONFIG_LIBS=libsci_mpi:libsci:mpich:dsmml;' export 'PE_PKGCONFIG_LIBS;' 'PE_PKGCONFIG_PRODUCTS=PE_LIBSCI:PE_MPICH:PE_DSMML:PE_XPMEM;' export 'PE_PKGCONFIG_PRODUCTS;' 'PE_PRODUCT_LIST=CRAY_LIBSCI:CRAYPE:CRAYPE_X86_ROME:PERFTOOLS:CRAYPAT;' export 'PE_PRODUCT_LIST;' 'PKGCONFIG_ENABLED=1;' export 'PKGCONFIG_ENABLED;' 'PKG_CONFIG_PATH=/opt/cray/pe/dsmml/0.2.2/dsmml/lib/pkgconfig:/opt/cray/pe/craype/2.7.19/pkg-config:/opt/cray/libfabric/1.12.1.2.2.0.0/lib64/pkgconfig;' export 'PKG_CONFIG_PATH;' '__LMOD_REF_COUNT__LMFILES_=/opt/cray/pe/lmod/modulefiles/craype-targets/default/craype-x86-rome.lua:1\;/opt/cray/modulefiles/libfabric/1.12.1.2.2.0.0:1\;/opt/cray/pe/lmod/modulefiles/craype-targets/default/craype-network-ofi.lua:1\;/opt/cray/pe/lmod/modulefiles/core/perftools-base/22.12.0.lua:1\;/opt/cray/modulefiles/xpmem/2.5.2-2.4_3.30__gd0f7936.shasta:1\;/opt/cray/pe/lmod/modulefiles/core/cce/15.0.0.lua:1\;/work/y07/shared/archer2-lmod/utils/core/bolt/0.8.lua:1\;/work/y07/shared/archer2-lmod/utils/core/epcc-setup-env.lua:1\;/usr/local/share/modulefiles/load-epcc-module.lua:1\;/opt/cray/pe/lmod/modulefiles/core/craype/2.7.19.lua:1\;/opt/cray/pe/lmod/modulefiles/core/cray-dsmml/0.2.2.lua:1\;/opt/cray/pe/lmod/modulefiles/comnet/crayclang/14.0/ofi/1.0/cray-mpich/8.1.23.lua:1\;/opt/cray/pe/lmod/modulefiles/core/cray-libsci/22.12.1.1.lua:1\;/opt/cray/pe/lmod/modulefiles/core/PrgEnv-cray/8.3.3.lua:1;' export '__LMOD_REF_COUNT__LMFILES_;' '_LMFILES_=/opt/cray/pe/lmod/modulefiles/craype-targets/default/craype-x86-rome.lua:/opt/cray/modulefiles/libfabric/1.12.1.2.2.0.0:/opt/cray/pe/lmod/modulefiles/craype-targets/default/craype-network-ofi.lua:/opt/cray/pe/lmod/modulefiles/core/perftools-base/22.12.0.lua:/opt/cray/modulefiles/xpmem/2.5.2-2.4_3.30__gd0f7936.shasta:/opt/cray/pe/lmod/modulefiles/core/cce/15.0.0.lua:/work/y07/shared/archer2-lmod/utils/core/bolt/0.8.lua:/work/y07/shared/archer2-lmod/utils/core/epcc-setup-env.lua:/usr/local/share/modulefiles/load-epcc-module.lua:/opt/cray/pe/lmod/modulefiles/core/craype/2.7.19.lua:/opt/cray/pe/lmod/modulefiles/core/cray-dsmml/0.2.2.lua:/opt/cray/pe/lmod/modulefiles/comnet/crayclang/14.0/ofi/1.0/cray-mpich/8.1.23.lua:/opt/cray/pe/lmod/modulefiles/core/cray-libsci/22.12.1.1.lua:/opt/cray/pe/lmod/modulefiles/core/PrgEnv-cray/8.3.3.lua;' export '_LMFILES_;' '_ModuleTable001_=X01vZHVsZVRhYmxlXz17WyJNVHZlcnNpb24iXT0zLFsiY19yZWJ1aWxkVGltZSJdPWZhbHNlLFsiY19zaG9ydFRpbWUiXT1mYWxzZSxkZXB0aFQ9e30sZmFtaWx5PXtbIlByZ0VudiJdPSJQcmdFbnYtY3JheSIsWyJjb21waWxlciJdPSJjY2UiLFsiY3JheXBlIl09ImNyYXlwZSIsWyJjcmF5cGVfY3B1Il09ImNyYXlwZS14ODYtcm9tZSIsWyJjcmF5cGVfbmV0d29yayJdPSJjcmF5cGUtbmV0d29yay1vZmkiLFsibXBpIl09ImNyYXktbXBpY2giLH0sbVQ9e1siUHJnRW52LWNyYXkiXT17WyJmbiJdPSIvb3B0L2NyYXkvcGUvbG1vZC9tb2R1bGVmaWxlcy9jb3JlL1ByZ0Vudi1jcmF5LzguMy4zLmx1YSIsWyJmdWxsTmFtZSJdPSJQcmdFbnYtY3JheS84LjMuMyIsWyJsb2FkT3Jk;' export '_ModuleTable001_;' '_ModuleTable002_=ZXIiXT0xNCxwcm9wVD17fSxbInN0YWNrRGVwdGgiXT0wLFsic3RhdHVzIl09ImFjdGl2ZSIsWyJ1c2VyTmFtZSJdPSJQcmdFbnYtY3JheSIsfSxib2x0PXtbImZuIl09Ii93b3JrL3kwNy9zaGFyZWQvYXJjaGVyMi1sbW9kL3V0aWxzL2NvcmUvYm9sdC8wLjgubHVhIixbImZ1bGxOYW1lIl09ImJvbHQvMC44IixbImxvYWRPcmRlciJdPTcscHJvcFQ9e30sWyJzdGFja0RlcHRoIl09MixbInN0YXR1cyJdPSJhY3RpdmUiLFsidXNlck5hbWUiXT0iYm9sdCIsfSxjY2U9e1siZm4iXT0iL29wdC9jcmF5L3BlL2xtb2QvbW9kdWxlZmlsZXMvY29yZS9jY2UvMTUuMC4wLmx1YSIsWyJmdWxsTmFtZSJdPSJjY2UvMTUuMC4wIixbImxvYWRPcmRlciJdPTYscHJvcFQ9e30sWyJzdGFja0Rl;' export '_ModuleTable002_;' '_ModuleTable003_=cHRoIl09MSxbInN0YXR1cyJdPSJhY3RpdmUiLFsidXNlck5hbWUiXT0iY2NlIix9LFsiY3JheS1kc21tbCJdPXtbImZuIl09Ii9vcHQvY3JheS9wZS9sbW9kL21vZHVsZWZpbGVzL2NvcmUvY3JheS1kc21tbC8wLjIuMi5sdWEiLFsiZnVsbE5hbWUiXT0iY3JheS1kc21tbC8wLjIuMiIsWyJsb2FkT3JkZXIiXT0xMSxwcm9wVD17fSxbInN0YWNrRGVwdGgiXT0xLFsic3RhdHVzIl09ImFjdGl2ZSIsWyJ1c2VyTmFtZSJdPSJjcmF5LWRzbW1sIix9LFsiY3JheS1saWJzY2kiXT17WyJmbiJdPSIvb3B0L2NyYXkvcGUvbG1vZC9tb2R1bGVmaWxlcy9jb3JlL2NyYXktbGlic2NpLzIyLjEyLjEuMS5sdWEiLFsiZnVsbE5hbWUiXT0iY3JheS1saWJzY2kvMjIuMTIuMS4xIixbImxvYWRP;' export '_ModuleTable003_;' '_ModuleTable004_=cmRlciJdPTEzLHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTEsWyJzdGF0dXMiXT0iYWN0aXZlIixbInVzZXJOYW1lIl09ImNyYXktbGlic2NpIix9LFsiY3JheS1tcGljaCJdPXtbImZuIl09Ii9vcHQvY3JheS9wZS9sbW9kL21vZHVsZWZpbGVzL2NvbW5ldC9jcmF5Y2xhbmcvMTQuMC9vZmkvMS4wL2NyYXktbXBpY2gvOC4xLjIzLmx1YSIsWyJmdWxsTmFtZSJdPSJjcmF5LW1waWNoLzguMS4yMyIsWyJsb2FkT3JkZXIiXT0xMixwcm9wVD17fSxbInN0YWNrRGVwdGgiXT0xLFsic3RhdHVzIl09ImFjdGl2ZSIsWyJ1c2VyTmFtZSJdPSJjcmF5LW1waWNoIix9LGNyYXlwZT17WyJmbiJdPSIvb3B0L2NyYXkvcGUvbG1vZC9tb2R1bGVmaWxlcy9jb3JlL2NyYXlwZS8yLjcuMTkubHVh;' export '_ModuleTable004_;' '_ModuleTable005_=IixbImZ1bGxOYW1lIl09ImNyYXlwZS8yLjcuMTkiLFsibG9hZE9yZGVyIl09MTAscHJvcFQ9e30sWyJzdGFja0RlcHRoIl09MSxbInN0YXR1cyJdPSJhY3RpdmUiLFsidXNlck5hbWUiXT0iY3JheXBlIix9LFsiY3JheXBlLW5ldHdvcmstb2ZpIl09e1siZm4iXT0iL29wdC9jcmF5L3BlL2xtb2QvbW9kdWxlZmlsZXMvY3JheXBlLXRhcmdldHMvZGVmYXVsdC9jcmF5cGUtbmV0d29yay1vZmkubHVhIixbImZ1bGxOYW1lIl09ImNyYXlwZS1uZXR3b3JrLW9maSIsWyJsb2FkT3JkZXIiXT0zLHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTAsWyJzdGF0dXMiXT0iYWN0aXZlIixbInVzZXJOYW1lIl09ImNyYXlwZS1uZXR3b3JrLW9maSIsfSxbImNyYXlwZS14ODYtcm9tZSJdPXtbImZu;' export '_ModuleTable005_;' '_ModuleTable006_=Il09Ii9vcHQvY3JheS9wZS9sbW9kL21vZHVsZWZpbGVzL2NyYXlwZS10YXJnZXRzL2RlZmF1bHQvY3JheXBlLXg4Ni1yb21lLmx1YSIsWyJmdWxsTmFtZSJdPSJjcmF5cGUteDg2LXJvbWUiLFsibG9hZE9yZGVyIl09MSxwcm9wVD17fSxbInN0YWNrRGVwdGgiXT0wLFsic3RhdHVzIl09ImFjdGl2ZSIsWyJ1c2VyTmFtZSJdPSJjcmF5cGUteDg2LXJvbWUiLH0sWyJlcGNjLXNldHVwLWVudiJdPXtbImZuIl09Ii93b3JrL3kwNy9zaGFyZWQvYXJjaGVyMi1sbW9kL3V0aWxzL2NvcmUvZXBjYy1zZXR1cC1lbnYubHVhIixbImZ1bGxOYW1lIl09ImVwY2Mtc2V0dXAtZW52IixbImxvYWRPcmRlciJdPTgscHJvcFQ9e30sWyJzdGFja0RlcHRoIl09MSxbInN0YXR1cyJdPSJhY3RpdmUi;' export '_ModuleTable006_;' '_ModuleTable007_=LFsidXNlck5hbWUiXT0iZXBjYy1zZXR1cC1lbnYiLH0sbGliZmFicmljPXtbImZuIl09Ii9vcHQvY3JheS9tb2R1bGVmaWxlcy9saWJmYWJyaWMvMS4xMi4xLjIuMi4wLjAiLFsiZnVsbE5hbWUiXT0ibGliZmFicmljLzEuMTIuMS4yLjIuMC4wIixbImxvYWRPcmRlciJdPTIscHJvcFQ9e30sWyJzdGFja0RlcHRoIl09MSxbInN0YXR1cyJdPSJhY3RpdmUiLFsidXNlck5hbWUiXT0ibGliZmFicmljIix9LFsibG9hZC1lcGNjLW1vZHVsZSJdPXtbImZuIl09Ii91c3IvbG9jYWwvc2hhcmUvbW9kdWxlZmlsZXMvbG9hZC1lcGNjLW1vZHVsZS5sdWEiLFsiZnVsbE5hbWUiXT0ibG9hZC1lcGNjLW1vZHVsZSIsWyJsb2FkT3JkZXIiXT05LHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTAs;' export '_ModuleTable007_;' '_ModuleTable008_=WyJzdGF0dXMiXT0iYWN0aXZlIixbInVzZXJOYW1lIl09ImxvYWQtZXBjYy1tb2R1bGUiLH0sWyJwZXJmdG9vbHMtYmFzZSJdPXtbImZuIl09Ii9vcHQvY3JheS9wZS9sbW9kL21vZHVsZWZpbGVzL2NvcmUvcGVyZnRvb2xzLWJhc2UvMjIuMTIuMC5sdWEiLFsiZnVsbE5hbWUiXT0icGVyZnRvb2xzLWJhc2UvMjIuMTIuMCIsWyJsb2FkT3JkZXIiXT00LHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTAsWyJzdGF0dXMiXT0iYWN0aXZlIixbInVzZXJOYW1lIl09InBlcmZ0b29scy1iYXNlIix9LHhwbWVtPXtbImZuIl09Ii9vcHQvY3JheS9tb2R1bGVmaWxlcy94cG1lbS8yLjUuMi0yLjRfMy4zMF9fZ2QwZjc5MzYuc2hhc3RhIixbImZ1bGxOYW1lIl09InhwbWVtLzIuNS4yLTIuNF8z;' export '_ModuleTable008_;' '_ModuleTable009_=LjMwX19nZDBmNzkzNi5zaGFzdGEiLFsibG9hZE9yZGVyIl09NSxwcm9wVD17fSxbInN0YWNrRGVwdGgiXT0wLFsic3RhdHVzIl09ImFjdGl2ZSIsWyJ1c2VyTmFtZSJdPSJ4cG1lbSIsfSx9LG1wYXRoQT17Ii9vcHQvY3JheS9wZS9sbW9kL21vZHVsZWZpbGVzL21waS9jcmF5Y2xhbmcvMTQuMC9vZmkvMS4wL2NyYXktbXBpY2gvOC4wIiwiL3dvcmsveTA3L3NoYXJlZC9hcmNoZXIyLWxtb2QvdXRpbHMvY29tcGlsZXIvY3JheWNsYW5nLzEwLjAiLCIvd29yay95MDcvc2hhcmVkL2FyY2hlcjItbG1vZC90cmFpbmluZy9jb3JlIiwiL3dvcmsveTA3L3NoYXJlZC9hcmNoZXIyLWxtb2QvcHl0aG9uL3B5ZW52cyIsIi93b3JrL3kwNy9zaGFyZWQvYXJjaGVyMi1sbW9kL3B5dGhvbi9j;' export '_ModuleTable009_;' '_ModuleTable010_=b3JlIiwiL3dvcmsveTA3L3NoYXJlZC9hcmNoZXIyLWxtb2QvbGlicy9jb3JlIiwiL3dvcmsveTA3L3NoYXJlZC9hcmNoZXIyLWxtb2QvYXBwcy9jb3JlIiwiL3dvcmsveTA3L3NoYXJlZC9hcmNoZXIyLWxtb2QvdXRpbHMvY29yZSIsIi9vcHQvY3JheS9wZS9sbW9kL21vZHVsZWZpbGVzL2NvbW5ldC9jcmF5Y2xhbmcvMTQuMC9vZmkvMS4wIiwiL29wdC9jcmF5L3BlL2xtb2QvbW9kdWxlZmlsZXMvY29tcGlsZXIvY3JheWNsYW5nLzE0LjAiLCIvb3B0L2NyYXkvcGUvbG1vZC9tb2R1bGVmaWxlcy9taXhfY29tcGlsZXJzIiwiL29wdC9jcmF5L3BlL2xtb2QvbW9kdWxlZmlsZXMvcGVyZnRvb2xzLzIyLjEyLjAiLCIvb3B0L2NyYXkvcGUvbG1vZC9tb2R1bGVmaWxlcy9uZXQvb2Zp;' export '_ModuleTable010_;' '_ModuleTable011_=LzEuMCIsIi9vcHQvY3JheS9wZS9sbW9kL21vZHVsZWZpbGVzL2NwdS94ODYtcm9tZS8xLjAiLCIvdXNyL3NoYXJlL21vZHVsZWZpbGVzL0xpbnV4IiwiL3Vzci9zaGFyZS9tb2R1bGVmaWxlcy9Db3JlIiwiL3Vzci9zaGFyZS9sbW9kL2xtb2QvbW9kdWxlZmlsZXMvQ29yZSIsIi9vcHQvY3JheS9wZS9sbW9kL21vZHVsZWZpbGVzL2NvcmUiLCIvb3B0L2NyYXkvcGUvbG1vZC9tb2R1bGVmaWxlcy9jcmF5cGUtdGFyZ2V0cy9kZWZhdWx0IiwiL3Vzci9sb2NhbC9zaGFyZS9tb2R1bGVmaWxlcyIsIi9vcHQvY3JheS9tb2R1bGVmaWxlcyIsfSxbInN5c3RlbUJhc2VNUEFUSCJdPSIvdXNyL3NoYXJlL21vZHVsZWZpbGVzL0xpbnV4Oi91c3Ivc2hhcmUvbW9kdWxlZmlsZXMvQ29yZTov;' export '_ModuleTable011_;' '_ModuleTable012_=dXNyL3NoYXJlL2xtb2QvbG1vZC9tb2R1bGVmaWxlcy9Db3JlOi9vcHQvY3JheS9wZS9sbW9kL21vZHVsZWZpbGVzL2NvcmU6L29wdC9jcmF5L3BlL2xtb2QvbW9kdWxlZmlsZXMvY3JheXBlLXRhcmdldHMvZGVmYXVsdDovdXNyL2xvY2FsL3NoYXJlL21vZHVsZWZpbGVzOi9vcHQvY3JheS9tb2R1bGVmaWxlcyIsfQ==;' export '_ModuleTable012_;' '_ModuleTable_Sz_=12;' export '_ModuleTable_Sz_;'
+++ CRAYPE_DIR=/opt/cray/pe/craype/2.7.19
+++ export CRAYPE_DIR
+++ CRAYPE_VERSION=2.7.19
+++ export CRAYPE_VERSION
+++ CRAY_DSMML_BASEDIR=/opt/cray/pe/dsmml/0.2.2
+++ export CRAY_DSMML_BASEDIR
+++ CRAY_DSMML_DIR=/opt/cray/pe/dsmml/0.2.2/dsmml
+++ export CRAY_DSMML_DIR
+++ CRAY_DSMML_PREFIX=/opt/cray/pe/dsmml/0.2.2/dsmml
+++ export CRAY_DSMML_PREFIX
+++ CRAY_DSMML_ROOTDIR=/opt/cray/pe/dsmml/0.2.2
+++ export CRAY_DSMML_ROOTDIR
+++ CRAY_DSMML_VER=0.2.2
+++ export CRAY_DSMML_VER
+++ CRAY_DSMML_VERSION=0.2.2
+++ export CRAY_DSMML_VERSION
+++ __LMOD_REF_COUNT_CRAY_LD_LIBRARY_PATH='/opt/cray/pe/libsci/22.12.1.1/CRAY/9.0/x86_64/lib:2;/opt/cray/pe/mpich/8.1.23/ofi/crayclang/10.0/lib:1;/opt/cray/pe/mpich/8.1.23/gtl/lib:1;/opt/cray/pe/dsmml/0.2.2/dsmml/lib:1;/opt/cray/pe/cce/15.0.0/cce-clang/x86_64/lib:1;/opt/cray/pe/cce/15.0.0/cce/x86_64/lib:1;/opt/cray/pe/perftools/22.12.0/lib64:1'
+++ export __LMOD_REF_COUNT_CRAY_LD_LIBRARY_PATH
+++ CRAY_LD_LIBRARY_PATH=/opt/cray/pe/libsci/22.12.1.1/CRAY/9.0/x86_64/lib:/opt/cray/pe/mpich/8.1.23/ofi/crayclang/10.0/lib:/opt/cray/pe/mpich/8.1.23/gtl/lib:/opt/cray/pe/dsmml/0.2.2/dsmml/lib:/opt/cray/pe/cce/15.0.0/cce-clang/x86_64/lib:/opt/cray/pe/cce/15.0.0/cce/x86_64/lib:/opt/cray/pe/perftools/22.12.0/lib64
+++ export CRAY_LD_LIBRARY_PATH
+++ CRAY_LIBSCI_BASE_DIR=/opt/cray/pe/libsci/22.12.1.1
+++ export CRAY_LIBSCI_BASE_DIR
+++ CRAY_LIBSCI_DIR=/opt/cray/pe/libsci/22.12.1.1
+++ export CRAY_LIBSCI_DIR
+++ CRAY_LIBSCI_PREFIX_DIR=/opt/cray/pe/libsci/22.12.1.1/CRAY/9.0/x86_64
+++ export CRAY_LIBSCI_PREFIX_DIR
+++ CRAY_LIBSCI_VERSION=22.12.1.1
+++ export CRAY_LIBSCI_VERSION
+++ CRAY_LMOD_MPI=cray-mpich/8.0
+++ export CRAY_LMOD_MPI
+++ CRAY_MPICH_BASEDIR=/opt/cray/pe/mpich/8.1.23/ofi
+++ export CRAY_MPICH_BASEDIR
+++ CRAY_MPICH_DIR=/opt/cray/pe/mpich/8.1.23/ofi/crayclang/10.0
+++ export CRAY_MPICH_DIR
+++ CRAY_MPICH_PREFIX=/opt/cray/pe/mpich/8.1.23/ofi/crayclang/10.0
+++ export CRAY_MPICH_PREFIX
+++ CRAY_MPICH_ROOTDIR=/opt/cray/pe/mpich/8.1.23
+++ export CRAY_MPICH_ROOTDIR
+++ CRAY_MPICH_VER=8.1.23
+++ export CRAY_MPICH_VER
+++ CRAY_MPICH_VERSION=8.1.23
+++ export CRAY_MPICH_VERSION
+++ LIBSCI_BASE_DIR=/opt/cray/pe/libsci/22.12.1.1
+++ export LIBSCI_BASE_DIR
+++ LIBSCI_VERSION=22.12.1.1
+++ export LIBSCI_VERSION
+++ LMOD_FAMILY_CRAYPE=craype
+++ export LMOD_FAMILY_CRAYPE
+++ LMOD_FAMILY_CRAYPE_VERSION=2.7.19
+++ export LMOD_FAMILY_CRAYPE_VERSION
+++ LMOD_FAMILY_MPI=cray-mpich
+++ export LMOD_FAMILY_MPI
+++ LMOD_FAMILY_MPI_VERSION=8.1.23
+++ export LMOD_FAMILY_MPI_VERSION
+++ LMOD_FAMILY_PRGENV=PrgEnv-cray
+++ export LMOD_FAMILY_PRGENV
+++ LMOD_FAMILY_PRGENV_VERSION=8.3.3
+++ export LMOD_FAMILY_PRGENV_VERSION
+++ __LMOD_REF_COUNT_LOADEDMODULES='craype-x86-rome:1;libfabric/1.12.1.2.2.0.0:1;craype-network-ofi:1;perftools-base/22.12.0:1;xpmem/2.5.2-2.4_3.30__gd0f7936.shasta:1;cce/15.0.0:1;bolt/0.8:1;epcc-setup-env:1;load-epcc-module:1;craype/2.7.19:1;cray-dsmml/0.2.2:1;cray-mpich/8.1.23:1;cray-libsci/22.12.1.1:1;PrgEnv-cray/8.3.3:1'
+++ export __LMOD_REF_COUNT_LOADEDMODULES
+++ LOADEDMODULES=craype-x86-rome:libfabric/1.12.1.2.2.0.0:craype-network-ofi:perftools-base/22.12.0:xpmem/2.5.2-2.4_3.30__gd0f7936.shasta:cce/15.0.0:bolt/0.8:epcc-setup-env:load-epcc-module:craype/2.7.19:cray-dsmml/0.2.2:cray-mpich/8.1.23:cray-libsci/22.12.1.1:PrgEnv-cray/8.3.3
+++ export LOADEDMODULES
+++ MANPATH=/opt/cray/pe/libsci/22.12.1.1/man:/opt/cray/pe/man/csmlversion:/opt/cray/pe/mpich/8.1.23/ofi/man:/opt/cray/pe/mpich/8.1.23/man/mpich:/opt/cray/pe/dsmml/0.2.2/dsmml/man:/opt/cray/pe/craype/2.7.19/man:/opt/cray/pe/cce/15.0.0/cce-clang/x86_64/share/man:/opt/cray/pe/cce/15.0.0/man:/opt/cray/pe/perftools/22.12.0/man:/opt/cray/pe/papi/6.0.0.17/share/pdoc/man:/opt/cray/libfabric/1.12.1.2.2.0.0/share/man:/usr/share/lmod/lmod/share/man:/usr/local/man:/usr/share/man:/usr/man
+++ export MANPATH
+++ __LMOD_REF_COUNT_MODULEPATH='/opt/cray/pe/lmod/modulefiles/mpi/crayclang/14.0/ofi/1.0/cray-mpich/8.0:1;/work/y07/shared/archer2-lmod/utils/compiler/crayclang/10.0:1;/work/y07/shared/archer2-lmod/training/core:1;/work/y07/shared/archer2-lmod/python/pyenvs:1;/work/y07/shared/archer2-lmod/python/core:1;/work/y07/shared/archer2-lmod/libs/core:1;/work/y07/shared/archer2-lmod/apps/core:1;/work/y07/shared/archer2-lmod/utils/core:1;/opt/cray/pe/lmod/modulefiles/comnet/crayclang/14.0/ofi/1.0:1;/opt/cray/pe/lmod/modulefiles/compiler/crayclang/14.0:1;/opt/cray/pe/lmod/modulefiles/mix_compilers:1;/opt/cray/pe/lmod/modulefiles/perftools/22.12.0:1;/opt/cray/pe/lmod/modulefiles/net/ofi/1.0:1;/opt/cray/pe/lmod/modulefiles/cpu/x86-rome/1.0:1;/usr/share/modulefiles/Linux:1;/usr/share/modulefiles/Core:1;/usr/share/lmod/lmod/modulefiles/Core:1;/opt/cray/pe/lmod/modulefiles/core:1;/opt/cray/pe/lmod/modulefiles/craype-targets/default:1;/usr/local/share/modulefiles:1;/opt/cray/modulefiles:1'
+++ export __LMOD_REF_COUNT_MODULEPATH
+++ MODULEPATH=/opt/cray/pe/lmod/modulefiles/mpi/crayclang/14.0/ofi/1.0/cray-mpich/8.0:/work/y07/shared/archer2-lmod/utils/compiler/crayclang/10.0:/work/y07/shared/archer2-lmod/training/core:/work/y07/shared/archer2-lmod/python/pyenvs:/work/y07/shared/archer2-lmod/python/core:/work/y07/shared/archer2-lmod/libs/core:/work/y07/shared/archer2-lmod/apps/core:/work/y07/shared/archer2-lmod/utils/core:/opt/cray/pe/lmod/modulefiles/comnet/crayclang/14.0/ofi/1.0:/opt/cray/pe/lmod/modulefiles/compiler/crayclang/14.0:/opt/cray/pe/lmod/modulefiles/mix_compilers:/opt/cray/pe/lmod/modulefiles/perftools/22.12.0:/opt/cray/pe/lmod/modulefiles/net/ofi/1.0:/opt/cray/pe/lmod/modulefiles/cpu/x86-rome/1.0:/usr/share/modulefiles/Linux:/usr/share/modulefiles/Core:/usr/share/lmod/lmod/modulefiles/Core:/opt/cray/pe/lmod/modulefiles/core:/opt/cray/pe/lmod/modulefiles/craype-targets/default:/usr/local/share/modulefiles:/opt/cray/modulefiles
+++ export MODULEPATH
+++ MPICH_DIR=/opt/cray/pe/mpich/8.1.23/ofi/crayclang/10.0
+++ export MPICH_DIR
+++ __LMOD_REF_COUNT_PATH='/opt/cray/pe/mpich/8.1.23/ofi/crayclang/10.0/bin:1;/opt/cray/pe/mpich/8.1.23/bin:1;/opt/cray/pe/craype/2.7.19/bin:1;/work/y07/shared/utils/core/bolt/0.8/bin:1;/work/y07/shared/utils/core/bin:1;/opt/cray/pe/cce/15.0.0/binutils/x86_64/x86_64-pc-linux-gnu/bin:1;/opt/cray/pe/cce/15.0.0/binutils/cross/x86_64-aarch64/aarch64-linux-gnu/../bin:1;/opt/cray/pe/cce/15.0.0/utils/x86_64/bin:1;/opt/cray/pe/cce/15.0.0/bin:1;/opt/cray/pe/cce/15.0.0/cce-clang/x86_64/bin:1;/opt/cray/pe/perftools/22.12.0/bin:1;/opt/cray/pe/papi/6.0.0.17/bin:1;/opt/cray/libfabric/1.12.1.2.2.0.0/bin:1;/usr/local/bin:1;/usr/bin:1;/bin:1;/usr/lib/mit/bin:1;/opt/cray/pe/bin:1'
+++ export __LMOD_REF_COUNT_PATH
+++ PATH=/opt/cray/pe/mpich/8.1.23/ofi/crayclang/10.0/bin:/opt/cray/pe/mpich/8.1.23/bin:/opt/cray/pe/craype/2.7.19/bin:/work/y07/shared/utils/core/bolt/0.8/bin:/work/y07/shared/utils/core/bin:/opt/cray/pe/cce/15.0.0/binutils/x86_64/x86_64-pc-linux-gnu/bin:/opt/cray/pe/cce/15.0.0/binutils/cross/x86_64-aarch64/aarch64-linux-gnu/../bin:/opt/cray/pe/cce/15.0.0/utils/x86_64/bin:/opt/cray/pe/cce/15.0.0/bin:/opt/cray/pe/cce/15.0.0/cce-clang/x86_64/bin:/opt/cray/pe/perftools/22.12.0/bin:/opt/cray/pe/papi/6.0.0.17/bin:/opt/cray/libfabric/1.12.1.2.2.0.0/bin:/usr/local/bin:/usr/bin:/bin:/usr/lib/mit/bin:/opt/cray/pe/bin
+++ export PATH
+++ PE_CRAYCLANG_FIXED_PKGCONFIG_PATH=/opt/cray/pe/libsci/22.12.1.1/CRAY/9.0/x86_64/lib/pkgconfig:/opt/cray/pe/mpich/8.1.23/ofi/crayclang/10.0/lib/pkgconfig
+++ export PE_CRAYCLANG_FIXED_PKGCONFIG_PATH
+++ PE_DSMML_MODULE_NAME=cray-dsmml
+++ export PE_DSMML_MODULE_NAME
+++ PE_DSMML_PKGCONFIG_LIBS=dsmml
+++ export PE_DSMML_PKGCONFIG_LIBS
+++ PE_ENV=CRAY
+++ export PE_ENV
+++ PE_FORTRAN_PKGCONFIG_LIBS=mpichf90
+++ export PE_FORTRAN_PKGCONFIG_LIBS
+++ PE_LIBSCI_FIXED_PRGENV=CRAYCLANG
+++ export PE_LIBSCI_FIXED_PRGENV
+++ PE_LIBSCI_GENCOMPILERS_AOCC_x86_64=2.0
+++ export PE_LIBSCI_GENCOMPILERS_AOCC_x86_64
+++ PE_LIBSCI_GENCOMPILERS_CRAY_x86_64=9.0
+++ export PE_LIBSCI_GENCOMPILERS_CRAY_x86_64
+++ PE_LIBSCI_GENCOMPILERS_GNU_x86_64=9.1
+++ export PE_LIBSCI_GENCOMPILERS_GNU_x86_64
+++ PE_LIBSCI_GENCOMPS_AOCC_x86_64=20
+++ export PE_LIBSCI_GENCOMPS_AOCC_x86_64
+++ PE_LIBSCI_GENCOMPS_CRAY_x86_64=90
+++ export PE_LIBSCI_GENCOMPS_CRAY_x86_64
+++ PE_LIBSCI_GENCOMPS_GNU_x86_64=91
+++ export PE_LIBSCI_GENCOMPS_GNU_x86_64
+++ PE_LIBSCI_MODULE_NAME=cray-libsci/22.12.1.1
+++ export PE_LIBSCI_MODULE_NAME
+++ PE_LIBSCI_OMP_REQUIRES=
+++ export PE_LIBSCI_OMP_REQUIRES
+++ PE_LIBSCI_OMP_REQUIRES_openmp=_mp
+++ export PE_LIBSCI_OMP_REQUIRES_openmp
+++ PE_LIBSCI_PKGCONFIG_LIBS=libsci_mpi:libsci
+++ export PE_LIBSCI_PKGCONFIG_LIBS
+++ PE_LIBSCI_PKGCONFIG_VARIABLES=PE_LIBSCI_OMP_REQUIRES_@openmp@:PE_SCI_EXT_LIBPATH:PE_SCI_EXT_LIBNAME
+++ export PE_LIBSCI_PKGCONFIG_VARIABLES
+++ PE_LIBSCI_REQUIRED_PRODUCTS=PE_MPICH
+++ export PE_LIBSCI_REQUIRED_PRODUCTS
+++ PE_LIBSCI_VOLATILE_PKGCONFIG_PATH=/opt/cray/pe/libsci/22.12.1.1/@PRGENV@/@PE_LIBSCI_GENCOMPS@/@PE_LIBSCI_TARGET@/lib/pkgconfig
+++ export PE_LIBSCI_VOLATILE_PKGCONFIG_PATH
+++ PE_LIBSCI_VOLATILE_PRGENV='AOCC CRAY GNU'
+++ export PE_LIBSCI_VOLATILE_PRGENV
+++ PE_MPICH_FIXED_PRGENV=CRAYCLANG
+++ export PE_MPICH_FIXED_PRGENV
+++ PE_MPICH_FORTRAN_PKGCONFIG_LIBS=mpichf90
+++ export PE_MPICH_FORTRAN_PKGCONFIG_LIBS
+++ PE_MPICH_GENCOMPILERS_CRAYCLANG=10.0
+++ export PE_MPICH_GENCOMPILERS_CRAYCLANG
+++ PE_MPICH_GTL_DIR_amd_gfx906=-L/opt/cray/pe/mpich/8.1.23/gtl/lib
+++ export PE_MPICH_GTL_DIR_amd_gfx906
+++ PE_MPICH_GTL_DIR_amd_gfx908=-L/opt/cray/pe/mpich/8.1.23/gtl/lib
+++ export PE_MPICH_GTL_DIR_amd_gfx908
+++ PE_MPICH_GTL_DIR_amd_gfx90a=-L/opt/cray/pe/mpich/8.1.23/gtl/lib
+++ export PE_MPICH_GTL_DIR_amd_gfx90a
+++ PE_MPICH_GTL_DIR_nvidia70=-L/opt/cray/pe/mpich/8.1.23/gtl/lib
+++ export PE_MPICH_GTL_DIR_nvidia70
+++ PE_MPICH_GTL_DIR_nvidia80=-L/opt/cray/pe/mpich/8.1.23/gtl/lib
+++ export PE_MPICH_GTL_DIR_nvidia80
+++ PE_MPICH_GTL_LIBS_amd_gfx906=-lmpi_gtl_hsa
+++ export PE_MPICH_GTL_LIBS_amd_gfx906
+++ PE_MPICH_GTL_LIBS_amd_gfx908=-lmpi_gtl_hsa
+++ export PE_MPICH_GTL_LIBS_amd_gfx908
+++ PE_MPICH_GTL_LIBS_amd_gfx90a=-lmpi_gtl_hsa
+++ export PE_MPICH_GTL_LIBS_amd_gfx90a
+++ PE_MPICH_GTL_LIBS_nvidia70=-lmpi_gtl_cuda
+++ export PE_MPICH_GTL_LIBS_nvidia70
+++ PE_MPICH_GTL_LIBS_nvidia80=-lmpi_gtl_cuda
+++ export PE_MPICH_GTL_LIBS_nvidia80
+++ PE_MPICH_MODULE_NAME=cray-mpich
+++ export PE_MPICH_MODULE_NAME
+++ PE_MPICH_PKGCONFIG_LIBS=mpich
+++ export PE_MPICH_PKGCONFIG_LIBS
+++ PE_MPICH_PKGCONFIG_VARIABLES=PE_MPICH_GTL_DIR_@accelerator@:PE_MPICH_GTL_LIBS_@accelerator@
+++ export PE_MPICH_PKGCONFIG_VARIABLES
+++ PE_PERFTOOLS_MPICH_LIBDIR=/opt/cray/pe/mpich/8.1.23/ofi/crayclang/10.0/lib
+++ export PE_PERFTOOLS_MPICH_LIBDIR
+++ PE_PKGCONFIG_LIBS=libsci_mpi:libsci:mpich:dsmml
+++ export PE_PKGCONFIG_LIBS
+++ PE_PKGCONFIG_PRODUCTS=PE_LIBSCI:PE_MPICH:PE_DSMML:PE_XPMEM
+++ export PE_PKGCONFIG_PRODUCTS
+++ PE_PRODUCT_LIST=CRAY_LIBSCI:CRAYPE:CRAYPE_X86_ROME:PERFTOOLS:CRAYPAT
+++ export PE_PRODUCT_LIST
+++ PKGCONFIG_ENABLED=1
+++ export PKGCONFIG_ENABLED
+++ PKG_CONFIG_PATH=/opt/cray/pe/dsmml/0.2.2/dsmml/lib/pkgconfig:/opt/cray/pe/craype/2.7.19/pkg-config:/opt/cray/libfabric/1.12.1.2.2.0.0/lib64/pkgconfig
+++ export PKG_CONFIG_PATH
+++ __LMOD_REF_COUNT__LMFILES_='/opt/cray/pe/lmod/modulefiles/craype-targets/default/craype-x86-rome.lua:1;/opt/cray/modulefiles/libfabric/1.12.1.2.2.0.0:1;/opt/cray/pe/lmod/modulefiles/craype-targets/default/craype-network-ofi.lua:1;/opt/cray/pe/lmod/modulefiles/core/perftools-base/22.12.0.lua:1;/opt/cray/modulefiles/xpmem/2.5.2-2.4_3.30__gd0f7936.shasta:1;/opt/cray/pe/lmod/modulefiles/core/cce/15.0.0.lua:1;/work/y07/shared/archer2-lmod/utils/core/bolt/0.8.lua:1;/work/y07/shared/archer2-lmod/utils/core/epcc-setup-env.lua:1;/usr/local/share/modulefiles/load-epcc-module.lua:1;/opt/cray/pe/lmod/modulefiles/core/craype/2.7.19.lua:1;/opt/cray/pe/lmod/modulefiles/core/cray-dsmml/0.2.2.lua:1;/opt/cray/pe/lmod/modulefiles/comnet/crayclang/14.0/ofi/1.0/cray-mpich/8.1.23.lua:1;/opt/cray/pe/lmod/modulefiles/core/cray-libsci/22.12.1.1.lua:1;/opt/cray/pe/lmod/modulefiles/core/PrgEnv-cray/8.3.3.lua:1'
+++ export __LMOD_REF_COUNT__LMFILES_
+++ _LMFILES_=/opt/cray/pe/lmod/modulefiles/craype-targets/default/craype-x86-rome.lua:/opt/cray/modulefiles/libfabric/1.12.1.2.2.0.0:/opt/cray/pe/lmod/modulefiles/craype-targets/default/craype-network-ofi.lua:/opt/cray/pe/lmod/modulefiles/core/perftools-base/22.12.0.lua:/opt/cray/modulefiles/xpmem/2.5.2-2.4_3.30__gd0f7936.shasta:/opt/cray/pe/lmod/modulefiles/core/cce/15.0.0.lua:/work/y07/shared/archer2-lmod/utils/core/bolt/0.8.lua:/work/y07/shared/archer2-lmod/utils/core/epcc-setup-env.lua:/usr/local/share/modulefiles/load-epcc-module.lua:/opt/cray/pe/lmod/modulefiles/core/craype/2.7.19.lua:/opt/cray/pe/lmod/modulefiles/core/cray-dsmml/0.2.2.lua:/opt/cray/pe/lmod/modulefiles/comnet/crayclang/14.0/ofi/1.0/cray-mpich/8.1.23.lua:/opt/cray/pe/lmod/modulefiles/core/cray-libsci/22.12.1.1.lua:/opt/cray/pe/lmod/modulefiles/core/PrgEnv-cray/8.3.3.lua
+++ export _LMFILES_
+++ _ModuleTable001_=X01vZHVsZVRhYmxlXz17WyJNVHZlcnNpb24iXT0zLFsiY19yZWJ1aWxkVGltZSJdPWZhbHNlLFsiY19zaG9ydFRpbWUiXT1mYWxzZSxkZXB0aFQ9e30sZmFtaWx5PXtbIlByZ0VudiJdPSJQcmdFbnYtY3JheSIsWyJjb21waWxlciJdPSJjY2UiLFsiY3JheXBlIl09ImNyYXlwZSIsWyJjcmF5cGVfY3B1Il09ImNyYXlwZS14ODYtcm9tZSIsWyJjcmF5cGVfbmV0d29yayJdPSJjcmF5cGUtbmV0d29yay1vZmkiLFsibXBpIl09ImNyYXktbXBpY2giLH0sbVQ9e1siUHJnRW52LWNyYXkiXT17WyJmbiJdPSIvb3B0L2NyYXkvcGUvbG1vZC9tb2R1bGVmaWxlcy9jb3JlL1ByZ0Vudi1jcmF5LzguMy4zLmx1YSIsWyJmdWxsTmFtZSJdPSJQcmdFbnYtY3JheS84LjMuMyIsWyJsb2FkT3Jk
+++ export _ModuleTable001_
+++ _ModuleTable002_=ZXIiXT0xNCxwcm9wVD17fSxbInN0YWNrRGVwdGgiXT0wLFsic3RhdHVzIl09ImFjdGl2ZSIsWyJ1c2VyTmFtZSJdPSJQcmdFbnYtY3JheSIsfSxib2x0PXtbImZuIl09Ii93b3JrL3kwNy9zaGFyZWQvYXJjaGVyMi1sbW9kL3V0aWxzL2NvcmUvYm9sdC8wLjgubHVhIixbImZ1bGxOYW1lIl09ImJvbHQvMC44IixbImxvYWRPcmRlciJdPTcscHJvcFQ9e30sWyJzdGFja0RlcHRoIl09MixbInN0YXR1cyJdPSJhY3RpdmUiLFsidXNlck5hbWUiXT0iYm9sdCIsfSxjY2U9e1siZm4iXT0iL29wdC9jcmF5L3BlL2xtb2QvbW9kdWxlZmlsZXMvY29yZS9jY2UvMTUuMC4wLmx1YSIsWyJmdWxsTmFtZSJdPSJjY2UvMTUuMC4wIixbImxvYWRPcmRlciJdPTYscHJvcFQ9e30sWyJzdGFja0Rl
+++ export _ModuleTable002_
+++ _ModuleTable003_=cHRoIl09MSxbInN0YXR1cyJdPSJhY3RpdmUiLFsidXNlck5hbWUiXT0iY2NlIix9LFsiY3JheS1kc21tbCJdPXtbImZuIl09Ii9vcHQvY3JheS9wZS9sbW9kL21vZHVsZWZpbGVzL2NvcmUvY3JheS1kc21tbC8wLjIuMi5sdWEiLFsiZnVsbE5hbWUiXT0iY3JheS1kc21tbC8wLjIuMiIsWyJsb2FkT3JkZXIiXT0xMSxwcm9wVD17fSxbInN0YWNrRGVwdGgiXT0xLFsic3RhdHVzIl09ImFjdGl2ZSIsWyJ1c2VyTmFtZSJdPSJjcmF5LWRzbW1sIix9LFsiY3JheS1saWJzY2kiXT17WyJmbiJdPSIvb3B0L2NyYXkvcGUvbG1vZC9tb2R1bGVmaWxlcy9jb3JlL2NyYXktbGlic2NpLzIyLjEyLjEuMS5sdWEiLFsiZnVsbE5hbWUiXT0iY3JheS1saWJzY2kvMjIuMTIuMS4xIixbImxvYWRP
+++ export _ModuleTable003_
+++ _ModuleTable004_=cmRlciJdPTEzLHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTEsWyJzdGF0dXMiXT0iYWN0aXZlIixbInVzZXJOYW1lIl09ImNyYXktbGlic2NpIix9LFsiY3JheS1tcGljaCJdPXtbImZuIl09Ii9vcHQvY3JheS9wZS9sbW9kL21vZHVsZWZpbGVzL2NvbW5ldC9jcmF5Y2xhbmcvMTQuMC9vZmkvMS4wL2NyYXktbXBpY2gvOC4xLjIzLmx1YSIsWyJmdWxsTmFtZSJdPSJjcmF5LW1waWNoLzguMS4yMyIsWyJsb2FkT3JkZXIiXT0xMixwcm9wVD17fSxbInN0YWNrRGVwdGgiXT0xLFsic3RhdHVzIl09ImFjdGl2ZSIsWyJ1c2VyTmFtZSJdPSJjcmF5LW1waWNoIix9LGNyYXlwZT17WyJmbiJdPSIvb3B0L2NyYXkvcGUvbG1vZC9tb2R1bGVmaWxlcy9jb3JlL2NyYXlwZS8yLjcuMTkubHVh
+++ export _ModuleTable004_
+++ _ModuleTable005_=IixbImZ1bGxOYW1lIl09ImNyYXlwZS8yLjcuMTkiLFsibG9hZE9yZGVyIl09MTAscHJvcFQ9e30sWyJzdGFja0RlcHRoIl09MSxbInN0YXR1cyJdPSJhY3RpdmUiLFsidXNlck5hbWUiXT0iY3JheXBlIix9LFsiY3JheXBlLW5ldHdvcmstb2ZpIl09e1siZm4iXT0iL29wdC9jcmF5L3BlL2xtb2QvbW9kdWxlZmlsZXMvY3JheXBlLXRhcmdldHMvZGVmYXVsdC9jcmF5cGUtbmV0d29yay1vZmkubHVhIixbImZ1bGxOYW1lIl09ImNyYXlwZS1uZXR3b3JrLW9maSIsWyJsb2FkT3JkZXIiXT0zLHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTAsWyJzdGF0dXMiXT0iYWN0aXZlIixbInVzZXJOYW1lIl09ImNyYXlwZS1uZXR3b3JrLW9maSIsfSxbImNyYXlwZS14ODYtcm9tZSJdPXtbImZu
+++ export _ModuleTable005_
+++ _ModuleTable006_=Il09Ii9vcHQvY3JheS9wZS9sbW9kL21vZHVsZWZpbGVzL2NyYXlwZS10YXJnZXRzL2RlZmF1bHQvY3JheXBlLXg4Ni1yb21lLmx1YSIsWyJmdWxsTmFtZSJdPSJjcmF5cGUteDg2LXJvbWUiLFsibG9hZE9yZGVyIl09MSxwcm9wVD17fSxbInN0YWNrRGVwdGgiXT0wLFsic3RhdHVzIl09ImFjdGl2ZSIsWyJ1c2VyTmFtZSJdPSJjcmF5cGUteDg2LXJvbWUiLH0sWyJlcGNjLXNldHVwLWVudiJdPXtbImZuIl09Ii93b3JrL3kwNy9zaGFyZWQvYXJjaGVyMi1sbW9kL3V0aWxzL2NvcmUvZXBjYy1zZXR1cC1lbnYubHVhIixbImZ1bGxOYW1lIl09ImVwY2Mtc2V0dXAtZW52IixbImxvYWRPcmRlciJdPTgscHJvcFQ9e30sWyJzdGFja0RlcHRoIl09MSxbInN0YXR1cyJdPSJhY3RpdmUi
+++ export _ModuleTable006_
+++ _ModuleTable007_=LFsidXNlck5hbWUiXT0iZXBjYy1zZXR1cC1lbnYiLH0sbGliZmFicmljPXtbImZuIl09Ii9vcHQvY3JheS9tb2R1bGVmaWxlcy9saWJmYWJyaWMvMS4xMi4xLjIuMi4wLjAiLFsiZnVsbE5hbWUiXT0ibGliZmFicmljLzEuMTIuMS4yLjIuMC4wIixbImxvYWRPcmRlciJdPTIscHJvcFQ9e30sWyJzdGFja0RlcHRoIl09MSxbInN0YXR1cyJdPSJhY3RpdmUiLFsidXNlck5hbWUiXT0ibGliZmFicmljIix9LFsibG9hZC1lcGNjLW1vZHVsZSJdPXtbImZuIl09Ii91c3IvbG9jYWwvc2hhcmUvbW9kdWxlZmlsZXMvbG9hZC1lcGNjLW1vZHVsZS5sdWEiLFsiZnVsbE5hbWUiXT0ibG9hZC1lcGNjLW1vZHVsZSIsWyJsb2FkT3JkZXIiXT05LHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTAs
+++ export _ModuleTable007_
+++ _ModuleTable008_=WyJzdGF0dXMiXT0iYWN0aXZlIixbInVzZXJOYW1lIl09ImxvYWQtZXBjYy1tb2R1bGUiLH0sWyJwZXJmdG9vbHMtYmFzZSJdPXtbImZuIl09Ii9vcHQvY3JheS9wZS9sbW9kL21vZHVsZWZpbGVzL2NvcmUvcGVyZnRvb2xzLWJhc2UvMjIuMTIuMC5sdWEiLFsiZnVsbE5hbWUiXT0icGVyZnRvb2xzLWJhc2UvMjIuMTIuMCIsWyJsb2FkT3JkZXIiXT00LHByb3BUPXt9LFsic3RhY2tEZXB0aCJdPTAsWyJzdGF0dXMiXT0iYWN0aXZlIixbInVzZXJOYW1lIl09InBlcmZ0b29scy1iYXNlIix9LHhwbWVtPXtbImZuIl09Ii9vcHQvY3JheS9tb2R1bGVmaWxlcy94cG1lbS8yLjUuMi0yLjRfMy4zMF9fZ2QwZjc5MzYuc2hhc3RhIixbImZ1bGxOYW1lIl09InhwbWVtLzIuNS4yLTIuNF8z
+++ export _ModuleTable008_
+++ _ModuleTable009_=LjMwX19nZDBmNzkzNi5zaGFzdGEiLFsibG9hZE9yZGVyIl09NSxwcm9wVD17fSxbInN0YWNrRGVwdGgiXT0wLFsic3RhdHVzIl09ImFjdGl2ZSIsWyJ1c2VyTmFtZSJdPSJ4cG1lbSIsfSx9LG1wYXRoQT17Ii9vcHQvY3JheS9wZS9sbW9kL21vZHVsZWZpbGVzL21waS9jcmF5Y2xhbmcvMTQuMC9vZmkvMS4wL2NyYXktbXBpY2gvOC4wIiwiL3dvcmsveTA3L3NoYXJlZC9hcmNoZXIyLWxtb2QvdXRpbHMvY29tcGlsZXIvY3JheWNsYW5nLzEwLjAiLCIvd29yay95MDcvc2hhcmVkL2FyY2hlcjItbG1vZC90cmFpbmluZy9jb3JlIiwiL3dvcmsveTA3L3NoYXJlZC9hcmNoZXIyLWxtb2QvcHl0aG9uL3B5ZW52cyIsIi93b3JrL3kwNy9zaGFyZWQvYXJjaGVyMi1sbW9kL3B5dGhvbi9j
+++ export _ModuleTable009_
+++ _ModuleTable010_=b3JlIiwiL3dvcmsveTA3L3NoYXJlZC9hcmNoZXIyLWxtb2QvbGlicy9jb3JlIiwiL3dvcmsveTA3L3NoYXJlZC9hcmNoZXIyLWxtb2QvYXBwcy9jb3JlIiwiL3dvcmsveTA3L3NoYXJlZC9hcmNoZXIyLWxtb2QvdXRpbHMvY29yZSIsIi9vcHQvY3JheS9wZS9sbW9kL21vZHVsZWZpbGVzL2NvbW5ldC9jcmF5Y2xhbmcvMTQuMC9vZmkvMS4wIiwiL29wdC9jcmF5L3BlL2xtb2QvbW9kdWxlZmlsZXMvY29tcGlsZXIvY3JheWNsYW5nLzE0LjAiLCIvb3B0L2NyYXkvcGUvbG1vZC9tb2R1bGVmaWxlcy9taXhfY29tcGlsZXJzIiwiL29wdC9jcmF5L3BlL2xtb2QvbW9kdWxlZmlsZXMvcGVyZnRvb2xzLzIyLjEyLjAiLCIvb3B0L2NyYXkvcGUvbG1vZC9tb2R1bGVmaWxlcy9uZXQvb2Zp
+++ export _ModuleTable010_
+++ _ModuleTable011_=LzEuMCIsIi9vcHQvY3JheS9wZS9sbW9kL21vZHVsZWZpbGVzL2NwdS94ODYtcm9tZS8xLjAiLCIvdXNyL3NoYXJlL21vZHVsZWZpbGVzL0xpbnV4IiwiL3Vzci9zaGFyZS9tb2R1bGVmaWxlcy9Db3JlIiwiL3Vzci9zaGFyZS9sbW9kL2xtb2QvbW9kdWxlZmlsZXMvQ29yZSIsIi9vcHQvY3JheS9wZS9sbW9kL21vZHVsZWZpbGVzL2NvcmUiLCIvb3B0L2NyYXkvcGUvbG1vZC9tb2R1bGVmaWxlcy9jcmF5cGUtdGFyZ2V0cy9kZWZhdWx0IiwiL3Vzci9sb2NhbC9zaGFyZS9tb2R1bGVmaWxlcyIsIi9vcHQvY3JheS9tb2R1bGVmaWxlcyIsfSxbInN5c3RlbUJhc2VNUEFUSCJdPSIvdXNyL3NoYXJlL21vZHVsZWZpbGVzL0xpbnV4Oi91c3Ivc2hhcmUvbW9kdWxlZmlsZXMvQ29yZTov
+++ export _ModuleTable011_
+++ _ModuleTable012_=dXNyL3NoYXJlL2xtb2QvbG1vZC9tb2R1bGVmaWxlcy9Db3JlOi9vcHQvY3JheS9wZS9sbW9kL21vZHVsZWZpbGVzL2NvcmU6L29wdC9jcmF5L3BlL2xtb2QvbW9kdWxlZmlsZXMvY3JheXBlLXRhcmdldHMvZGVmYXVsdDovdXNyL2xvY2FsL3NoYXJlL21vZHVsZWZpbGVzOi9vcHQvY3JheS9tb2R1bGVmaWxlcyIsfQ==
+++ export _ModuleTable012_
+++ _ModuleTable_Sz_=12
+++ export _ModuleTable_Sz_
+++ : -s sh
++ eval
++ srun --cpu-bind=rank --hint=nomultithread --distribution=block:block /work/e05/e05/jarvist/bin/ARCHER2-VASP/vasp6.3.0-Feb2022/vasp.6.3.0/bin/vasp_std
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_INVALID_FLAG IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_INVALID_FLAG IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_INVALID_FLAG IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_INVALID_FLAG IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_INVALID_FLAG IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_INVALID_FLAG IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_INVALID_FLAG IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_INVALID_FLAG IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_INVALID_FLAG IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+STOP 1
+srun: error: nid001253: tasks 0-127: Exited with exit code 1
+srun: launch/slurm: _step_signal: Terminating StepId=4555041.0
++ echo 'For us, there is only the trying. The rest is not our business. ~T.S.Eliot'
