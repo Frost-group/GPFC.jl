@@ -24,7 +24,7 @@ function VASP_input(vasph5)
 	# Ionic info
 	input_position_ions = read(file["input/poscar/position_ions"])'
 	type_ions = read(file["input/poscar/ion_types"]) # string, name of elements.
-	#atomicnumber_ions = [82 , 52]
+	atomicnumber_ions = [82 , 52]
 	#atomicnumber_ions = [14]
 	
 	number_iontypes = read(file["input/poscar/number_ion_types"])
@@ -106,8 +106,11 @@ function kernelfunction(k, x₁, x₂, grad::Int64)
 	end
 end
 
+# ╔═╡ f0525b1e-ec29-4050-9e4a-aadfa7897470
+atomicnumber_ions = [82 , 52]
+
 # ╔═╡ 6efdbe70-ae02-4b75-b050-e5a9d95c980a
-function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
+function Marginal(X::Matrix{Float64}, k, l, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
 	num = size(X,2)
 	#building Marginal Likelihood containers
@@ -132,7 +135,11 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 	end
 
 	Iee = σₑ^2 * Matrix(I, num, num)
-	Iff = (σₑ/l)^2 * Matrix(I, dim * num, dim * num)
+	if typeof(l) == Float64
+		Iff = σₑ^2* Matrix(I, dim * num, dim * num).*(l).^-2
+	else
+		Iff = σₑ^2*kronecker(1.0*Matrix(I,num,num),Matrix(I,dim,dim).*(l).^-2)
+	end
 	Ief = zeros(num, dim * num)
 	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
 
@@ -220,7 +227,7 @@ end
 # ╔═╡ 1cf3fc5a-daca-434b-a847-284cd539f97e
 begin
 	σₒ = 0.05             # Kernel Scale
-	l = 0.05  				# Length Scale
+	l = 0.08  				# Length Scale
 	σₑ = 9e-7              # Energy Gaussian noise
 	σₙ = 4e-8                 # Force Gaussian noise for Model 2 (σₑ independent)
 		
@@ -231,6 +238,9 @@ begin
 		
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
+
+# ╔═╡ fac39101-542d-4caa-972f-8ab978684b56
+typeof(l) == Float64
 
 # ╔═╡ c8aa8b2c-33ef-47c3-b238-4976a81d40a8
 begin
@@ -302,26 +312,42 @@ heatmap(1:size(FC2[:,:],1),
 		    #title="FC2 (Traning Data = " *string(nd[i]) *")"
 )
 
-# ╔═╡ 45843c8e-4da2-4641-a1e7-6734865804c0
-begin
-	Dim_feature = 48
+# ╔═╡ 129f8f13-74c3-4b89-bd0d-9af91c40f9ea
+function generate_kernelARD(kernel, atomicnumber_ions, equi, σₒ, l)
+	Dim_feature = size(equi,1)
 	L = zeros((Dim_feature))
 	atomicnumber_ions = [82 , 52]
-	l2 = 9.5
 	for ii in 1:size(atomicnumber_ions,1)
 		Dim_atom = Int(Dim_feature/size(atomicnumber_ions,1))
-		L[1+Dim_atom*(ii-1):Dim_atom*ii] = l2*ones(Dim_atom)*(1/atomicnumber_ions[ii])
+		L[1+Dim_atom*(ii-1):Dim_atom*ii] = l*ones(Dim_atom)*(1/atomicnumber_ions[ii])
 	end
-	kernel_ARD = σₒ^2 * SqExponentialKernel() ∘ ARDTransform(L)
+	kernel_ARD = σₒ^2 * kernel ∘ ARDTransform(L)
+	return kernel_ARD, L 
 end
 
-# ╔═╡ 0b049134-513d-41d9-982d-47b8f8feb1ea
+# ╔═╡ f73491c0-02f4-4113-b0f8-4317ee0fff45
+begin
+	σₒ2 = 0.05
+	l2 = 1.0
+	kernel_ARD, L = generate_kernelARD(SqExponentialKernel() , atomicnumber_ions, equi, σₒ2, l2)
+end
+
+# ╔═╡ d00d05e7-3d18-4654-a557-2fb7263b0bf5
+Dim_feature2 = size(equi,1)
+
+# ╔═╡ 6cab8022-8a54-4612-96c5-2b9c43af0bf4
+SqExponentialKernel()
+
+# ╔═╡ c04a9530-62a8-4791-935c-81d5a89f7e9c
 L
+
+# ╔═╡ 0b049134-513d-41d9-982d-47b8f8feb1ea
+σₑ^2*Matrix(I, 48,48).*(L).^-2
 
 # ╔═╡ 0bed9cd8-f088-4b9e-9be3-1fe7a4b311d7
 begin
 	ii_ARD = 51
-	Kₘₘ_ARD = Marginal(feature[:,1:ii], kernel_ARD, l, σₑ, σₙ)
+	Kₘₘ_ARD = Marginal(feature[:,1:ii], kernel_ARD, L, σₑ, σₙ)
 	Kₙₘ_ARD = Coveriance_fc2(feature[:,1:ii], equi, kernel_ARD)
 	FC2_ARD = Posterior(Kₘₘ_ARD , Kₙₘ_ARD , Set_Target(Target, ii))
 end;
@@ -340,6 +366,9 @@ heatmap(1:size(FC2_ARD[:,:],1),
 
 # ╔═╡ 99caa5a2-4c46-40ef-bcb5-c98de092b6b7
 sum(FC2_ARD)
+
+# ╔═╡ 486aad9a-5d37-438f-b145-5045ce4342ac
+
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1790,7 +1819,9 @@ version = "1.4.1+1"
 # ╠═5e3b51f8-5b91-11ee-097e-41cb6031e18b
 # ╠═5c03ce74-b3fe-4dec-beb0-f569fb9614ae
 # ╠═0860b47a-6296-4dbd-a6f2-d6857abfe9e3
+# ╠═f0525b1e-ec29-4050-9e4a-aadfa7897470
 # ╠═6efdbe70-ae02-4b75-b050-e5a9d95c980a
+# ╠═fac39101-542d-4caa-972f-8ab978684b56
 # ╠═280f8da1-b44d-4a49-825b-f80753b8934f
 # ╠═d9c8a416-3630-421b-becc-8be55e16c65c
 # ╠═449acc9c-6a4a-4325-a113-e898d89bdb81
@@ -1805,10 +1836,15 @@ version = "1.4.1+1"
 # ╠═3203cc0f-c938-48a5-95ea-21d35dd6695b
 # ╠═ce32af1b-658c-4758-b8eb-c9fe4dfb76af
 # ╠═b0aa9382-6829-47bd-8343-d770e00db8e9
-# ╠═45843c8e-4da2-4641-a1e7-6734865804c0
+# ╠═129f8f13-74c3-4b89-bd0d-9af91c40f9ea
+# ╠═f73491c0-02f4-4113-b0f8-4317ee0fff45
+# ╠═d00d05e7-3d18-4654-a557-2fb7263b0bf5
+# ╠═6cab8022-8a54-4612-96c5-2b9c43af0bf4
+# ╠═c04a9530-62a8-4791-935c-81d5a89f7e9c
 # ╠═0b049134-513d-41d9-982d-47b8f8feb1ea
 # ╠═0bed9cd8-f088-4b9e-9be3-1fe7a4b311d7
 # ╠═28d02ccc-2ffe-4294-aa34-0540aac64a9e
 # ╠═99caa5a2-4c46-40ef-bcb5-c98de092b6b7
+# ╠═486aad9a-5d37-438f-b145-5045ce4342ac
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
