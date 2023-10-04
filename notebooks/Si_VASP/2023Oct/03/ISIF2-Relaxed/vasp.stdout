@@ -1,0 +1,60 @@
+ ----------------------------------------------------
+    OOO  PPPP  EEEEE N   N M   M PPPP
+   O   O P   P E     NN  N MM MM P   P
+   O   O PPPP  EEEEE N N N M M M PPPP   -- VERSION
+   O   O P     E     N  NN M   M P
+    OOO  P     EEEEE N   N M   M P
+ ----------------------------------------------------
+ running  128 mpi-ranks, with    1 threads/rank
+ distrk:  each k-point on  128 cores,    1 groups
+ distr:  one band on   16 cores,    8 groups
+ vasp.6.3.0 20Jan22 (build Feb 21 2022 11:18:28) complex                         
+ POSCAR found type information on POSCAR Si
+ POSCAR found :  1 types and      16 ions
+ Reading from existing POTCAR
+ scaLAPACK will be used
+ Reading from existing POTCAR
+ -----------------------------------------------------------------------------
+|                                                                             |
+|               ----> ADVICE to this user running VASP <----                  |
+|                                                                             |
+|     You enforced a specific xc type in the INCAR file but a different       |
+|     type was found in the POTCAR file.                                      |
+|     I HOPE YOU KNOW WHAT YOU ARE DOING!                                     |
+|                                                                             |
+ -----------------------------------------------------------------------------
+
+ LDA part: xc-table for Pade appr. of Perdew
+ POSCAR, INCAR and KPOINTS ok, starting setup
+ FFT: planning ... GRIDC
+ FFT: planning ... GRID_SOFT
+ FFT: planning ... GRID
+ WAVECAR not read
+ WARNING: random wavefunctions but no delay for mixing, default for NELMDL
+ entering main loop
+       N       E                     dE             d eps       ncg     rms          rms(c)
+DAV:   1     0.154592142527E+03    0.15459E+03   -0.26175E+04  1536   0.123E+03
+DAV:   2    -0.794009058296E+02   -0.23399E+03   -0.21531E+03  1872   0.169E+02
+DAV:   3    -0.934069663637E+02   -0.14006E+02   -0.13738E+02  1984   0.364E+01
+DAV:   4    -0.937099485391E+02   -0.30298E+00   -0.30142E+00  1920   0.645E+00
+DAV:   5    -0.937174692827E+02   -0.75207E-02   -0.75138E-02  1928   0.970E-01    0.140E+01
+RMM:   6    -0.924929012883E+02    0.12246E+01   -0.54405E-01  1547   0.201E+00    0.842E+00
+RMM:   7    -0.919316311529E+02    0.56127E+00   -0.12875E+00  1649   0.318E+00    0.462E-01
+RMM:   8    -0.919417544447E+02   -0.10123E-01   -0.11941E-01  1727   0.118E+00    0.249E-01
+RMM:   9    -0.919451504288E+02   -0.33960E-02   -0.35015E-02  1852   0.578E-01    0.271E-01
+RMM:  10    -0.919456918919E+02   -0.54146E-03   -0.58931E-03  1862   0.284E-01    0.279E-01
+RMM:  11    -0.919448101911E+02    0.88170E-03   -0.20969E-03  1772   0.176E-01    0.123E+00
+RMM:  12    -0.919457665848E+02   -0.95639E-03   -0.21018E-03  1736   0.182E-01    0.257E-01
+RMM:  13    -0.919458482666E+02   -0.81682E-04   -0.19811E-04  1771   0.577E-02    0.102E-01
+RMM:  14    -0.919458555940E+02   -0.73274E-05   -0.56685E-05  1933   0.289E-02    0.570E-02
+RMM:  15    -0.919458558541E+02   -0.26009E-06   -0.89608E-06  1880   0.131E-02    0.235E-02
+RMM:  16    -0.919458568492E+02   -0.99515E-06   -0.24605E-06  1975   0.591E-03    0.173E-02
+RMM:  17    -0.919458566359E+02    0.21335E-06   -0.72649E-07  1804   0.342E-03    0.485E-04
+RMM:  18    -0.919458566668E+02   -0.30952E-07   -0.16040E-07  1870   0.156E-03    0.214E-03
+RMM:  19    -0.919458566492E+02    0.17656E-07   -0.21863E-08  1405   0.610E-04    0.206E-03
+RMM:  20    -0.919458566644E+02   -0.15244E-07   -0.82387E-09  1165   0.327E-04    0.129E-03
+RMM:  21    -0.919458566893E+02   -0.24914E-07   -0.49689E-09  1039   0.254E-04    0.223E-04
+RMM:  22    -0.919458566939E+02   -0.45993E-08   -0.78128E-10   795   0.108E-04
+   1 F= -.91945857E+02 E0= -.91945857E+02  d E =-.821274E-12
+ writing wavefunctions
+For us, there is only the trying. The rest is not our business. ~T.S.Eliot
