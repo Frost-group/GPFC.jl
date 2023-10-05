@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 5e3b51f8-5b91-11ee-097e-41cb6031e18b
+# ╔═╡ b9108a30-634b-11ee-1e91-b3ac9a6befde
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum
@@ -16,7 +16,13 @@ begin
 	using HDF5
 end
 
-# ╔═╡ 5c03ce74-b3fe-4dec-beb0-f569fb9614ae
+# ╔═╡ f7ab1192-9128-477f-81a4-9d57473db57f
+begin
+	path = "2023Oct/02/ISIF2-2/vaspout.h5"  # string, Name of vasp out put vas output files (HDF5)
+	file = h5open(path, "r")
+end;
+
+# ╔═╡ ebe1425a-fb7f-4ece-91b8-61c0be45efcf
 function VASP_input(vasph5)
 	path = vasph5  # string, Name of vasp out put vas output files (HDF5)
 	file = h5open(path, "r")
@@ -24,7 +30,7 @@ function VASP_input(vasph5)
 	# Ionic info
 	input_position_ions = read(file["input/poscar/position_ions"])'
 	type_ions = read(file["input/poscar/ion_types"]) # string, name of elements.
-	atomicnumber_ions = [82 , 52]
+	atomicnumber_ions = [14]
 	#atomicnumber_ions = [14]
 	
 	number_iontypes = read(file["input/poscar/number_ion_types"])
@@ -76,7 +82,7 @@ function VASP_input(vasph5)
 	return equi, F2C, rev_feature, rev_energy, rev_forces, Target 
 end;
 
-# ╔═╡ 0860b47a-6296-4dbd-a6f2-d6857abfe9e3
+# ╔═╡ 2cfc30b4-7b8c-409e-ba5e-c9c2c6f694e4
 function kernelfunction(k, x₁, x₂, grad::Int64)
 	function f1st(x₁, x₂) 
 		Zygote.gradient( a -> k(a, x₂), x₁)[1]
@@ -106,10 +112,7 @@ function kernelfunction(k, x₁, x₂, grad::Int64)
 	end
 end
 
-# ╔═╡ f0525b1e-ec29-4050-9e4a-aadfa7897470
-atomicnumber_ions = [82 , 52]
-
-# ╔═╡ 6efdbe70-ae02-4b75-b050-e5a9d95c980a
+# ╔═╡ a2748635-9c7b-4e37-b63c-3d24a24872a3
 function Marginal(X::Matrix{Float64}, k, l, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
 	num = size(X,2)
@@ -149,7 +152,7 @@ function Marginal(X::Matrix{Float64}, k, l, σₑ::Float64, σₙ::Float64)
 end
 
 
-# ╔═╡ 280f8da1-b44d-4a49-825b-f80753b8934f
+# ╔═╡ 217b3df8-74bd-4067-97a0-abceb38fa6a7
 function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	dim = size(X,1)
 	num = size(X,2)
@@ -173,7 +176,7 @@ function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	return K₂ₙₘ
 end
 
-# ╔═╡ d9c8a416-3630-421b-becc-8be55e16c65c
+# ╔═╡ e12c303a-2cb7-48d0-8410-15a917c91525
 function Posterior(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
 	dimₜ = size(Marginal, 1)
@@ -202,7 +205,7 @@ function Posterior(Marginal, Covariance, Target)
 	return Meanₚ 
 end
 
-# ╔═╡ 449acc9c-6a4a-4325-a113-e898d89bdb81
+# ╔═╡ ad57c4be-b0f6-4217-bb8c-27821c864bf3
 function Set_Target(Target, ii)
 	number_ions = Int((size(Target, 1) - 1)/3)
 	datasize = size(Target,2)
@@ -216,19 +219,33 @@ function Set_Target(Target, ii)
 	return Target_vec
 end 
 
-# ╔═╡ 6211ca02-8853-44fd-8f91-253313daf7bc
+# ╔═╡ a4f30e6a-9ba1-4908-ade1-c0272b9d4dc3
 begin
-	equi1, F2C1, feature1, energy1, forces1, Target1 = VASP_input("2023Sep/24/vaspout_1.h5")
-	equi2, F2C2, feature2, energy2, forces2, Target2 = VASP_input("2023Sep/24/vaspout_2.h5")
-	equi3, F2C3, feature3, energy3, forces3, Target3 = VASP_input("2023Sep/24/vaspout_3.h5")
-	equi4, F2C4, feature4, energy4, forces4, Target4 = VASP_input("2023Sep/24/vaspout_4.h5")
-end
+	equi1, F2C1, feature1, energy1, forces1, Target1 = VASP_input("2023Oct/02/ISIF2-2/vaspout.h5")
+end;
 
-# ╔═╡ 1cf3fc5a-daca-434b-a847-284cd539f97e
+# ╔═╡ f0428d66-5ca6-4fc4-a3c0-64819fb716fb
+
+
+# ╔═╡ ab87f51c-96b7-4927-8a89-1d608cffcd86
 begin
-	σₒ = 0.1             # Kernel Scale
+	equi = F2C1*[0.125, 0.125, 0.125, 0.625, 0.125, 0.125,
+		0.125, 0.625, 0.125,0.625, 0.625, 0.125,0.125, 0.125, 0.625, 0.625, 0.125, 0.625, 0.125, 0.625, 0.625, 0.625, 0.625, 0.625, 0.000, 0.000, 0.000, 0.500, 0.000, 0.000, 0.000, 0.500, 0.000, 0.500, 0.500, 0.000, 0.000, 0.000, 0.500, 0.500, 0.000, 0.500, 0.000, 0.500, 0.500, 0.500, 0.500, 0.500]
+	size(equi)
+	GSEner = vcat([-91.94585649], zeros((48,1)))
+end;
+
+# ╔═╡ 26f0a4a7-f3c4-4ad5-840d-d80196cafdfe
+begin
+	Target = hcat(GSEner, Target1);
+	feature = hcat(equi, feature1)
+end;
+
+# ╔═╡ 5c6796f1-99e3-4d5b-9166-f5d616b272c8
+begin
+	σₒ = 0.15             # Kernel Scale
 	l = 0.08  				# Length Scale
-	σₑ = 9e-7              # Energy Gaussian noise
+	σₑ = 9.5e-7              # Energy Gaussian noise
 	σₙ = 4e-8                 # Force Gaussian noise for Model 2 (σₑ independent)
 		
 	Num = 10                   # Number of training points
@@ -239,68 +256,18 @@ begin
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
 
-# ╔═╡ fac39101-542d-4caa-972f-8ab978684b56
-typeof(l) == Float64
-
-# ╔═╡ c8aa8b2c-33ef-47c3-b238-4976a81d40a8
+# ╔═╡ b1149a02-b7e4-427d-ad99-fc0635f5b3de
 begin
-	equi = F2C1*[0.24991, 0.24997, 0.25031, 0.74991, 0.24997, 0.25031, 0.24991, 0.74997, 0.25031, 0.74991, 0.74997, 0.25031, 0.24991, 0.24997, 0.75031, 0.74991, 0.24997, 0.75031, 0.24991, 0.74997, 0.75031, 0.74991, 0.74997, 0.75031, 0.99989, 0.99988, 0.00035, 0.49989, 0.99988, 0.00035, 0.99989, 0.49989, 0.00035, 0.49989, 0.49989, 0.00035, 0.99989, 0.99988, 0.50035, 0.49989, 0.99988, 0.50035, 0.99989, 0.49989, 0.50035, 0.49989, 0.49989, 0.50035]
-	size(equi)
-	GSEner = Target4[:,1]
-	#vcat([-65.92692329404781], zeros((48,1)))
-end;
-
-# ╔═╡ 8260a0bf-1071-4d72-b544-7771cf041e72
-begin
-	Target = hcat(
-		hcat(
-			hcat(
-				hcat(GSEner, Target1)
-			,Target2)
-		,Target3)
-	,Target4);
-	feature = hcat(
-		hcat(
-			hcat(
-				hcat(equi, feature1)
-				,feature2)
-			,feature3)
-		,feature4);
-end;
-
-# ╔═╡ c5fe61cf-e064-41b6-8266-0132e2307e05
-Target
-
-# ╔═╡ 67120528-5e19-4358-884b-9717887c696b
-feature
-
-# ╔═╡ fca9fee0-2d9e-47e5-9511-d3a231d6ad11
-begin
-	path = "2023Sep/24/vaspout_1.h5"  # string, Name of vasp out put vas output files (HDF5)
-	file = h5open(path, "r")
-	number_iontypes = read(file["input/poscar/number_ion_types"])
-	number_ions = sum(number_iontypes)
-	intermediate_position_ions = read(file["intermediate/ion_dynamics/position_ions"])
-	lattice_vectors = read(file["intermediate/ion_dynamics/lattice_vectors"])[:,:,1]
-	Iden = 1.0 * Matrix(I, number_ions, number_ions)
-	V = kronecker(Iden, lattice_vectors)
-end;
-
-# ╔═╡ 71aeb543-7756-47da-9850-f53cac742577
-lattice_vectors
-
-# ╔═╡ 3203cc0f-c938-48a5-95ea-21d35dd6695b
-begin
-	ii = 51
+	ii = 42
 	Kₘₘ = Marginal(feature[:,1:ii], kernel, l, σₑ, σₙ)
 	Kₙₘ = Coveriance_fc2(feature[:,1:ii], equi, kernel)
 	FC2 = Posterior(Kₘₘ , Kₙₘ , Set_Target(Target, ii))
 end;
 
-# ╔═╡ ce32af1b-658c-4758-b8eb-c9fe4dfb76af
+# ╔═╡ e2917111-128f-4e1b-90ae-82efb99560d8
 sum(FC2)
 
-# ╔═╡ b0aa9382-6829-47bd-8343-d770e00db8e9
+# ╔═╡ 62af99c6-c0b6-4a30-b80a-072ee06732a0
 heatmap(1:size(FC2[:,:],1),
 		    1:size(FC2[:,:],2), 
 			FC2[:,:],
@@ -312,63 +279,14 @@ heatmap(1:size(FC2[:,:],1),
 		    #title="FC2 (Traning Data = " *string(nd[i]) *")"
 )
 
-# ╔═╡ 129f8f13-74c3-4b89-bd0d-9af91c40f9ea
-function generate_kernelARD(kernel, atomicnumber_ions, equi, σₒ, l)
-	Dim_feature = size(equi,1)
-	L = zeros((Dim_feature))
-	atomicnumber_ions = [82 , 52]
-	for ii in 1:size(atomicnumber_ions,1)
-		Dim_atom = Int(Dim_feature/size(atomicnumber_ions,1))
-		L[1+Dim_atom*(ii-1):Dim_atom*ii] = l*ones(Dim_atom)*(1/atomicnumber_ions[ii])
-	end
-	kernel_ARD = σₒ^2 * kernel ∘ ARDTransform(L)
-	return kernel_ARD, L 
-end
+# ╔═╡ 812c2958-c77c-4b27-b787-b7f2c0edc134
+ feature[1:1,1:42]
 
-# ╔═╡ f73491c0-02f4-4113-b0f8-4317ee0fff45
-begin
-	σₒ2 = 0.1
-	l2 = 6
-	kernel_ARD, L = generate_kernelARD(SqExponentialKernel() , atomicnumber_ions, equi, σₒ2, l2)
-end
+# ╔═╡ fde768b5-3da7-40bc-975e-29f4e27d2daf
+Target[1:1,1:42]
 
-# ╔═╡ d00d05e7-3d18-4654-a557-2fb7263b0bf5
-Dim_feature2 = size(equi,1)
-
-# ╔═╡ 6cab8022-8a54-4612-96c5-2b9c43af0bf4
-SqExponentialKernel()
-
-# ╔═╡ c04a9530-62a8-4791-935c-81d5a89f7e9c
-L
-
-# ╔═╡ 0b049134-513d-41d9-982d-47b8f8feb1ea
-σₑ^2*Matrix(I, 48,48).*(L).^-2;
-
-# ╔═╡ 0bed9cd8-f088-4b9e-9be3-1fe7a4b311d7
-begin
-	ii_ARD = 51
-	Kₘₘ_ARD = Marginal(feature[:,1:ii], kernel_ARD, L, σₑ, σₙ)
-	Kₙₘ_ARD = Coveriance_fc2(feature[:,1:ii], equi, kernel_ARD)
-	FC2_ARD = Posterior(Kₘₘ_ARD , Kₙₘ_ARD , Set_Target(Target, ii))
-end;
-
-# ╔═╡ 28d02ccc-2ffe-4294-aa34-0540aac64a9e
-heatmap(1:size(FC2_ARD[:,:],1),
-		    1:size(FC2_ARD[:,:],2), 
-			FC2_ARD[:,:],
-		    c=cgrad([:blue, :white, :red, :yellow]),
-			aspectratio=:equal,
-			size=(700, 700),
-		    xlabel="feature coord. (n x d)",
-			ylabel="feature coord. (n x d)",
-		    #title="FC2 (Traning Data = " *string(nd[i]) *")"
-)
-
-# ╔═╡ 99caa5a2-4c46-40ef-bcb5-c98de092b6b7
-sum(FC2_ARD)
-
-# ╔═╡ 486aad9a-5d37-438f-b145-5045ce4342ac
-
+# ╔═╡ 2fc6e8fc-b212-4c69-ad8c-0551c9fac379
+plot(feature[1:1,1:42], Target[1:1,1:42], seriestype=:scatter)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -989,9 +907,9 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[deps.LoggingExtras]]
 deps = ["Dates", "Logging"]
-git-tree-sha1 = "0d097476b6c381ab7906460ef1ef1638fbce1d91"
+git-tree-sha1 = "c1dd6d7978c12545b4179fb6153b9250c96b0075"
 uuid = "e6f89c97-d47a-5376-807f-9c37f3926c36"
-version = "1.0.2"
+version = "1.0.3"
 
 [[deps.MPIPreferences]]
 deps = ["Libdl", "Preferences"]
@@ -1693,35 +1611,24 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═5e3b51f8-5b91-11ee-097e-41cb6031e18b
-# ╠═5c03ce74-b3fe-4dec-beb0-f569fb9614ae
-# ╠═0860b47a-6296-4dbd-a6f2-d6857abfe9e3
-# ╠═f0525b1e-ec29-4050-9e4a-aadfa7897470
-# ╠═6efdbe70-ae02-4b75-b050-e5a9d95c980a
-# ╠═fac39101-542d-4caa-972f-8ab978684b56
-# ╠═280f8da1-b44d-4a49-825b-f80753b8934f
-# ╠═d9c8a416-3630-421b-becc-8be55e16c65c
-# ╠═449acc9c-6a4a-4325-a113-e898d89bdb81
-# ╠═6211ca02-8853-44fd-8f91-253313daf7bc
-# ╠═8260a0bf-1071-4d72-b544-7771cf041e72
-# ╠═c5fe61cf-e064-41b6-8266-0132e2307e05
-# ╠═1cf3fc5a-daca-434b-a847-284cd539f97e
-# ╠═c8aa8b2c-33ef-47c3-b238-4976a81d40a8
-# ╠═67120528-5e19-4358-884b-9717887c696b
-# ╠═fca9fee0-2d9e-47e5-9511-d3a231d6ad11
-# ╠═71aeb543-7756-47da-9850-f53cac742577
-# ╠═3203cc0f-c938-48a5-95ea-21d35dd6695b
-# ╠═ce32af1b-658c-4758-b8eb-c9fe4dfb76af
-# ╠═b0aa9382-6829-47bd-8343-d770e00db8e9
-# ╠═129f8f13-74c3-4b89-bd0d-9af91c40f9ea
-# ╠═f73491c0-02f4-4113-b0f8-4317ee0fff45
-# ╠═d00d05e7-3d18-4654-a557-2fb7263b0bf5
-# ╠═6cab8022-8a54-4612-96c5-2b9c43af0bf4
-# ╠═c04a9530-62a8-4791-935c-81d5a89f7e9c
-# ╠═0b049134-513d-41d9-982d-47b8f8feb1ea
-# ╠═0bed9cd8-f088-4b9e-9be3-1fe7a4b311d7
-# ╠═28d02ccc-2ffe-4294-aa34-0540aac64a9e
-# ╠═99caa5a2-4c46-40ef-bcb5-c98de092b6b7
-# ╠═486aad9a-5d37-438f-b145-5045ce4342ac
+# ╠═b9108a30-634b-11ee-1e91-b3ac9a6befde
+# ╠═f7ab1192-9128-477f-81a4-9d57473db57f
+# ╠═ebe1425a-fb7f-4ece-91b8-61c0be45efcf
+# ╠═2cfc30b4-7b8c-409e-ba5e-c9c2c6f694e4
+# ╠═a2748635-9c7b-4e37-b63c-3d24a24872a3
+# ╠═217b3df8-74bd-4067-97a0-abceb38fa6a7
+# ╠═e12c303a-2cb7-48d0-8410-15a917c91525
+# ╠═ad57c4be-b0f6-4217-bb8c-27821c864bf3
+# ╠═a4f30e6a-9ba1-4908-ade1-c0272b9d4dc3
+# ╠═f0428d66-5ca6-4fc4-a3c0-64819fb716fb
+# ╠═ab87f51c-96b7-4927-8a89-1d608cffcd86
+# ╠═26f0a4a7-f3c4-4ad5-840d-d80196cafdfe
+# ╠═5c6796f1-99e3-4d5b-9166-f5d616b272c8
+# ╠═b1149a02-b7e4-427d-ad99-fc0635f5b3de
+# ╠═e2917111-128f-4e1b-90ae-82efb99560d8
+# ╠═62af99c6-c0b6-4a30-b80a-072ee06732a0
+# ╠═812c2958-c77c-4b27-b787-b7f2c0edc134
+# ╠═fde768b5-3da7-40bc-975e-29f4e27d2daf
+# ╠═2fc6e8fc-b212-4c69-ad8c-0551c9fac379
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
