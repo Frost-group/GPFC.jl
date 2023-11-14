@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 013966d8-824e-11ee-1e1e-3776b206f35e
+# ╔═╡ 8bf63602-82ff-11ee-1470-8d2419792464
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum
@@ -14,7 +14,7 @@ begin
 	using Plots
 end
 
-# ╔═╡ e2810c0e-304b-41b9-9009-b78c526a6cd1
+# ╔═╡ 9a62fef1-3aa3-460f-b07f-dee44f102b45
 function kernelfunction(k, x₁, x₂, grad::Int64)
 	function f1st(x₁, x₂) 
 		Zygote.gradient( a -> k(a, x₂), x₁)[1]
@@ -44,7 +44,7 @@ function kernelfunction(k, x₁, x₂, grad::Int64)
 	end
 end
 
-# ╔═╡ 41bd9799-3621-4ec8-a3e1-fb46624a5e4c
+# ╔═╡ 2cb9a181-eefa-48d7-88f8-890ac23adcba
 function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
 	a  = 4 - dimA
 	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
@@ -64,7 +64,7 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 	return equi, feature, energy, force, Target
 end
 
-# ╔═╡ 01705158-7674-41fb-bd97-ac9a1539938a
+# ╔═╡ a4b53933-28e4-4754-ade1-8b6219607026
 function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
 	num = size(X,2)
@@ -99,7 +99,7 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 	return Kₘₘ
 end
 
-# ╔═╡ 5623856e-8c11-403b-89b9-f257ecdc9329
+# ╔═╡ d866792a-f9df-4de3-a8da-53d605b12083
 function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	dim = size(X,1)
 	num = size(X,2)
@@ -123,7 +123,7 @@ function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	return K₂ₙₘ
 end
 
-# ╔═╡ 6a65877f-2eab-46c5-aa92-058891e668eb
+# ╔═╡ bd5386d0-8ebf-4174-b99a-3b9cb307ee77
 function Posterior(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
 	dimₜ = size(Marginal, 1)
@@ -152,7 +152,7 @@ function Posterior(Marginal, Covariance, Target)
 	return Meanₚ 
 end
 
-# ╔═╡ 5321eb51-42ca-4a3d-8d10-68e756c7bc9e
+# ╔═╡ 67cea097-cdfe-4587-b93f-45af7fce2e94
 begin
 	σₒ = 0.05                  # Kernel Scale
 	l = 0.4				    # Length Scale
@@ -167,71 +167,212 @@ begin
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
 
-# ╔═╡ b0e339bc-f8f5-45fd-934d-5a8e66eb11f2
+# ╔═╡ aeeba1f6-620c-42b4-a91c-9c56a56c234d
+equi, feature, energy, force, Target = ASEFeatureTarget(
+    "feature", "energy", "force", Num, DIM);
+
+# ╔═╡ 6324f904-89da-47e4-bbb9-fbcb63d58881
+@time Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
+
+# ╔═╡ f83eff59-b191-4aae-b999-6a69deec7e6d
+@time K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
+
+# ╔═╡ 7fa0ad86-6c33-49d3-8c2b-b150d39ca18a
+FC2= Posterior(Kₘₘ, K₂ₙₘ, Target);
+
+# ╔═╡ 7f7b136e-8998-4aa3-919a-d1645b867237
 begin
-	nd = [1,5,10,15,20,30,40,50,60,80,100,130,160,199]
-	P2 = zeros(( 48, 48, size(nd,1)))
-	P3= zeros(( 48, 48, size(nd,1)))
-	SumRule2 = zeros((size(nd,1)))
-	SumRule3 = zeros((size(nd,1)))
+	FC = FC2
+	natom = Int(size(FC,2)/3)
+	dist_norm = zeros((natom,natom))
+	disp = zeros(size(FC,2))
+	for jj in 1:natom
+		disp[3*(jj-1)+1:3*jj] = equi[3*(jj-1)+1:3*jj]-equi[1:3]
+		for ii in 1:natom
+			dist_norm[ii, jj] = norm(equi[3*(ii-1)+1:3*ii] - equi[3*(jj-1)+1:3*jj])
+		end
+	end
+end
+
+# ╔═╡ 26a1305e-7813-4b11-82eb-d309aebd13ea
+heatmap(1:size(dist_norm[:,:],1),
+	    1:size(dist_norm[:,:],2), dist_norm[:,:],
+	    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
+	    xlabel="feature coord. (n x d)",
+		ylabel="feature coord. (n x d)",
+		aspectratio=:equal,
+		size=(700, 700),
+	    title="PbTe_FC2 (Traning Data = " *string(199) *")" );
+
+# ╔═╡ 9eb8a0cc-683e-4205-867d-c165afe816b0
+heatmap(1:size(FC2[:,:],1),
+	    1:size(FC2[:,:],2), FC2[:,:],
+	    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
+	    xlabel="feature coord. (n x d)",
+		ylabel="feature coord. (n x d)",
+		aspectratio=:equal,
+		size=(700, 700),
+	    title="PbTe_FC2 (Traning Data = " *string(199) *")" );
+
+# ╔═╡ c7260c34-8aba-469a-a84c-8e0571697f72
+begin
+	e = [[ 1 0 0 ]
+		 [ 0 1 0 ]	
+		 [ 0 0 1 ]]
+	a = [[ 0 1 0 ]
+		 [ 0 0 1 ]	
+		 [ 1 0 0 ]]
+	b = [[ 1 0 0 ]
+		 [ 0 0 1 ]	
+		 [ 0 1 0 ]]
+	c = [[ 0 1 0 ]
+		 [ 1 0 0 ]	
+		 [ 0 0 1 ]]
+	d = [[ 0 0 1 ]
+		 [ 0 1 0 ]	
+		 [ 1 0 0 ]]
+	f = [[ 0 0 1 ]
+		 [ 1 0 0 ]	
+		 [ 0 1 0 ]]
 end;
 
-# ╔═╡ 557d91aa-b7ff-49a0-afd5-02adec2b6efd
-@time for i in 1:size(nd,1)
-	numt1 = nd[i]
-	equi, feature, energy, force, Target = ASEFeatureTarget(
-    "feature", "energy", "force", numt1, DIM);
+# ╔═╡ 6af7135f-49d8-4134-a7e6-73397ac6fa41
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	Fequi_new = zeros(size(disp,1))
+	for ii in 1:Int(size(disp,1)/3)
+			if i == 1
+				Fequi_new[3*(ii-1)+1:3*ii] = [0.0,0.0,0.0]
+			else
+				for sym in 1:size(S,1)
+					if 
+					else
+					end
+				end
+			
+				for jj in 1:Int(size(disp,1)/3)
+					for sym in 1:size(S,1)
+						if S[]
 
-	Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
-	K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
-	Mp = Posterior(Kₘₘ, K₂ₙₘ, Target);
-	
-	P2[:,:,i] = Mp 
-	
-	SumRule2[i] = abs(sum(Mp))
-end 
+	s = []
+	push!(s,a)
+	push!(s,b)
+	s[2]
+						
+end
+  ╠═╡ =#
 
-# ╔═╡ fd10d3c0-dee5-4ee9-8b6e-8bf503b8d58d
-animCar = @animate for i in 1:size(nd,1)
-	heatmap(1:size(P2[:,:,i],1),
-		    1:size(P2[:,:,i],2), P2[:,:,i],
-		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
-			aspectratio=:equal,
-			size=(700, 700),
-		    xlabel="feature coord. (n x d)",
-			ylabel="feature coord. (n x d)",
-		    title="PbTe_FC2 (Traning Data = " *string(nd[i]) *")")
+# ╔═╡ edfc8dc9-1bdc-4236-a7d6-95e652a2b2d1
+S = [e, a, b, c, d, f];
+
+# ╔═╡ c73df96f-7791-4744-89ed-c334a0011f5f
+function AnaForce(FC2,disp)
+	Fequi = FC2*disp
+	sum_error = sum(Fequi)
+	return Fequi
 end
 
-# ╔═╡ 09e6cdea-70bb-4a9c-85fe-c9be419c11a0
-gif(animCar, "PbTe_anim_Car.gif", fps=2)
+# ╔═╡ ee528e53-a553-4257-8854-42e341138925
+ii = 7
 
-# ╔═╡ b928a28b-12bb-4491-a922-d01f107ba2a4
-anim5 = @animate for i in 1:size(nd,1)
-	scatter(nd[1:i], SumRule2[1:i],
-		xlabel="Training points",
-		ylabel="Sum of FC2 element",
-		xlim = (-1, 205), 
-		ylim = (-20.0, 700.0),
-		labels = "Cartesian",
-		linewidth=3,
-		title="PbTe_Sum-Rule relation (Traning Data = " *string(nd[i]) *")"
-	)
+# ╔═╡ ed850dd2-1b80-4bc7-bb01-deb40d884e84
+disp[3*(ii-1)+1:3*ii]
+
+# ╔═╡ 18f2d264-6116-4847-aa59-2210e49765a8
+disp[3*(ii-1)+1:3*ii]
+
+# ╔═╡ 526bf3e2-9c89-4e2d-be91-718117940ea8
+norm(disp[3*(ii-1)+1:3*ii])
+
+# ╔═╡ bb8ecc08-b165-469b-b1f9-490c352ee8e5
+AnaForce(FC2, disp)[3*(ii-1)+1:3*ii]
+
+# ╔═╡ 91b2cdd2-a797-4d92-982f-06aa4a63e705
+FC2[3*(ii-1)+1:3*ii,1:3]
+
+# ╔═╡ 487abe49-9d23-4293-8abd-3404911f19c2
+F = AnaForce(FC2, disp)
+
+# ╔═╡ bd69628b-fddd-4b1b-9dbe-c374ebb5f68f
+begin
+	F4 = (F[22:24] + a*F[34:36] + d*F[40:42])/3 
 end
 
-# ╔═╡ 48454b4d-6c66-489a-925b-33e2adbdc7d0
-gif(anim5, "PbTe_FC2_CartesianCoord.gif", fps=2)
+# ╔═╡ 06e9934f-45d3-48bb-8507-b4c153f37177
+F[1:3]
 
-# ╔═╡ c9aae520-10ef-4b54-9bb7-4ec2a64202cd
-plot(nd, SumRule2,
-		xlabel="Training points",
-		ylabel="Sum of FC2 element",
-		xlim = (-1, 205), 
-		ylim = (-20.0, 700.0),
-		labels = "PbTe_Car",
-		linewidth=3,
-		title="Sum Rule relation (Traning Data = " *string(nd[14]) *")"
-	)
+# ╔═╡ 4c0bc5a9-a179-4117-8efc-247b3c0faa77
+F[46:48]
+
+# ╔═╡ 8fa4a7c0-33f5-4b4c-a6c2-3482aa0ee78e
+F[34:36] 
+
+# ╔═╡ de58d9c2-8427-40dc-9f94-c47d2b58a3f2
+F[40:42] 
+
+# ╔═╡ 28204730-e609-490d-8dd5-635b1ea05de2
+b*F[7:9] 
+
+# ╔═╡ c94daf21-0f3b-4f12-a28f-5d879d0b5f61
+size(disp,1)
+
+# ╔═╡ 22653b3c-a42e-4f97-83a7-a9284c091515
+(0.367388+0.634668+1.57297-0.433645+0.275849+0.703151)/6
+
+# ╔═╡ 77b3532c-d36d-4bc2-ac6e-1287d8e4f1d2
+begin
+	Fequi_new = zeros(size(disp,1))
+	Fequi_new[1:3] = [0.0,0.0,0.0] 
+	Fequi_new[4:6] =  -36.93070462767068*[1,1,1]
+	Fequi_new[7:9] = [33.60235, 33.60235, -28.7408]
+	Fequi_new[13:15] = b * [33.60235, 33.60235, -28.7408]
+	Fequi_new[25:27] = d * [33.60235, 33.60235, -28.7408]
+end
+
+# ╔═╡ ec8bb399-df38-442a-bbf8-c7aeb0aaa0ce
+begin
+	Fequi_new[10:12] = [-3.7342675, -3.7342675, -67.0623]
+	Fequi_new[16:18] = b * [-3.7342675, -3.7342675, -67.0623]
+	Fequi_new[28:30] = d * [-3.7342675, -3.7342675, -67.0623]
+	
+	Fequi_new[19:21] = [67.0623, 3.7342675, 3.7342675]
+	Fequi_new[31:33] = a * [67.0623, 3.7342675, 3.7342675]
+	Fequi_new[37:39] = d * [67.0623, 3.7342675, 3.7342675]
+end
+
+# ╔═╡ 9658b008-ccba-4712-be0c-9b077ce9eb8d
+begin
+	Fequi_new[22:24] = [28.7408, -33.60235, -33.60235]
+	Fequi_new[34:36] = a * [28.7408, -33.60235, -33.60235]
+	Fequi_new[40:42] = d * [28.7408, -33.60235, -33.60235]
+	
+	Fequi_new[43:45] = [36.93070462767068, 36.93070462767068, 36.93070462767068]
+	Fequi_new[46:48] = a * [0.5200635000000001,0.5200635000000001,0.5200635000000001]
+end
+
+# ╔═╡ 08468539-392b-4bfd-bfa7-20445126d502
+ForwardDiff.jacobian( a -> AnaForce(FC2[3*(ii-1)+1:3*ii,1:3], a), disp[3*(ii-1)+1:3*ii])
+
+# ╔═╡ eeb30f38-47b1-4b15-92ca-77eca59d96f9
+ForwardDiff.jacobian( a -> AnaForce(FC2, a), disp);
+
+# ╔═╡ 7bcd1233-5d85-4ee4-9bc7-b5a2755621d3
+function recon_FC2(FC2)
+	FC2_re = zeros(3,3,Int(size(FC2,1)/3),Int(size(FC2,1)/3));
+	for i in 1:Int(size(FC2,1)/3)
+		for j in 1:Int(size(FC2,1)/3)
+			FC2_re[:,:,i,j] = FC2[3*(i-1)+1:3*i,3*(j-1)+1:3*j]
+		end
+	end
+	return FC2_re
+end
+
+# ╔═╡ 86449827-aa4c-43c5-83f5-b9e142ab5af8
+FC2_re = recon_FC2(FC2)
+
+# ╔═╡ 05fd6622-8337-4bbf-b4f8-0998d0a9702c
+vec(FC2)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1647,19 +1788,46 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═013966d8-824e-11ee-1e1e-3776b206f35e
-# ╠═e2810c0e-304b-41b9-9009-b78c526a6cd1
-# ╠═41bd9799-3621-4ec8-a3e1-fb46624a5e4c
-# ╠═01705158-7674-41fb-bd97-ac9a1539938a
-# ╠═5623856e-8c11-403b-89b9-f257ecdc9329
-# ╠═6a65877f-2eab-46c5-aa92-058891e668eb
-# ╠═5321eb51-42ca-4a3d-8d10-68e756c7bc9e
-# ╠═b0e339bc-f8f5-45fd-934d-5a8e66eb11f2
-# ╠═557d91aa-b7ff-49a0-afd5-02adec2b6efd
-# ╠═fd10d3c0-dee5-4ee9-8b6e-8bf503b8d58d
-# ╠═09e6cdea-70bb-4a9c-85fe-c9be419c11a0
-# ╠═b928a28b-12bb-4491-a922-d01f107ba2a4
-# ╠═48454b4d-6c66-489a-925b-33e2adbdc7d0
-# ╠═c9aae520-10ef-4b54-9bb7-4ec2a64202cd
+# ╠═8bf63602-82ff-11ee-1470-8d2419792464
+# ╠═9a62fef1-3aa3-460f-b07f-dee44f102b45
+# ╠═2cb9a181-eefa-48d7-88f8-890ac23adcba
+# ╠═a4b53933-28e4-4754-ade1-8b6219607026
+# ╠═d866792a-f9df-4de3-a8da-53d605b12083
+# ╠═bd5386d0-8ebf-4174-b99a-3b9cb307ee77
+# ╠═67cea097-cdfe-4587-b93f-45af7fce2e94
+# ╠═aeeba1f6-620c-42b4-a91c-9c56a56c234d
+# ╠═6324f904-89da-47e4-bbb9-fbcb63d58881
+# ╠═f83eff59-b191-4aae-b999-6a69deec7e6d
+# ╠═7fa0ad86-6c33-49d3-8c2b-b150d39ca18a
+# ╠═7f7b136e-8998-4aa3-919a-d1645b867237
+# ╠═26a1305e-7813-4b11-82eb-d309aebd13ea
+# ╠═9eb8a0cc-683e-4205-867d-c165afe816b0
+# ╠═c7260c34-8aba-469a-a84c-8e0571697f72
+# ╠═6af7135f-49d8-4134-a7e6-73397ac6fa41
+# ╠═edfc8dc9-1bdc-4236-a7d6-95e652a2b2d1
+# ╠═c73df96f-7791-4744-89ed-c334a0011f5f
+# ╠═ed850dd2-1b80-4bc7-bb01-deb40d884e84
+# ╠═ee528e53-a553-4257-8854-42e341138925
+# ╠═18f2d264-6116-4847-aa59-2210e49765a8
+# ╠═526bf3e2-9c89-4e2d-be91-718117940ea8
+# ╠═bb8ecc08-b165-469b-b1f9-490c352ee8e5
+# ╠═91b2cdd2-a797-4d92-982f-06aa4a63e705
+# ╠═487abe49-9d23-4293-8abd-3404911f19c2
+# ╠═bd69628b-fddd-4b1b-9dbe-c374ebb5f68f
+# ╠═06e9934f-45d3-48bb-8507-b4c153f37177
+# ╠═4c0bc5a9-a179-4117-8efc-247b3c0faa77
+# ╠═8fa4a7c0-33f5-4b4c-a6c2-3482aa0ee78e
+# ╠═de58d9c2-8427-40dc-9f94-c47d2b58a3f2
+# ╠═28204730-e609-490d-8dd5-635b1ea05de2
+# ╠═c94daf21-0f3b-4f12-a28f-5d879d0b5f61
+# ╠═22653b3c-a42e-4f97-83a7-a9284c091515
+# ╠═77b3532c-d36d-4bc2-ac6e-1287d8e4f1d2
+# ╠═ec8bb399-df38-442a-bbf8-c7aeb0aaa0ce
+# ╠═9658b008-ccba-4712-be0c-9b077ce9eb8d
+# ╠═08468539-392b-4bfd-bfa7-20445126d502
+# ╠═eeb30f38-47b1-4b15-92ca-77eca59d96f9
+# ╠═7bcd1233-5d85-4ee4-9bc7-b5a2755621d3
+# ╠═86449827-aa4c-43c5-83f5-b9e142ab5af8
+# ╠═05fd6622-8337-4bbf-b4f8-0998d0a9702c
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
