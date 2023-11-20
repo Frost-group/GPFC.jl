@@ -371,6 +371,9 @@ end
 # ╔═╡ 86449827-aa4c-43c5-83f5-b9e142ab5af8
 FC2_re = recon_FC2(FC2)
 
+# ╔═╡ 3c9e4221-6d45-467e-b541-b027c9453f21
+FC2_re[:,:,1, 14]
+
 # ╔═╡ 05fd6622-8337-4bbf-b4f8-0998d0a9702c
 vec(FC2)
 
@@ -402,7 +405,7 @@ Zygote = "~0.6.67"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.0-beta4"
+julia_version = "1.9.3"
 manifest_format = "2.0"
 project_hash = "258d88deb8a09166ba533908a3c52a960e36d54c"
 
@@ -536,7 +539,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.2+0"
+version = "1.0.5+0"
 
 [[deps.CompositionsBase]]
 git-tree-sha1 = "802bb88cd69dfd1509f6670416bd4434015693ad"
@@ -1066,7 +1069,7 @@ version = "1.1.8"
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
-version = "2.28.0+0"
+version = "2.28.2+0"
 
 [[deps.Measures]]
 git-tree-sha1 = "c13304c81eec1ed3af7fc20e75fb6b26092a1102"
@@ -1105,7 +1108,7 @@ version = "1.3.5+1"
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.21+0"
+version = "0.3.21+4"
 
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1166,7 +1169,7 @@ version = "0.42.2+0"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.9.0"
+version = "1.9.2"
 
 [[deps.PlotThemes]]
 deps = ["PlotUtils", "Statistics"]
@@ -1720,7 +1723,7 @@ version = "0.15.1+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.4.0+0"
+version = "5.8.0+0"
 
 [[deps.libevdev_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1828,6 +1831,7 @@ version = "1.4.1+1"
 # ╠═eeb30f38-47b1-4b15-92ca-77eca59d96f9
 # ╠═7bcd1233-5d85-4ee4-9bc7-b5a2755621d3
 # ╠═86449827-aa4c-43c5-83f5-b9e142ab5af8
+# ╠═3c9e4221-6d45-467e-b541-b027c9453f21
 # ╠═05fd6622-8337-4bbf-b4f8-0998d0a9702c
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
