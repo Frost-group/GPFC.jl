@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 44c8e082-8245-11ee-2d82-9527e5e5ba5e
+# ╔═╡ 1abf5d2c-87c5-11ee-2935-89f71d620bf0
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum
@@ -14,7 +14,7 @@ begin
 	using Plots
 end
 
-# ╔═╡ 328bff98-7d24-4f46-8474-a8096c652529
+# ╔═╡ 8921a014-a9d6-4dc9-b4e9-8202de134503
 function kernelfunction(k, x₁, x₂, grad::Int64)
 	function f1st(x₁, x₂) 
 		Zygote.gradient( a -> k(a, x₂), x₁)[1]
@@ -44,7 +44,7 @@ function kernelfunction(k, x₁, x₂, grad::Int64)
 	end
 end
 
-# ╔═╡ e13cf0e5-5de4-4fdf-9b8c-9794342e5bfe
+# ╔═╡ c14192d2-97be-4802-9669-b1234668afc9
 function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
 	a  = 4 - dimA
 	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
@@ -64,7 +64,7 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 	return equi, feature, energy, force, Target
 end
 
-# ╔═╡ 314b236f-39a9-432b-b5d9-678dae1c0568
+# ╔═╡ 23de5989-9884-4bb8-8141-3169347574fc
 function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
 	num = size(X,2)
@@ -99,7 +99,7 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 	return Kₘₘ
 end
 
-# ╔═╡ 62405c5f-2f4a-4d65-91c5-54d073067610
+# ╔═╡ f87847e3-7cc5-4cab-8e74-e0a1d65af68e
 function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	dim = size(X,1)
 	num = size(X,2)
@@ -123,7 +123,7 @@ function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	return K₂ₙₘ
 end
 
-# ╔═╡ 22e0b8f5-3f90-4d6e-9a00-77f14356efb2
+# ╔═╡ 712bf638-ac0b-4aa4-aae1-f017fce73736
 function Posterior(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
 	dimₜ = size(Marginal, 1)
@@ -152,7 +152,7 @@ function Posterior(Marginal, Covariance, Target)
 	return Meanₚ 
 end
 
-# ╔═╡ 6ee83b8c-3215-41d3-9ac7-be93615820a9
+# ╔═╡ 2e2fe4db-3572-4bde-8dd4-fe92d936ce9b
 begin
 	σₒ = 0.05                  # Kernel Scale
 	l = 0.4				    # Length Scale
@@ -167,7 +167,7 @@ begin
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
 
-# ╔═╡ 379ddedd-8095-4d8c-9fa7-b328c7fd63f1
+# ╔═╡ 76e4df36-46d4-44d5-8c9b-0f016330d96f
 begin
 	nd = [1,5,10,15,20,30,40,50,60,80,100,130,160,199]
 	P2 = zeros(( 48, 48, size(nd,1)))
@@ -176,7 +176,7 @@ begin
 	SumRule3 = zeros((size(nd,1)))
 end;
 
-# ╔═╡ 0b0e8238-d6b5-4969-a7f2-e891e071fb47
+# ╔═╡ facce0b0-fa3e-4dbc-9e37-ec7275b2b765
 @time for i in 1:size(nd,1)
 	numt1 = nd[i]
 	equi, feature, energy, force, Target = ASEFeatureTarget(
@@ -191,7 +191,7 @@ end;
 	SumRule2[i] = abs(sum(Mp))
 end 
 
-# ╔═╡ 634b059a-5979-49a4-8e69-d3c81f3650d7
+# ╔═╡ 029eaac6-84c9-449d-93bf-531afe1e34b3
 animCar = @animate for i in 1:size(nd,1)
 	heatmap(1:size(P2[:,:,i],1),
 		    1:size(P2[:,:,i],2), P2[:,:,i],
@@ -200,13 +200,13 @@ animCar = @animate for i in 1:size(nd,1)
 			size=(700, 700),
 		    xlabel="feature coord. (n x d)",
 			ylabel="feature coord. (n x d)",
-		    title="Si2_FC2 (Traning Data = " *string(nd[i]) *")")
+		    title="NaCl_FC2 (Traning Data = " *string(nd[i]) *")")
 end
 
-# ╔═╡ ed3154cc-187a-43dd-be16-d19ef97f78f1
-gif(animCar, "Si_anim_Car.gif", fps=2)
+# ╔═╡ 82ae78fc-4f26-4c2e-aa5a-a812b74acbd1
+gif(animCar, "NaCl_anim_Car.gif", fps=2)
 
-# ╔═╡ b47f0270-988c-4827-99f4-3a6b1a7bfb36
+# ╔═╡ 2307c745-59fe-4f6d-bf2a-9b51f0203f69
 anim5 = @animate for i in 1:size(nd,1)
 	scatter(nd[1:i], SumRule2[1:i],
 		xlabel="Training points",
@@ -215,14 +215,25 @@ anim5 = @animate for i in 1:size(nd,1)
 		ylim = (-20.0, 700.0),
 		labels = "Cartesian",
 		linewidth=3,
-		title="Sum Rule relation (Traning Data = " *string(nd[i]) *")"
+		title="NaCl_Sum-Rule relation (Traning Data = " *string(nd[i]) *")"
 	)
 end
 
-# ╔═╡ b338495a-2c98-42be-9f00-4098b4a7fbfc
-gif(anim5, "Si_FC2_CartesianCoord.gif", fps=2)
+# ╔═╡ e4f30d3c-cbab-4fd6-84be-0ca58ff622e0
+gif(anim5, "NaCl_FC2_CartesianCoord.gif", fps=2)
 
-# ╔═╡ d53dcdde-b5e5-40b5-aa7f-888fc9c9c4da
+# ╔═╡ 73a3a8e1-c6eb-4163-9562-9ed8ccc8c467
+plot(nd, SumRule2,
+		xlabel="Training points",
+		ylabel="Sum of FC2 element",
+		xlim = (-1, 205), 
+		ylim = (-20.0, 700.0),
+		labels = "NaCl_Car",
+		linewidth=3,
+		title="Sum Rule relation (Traning Data = " *string(nd[14]) *")"
+	)
+
+# ╔═╡ 01b141b7-797e-4055-8d39-17b262da9626
 SumRule2
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -760,9 +771,9 @@ version = "6.4.0"
 
 [[deps.LLVMExtra_jll]]
 deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
-git-tree-sha1 = "a84f8f1e8caaaa4e3b4c101306b9e801d3883ace"
+git-tree-sha1 = "98eaee04d96d973e79c25d49167668c5c8fb50e2"
 uuid = "dad2f222-ce93-54a1-a47d-0025e8a3acab"
-version = "0.0.27+0"
+version = "0.0.27+1"
 
 [[deps.LLVMOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1070,10 +1081,10 @@ uuid = "21216c6a-2e73-6563-6e65-726566657250"
 version = "1.4.1"
 
 [[deps.PrettyTables]]
-deps = ["Crayons", "LaTeXStrings", "Markdown", "Printf", "Reexport", "StringManipulation", "Tables"]
-git-tree-sha1 = "6842ce83a836fbbc0cfeca0b5a4de1a4dcbdb8d1"
+deps = ["Crayons", "LaTeXStrings", "Markdown", "PrecompileTools", "Printf", "Reexport", "StringManipulation", "Tables"]
+git-tree-sha1 = "3f43c2aae6aa4a2503b05587ab74f4f6aeff9fd0"
 uuid = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
-version = "2.2.8"
+version = "2.3.0"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -1639,19 +1650,20 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═44c8e082-8245-11ee-2d82-9527e5e5ba5e
-# ╠═328bff98-7d24-4f46-8474-a8096c652529
-# ╠═e13cf0e5-5de4-4fdf-9b8c-9794342e5bfe
-# ╠═314b236f-39a9-432b-b5d9-678dae1c0568
-# ╠═62405c5f-2f4a-4d65-91c5-54d073067610
-# ╠═22e0b8f5-3f90-4d6e-9a00-77f14356efb2
-# ╠═6ee83b8c-3215-41d3-9ac7-be93615820a9
-# ╠═379ddedd-8095-4d8c-9fa7-b328c7fd63f1
-# ╠═0b0e8238-d6b5-4969-a7f2-e891e071fb47
-# ╠═634b059a-5979-49a4-8e69-d3c81f3650d7
-# ╠═ed3154cc-187a-43dd-be16-d19ef97f78f1
-# ╠═b47f0270-988c-4827-99f4-3a6b1a7bfb36
-# ╠═b338495a-2c98-42be-9f00-4098b4a7fbfc
-# ╠═d53dcdde-b5e5-40b5-aa7f-888fc9c9c4da
+# ╠═1abf5d2c-87c5-11ee-2935-89f71d620bf0
+# ╠═8921a014-a9d6-4dc9-b4e9-8202de134503
+# ╠═c14192d2-97be-4802-9669-b1234668afc9
+# ╠═23de5989-9884-4bb8-8141-3169347574fc
+# ╠═f87847e3-7cc5-4cab-8e74-e0a1d65af68e
+# ╠═712bf638-ac0b-4aa4-aae1-f017fce73736
+# ╠═2e2fe4db-3572-4bde-8dd4-fe92d936ce9b
+# ╠═76e4df36-46d4-44d5-8c9b-0f016330d96f
+# ╠═facce0b0-fa3e-4dbc-9e37-ec7275b2b765
+# ╠═029eaac6-84c9-449d-93bf-531afe1e34b3
+# ╠═82ae78fc-4f26-4c2e-aa5a-a812b74acbd1
+# ╠═2307c745-59fe-4f6d-bf2a-9b51f0203f69
+# ╠═e4f30d3c-cbab-4fd6-84be-0ca58ff622e0
+# ╠═73a3a8e1-c6eb-4163-9562-9ed8ccc8c467
+# ╠═01b141b7-797e-4055-8d39-17b262da9626
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

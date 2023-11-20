@@ -212,28 +212,91 @@ heatmap(1:size(FC2[:,:],1),
 		ylabel="feature coord. (n x d)",
 		aspectratio=:equal,
 		size=(700, 700),
-	    title="PbTe_FC2 (Traning Data = " *string(199) *")" );
+	    title="PbTe_FC2 (Traning Data = " *string(199) *")" )
+
+# ╔═╡ ec391d1f-e592-43ce-9ac8-c480e0a70157
+FC2[1:3,46:48]
 
 # ╔═╡ c7260c34-8aba-469a-a84c-8e0571697f72
 begin
-	e = [[ 1 0 0 ]
+	xyz = [[ 1 0 0 ]
 		 [ 0 1 0 ]	
 		 [ 0 0 1 ]]
-	a = [[ 0 1 0 ]
+	xyz1 =[[ 1 0 0 ]
+		 [ 0 -1 0 ]	
+		 [ 0 0 -1]]
+	xyz2 =[[-1 0 0 ]
+		 [ 0 1 0 ]	
+		 [ 0 0 -1 ]]
+	xyz3 =[[-1 0 0 ]
+		 [ 0 -1 0 ]	
+		 [ 0 0 1 ]]
+	
+	zxy =[[ 0 0 1 ]
+		 [ 1 0 0 ]	
+		 [ 0 1 0 ]]
+	zxy1 =[[ 0 0 -1 ]
+		 [-1 0 0 ]	
+		 [ 0 1 0 ]]
+	zxy2 =[[ 0 0 1 ]
+		 [-1 0 0 ]	
+		 [ 0 -1 0 ]]
+	zxy3 =[[ 0 0 -1 ]
+		 [ 1 0 0 ]	
+		 [ 0 -1 0 ]]
+	
+	yzx = [[ 0 1 0 ]
 		 [ 0 0 1 ]	
 		 [ 1 0 0 ]]
-	b = [[ 1 0 0 ]
+	yzx1 = [[ 0 -1 0 ]
+		 [ 0 0 -1 ]	
+		 [ 1 0 0 ]]
+	yzx2 = [[ 0 -1 0 ]
+		 [ 0 0 1 ]	
+		 [ -1 0 0 ]]
+	yzx3 = [[ 0 1 0 ]
+		 [ 0 0 -1 ]	
+		 [ -1 0 0 ]]
+
+	xzy = [[ 1 0 0 ]
 		 [ 0 0 1 ]	
 		 [ 0 1 0 ]]
-	c = [[ 0 1 0 ]
+	xzy1 = [[ -1 0 0 ]
+		 [ 0 0 -1 ]	
+		 [ 0 1 0 ]]
+	xzy2 = [[ -1 0 0 ]
+		 [ 0 0 1 ]	
+		 [ 0 -1 0 ]]
+	xzy3 = [[ 1 0 0 ]
+		 [ 0 0 -1 ]	
+		 [ 0 -1 0 ]]
+
+
+	zyx = [[ 0 1 0 ]
 		 [ 1 0 0 ]	
 		 [ 0 0 1 ]]
-	d = [[ 0 0 1 ]
+	zyx1 = [[ 0 -1 0 ]
+		 [ -1 0 0 ]	
+		 [ 0 0 1 ]]
+	zyx2 = [[ 0 -1 0 ]
+		 [ 1 0 0 ]	
+		 [ 0 0 -1 ]]
+	zyx3 = [[ 0 1 0 ]
+		 [ -1 0 0 ]	
+		 [ 0 0 -1 ]]
+	
+	yxz = [[ 0 0 1 ]
 		 [ 0 1 0 ]	
 		 [ 1 0 0 ]]
-	f = [[ 0 0 1 ]
-		 [ 1 0 0 ]	
-		 [ 0 1 0 ]]
+	yxz1 = [[ 0 0 -1 ]
+		 [ 0 -1 0 ]	
+		 [ 1 0 0 ]]
+	yxz2 = [[ 0 0 -1 ]
+		 [ 0 1 0 ]	
+		 [ -1 0 0 ]]
+	yxz3 = [[ 0 0 1 ]
+		 [ 0 -1 0 ]	
+		 [ -1 0 0 ]]
 end;
 
 # ╔═╡ 6af7135f-49d8-4134-a7e6-73397ac6fa41
@@ -288,8 +351,14 @@ norm(disp[3*(ii-1)+1:3*ii])
 # ╔═╡ bb8ecc08-b165-469b-b1f9-490c352ee8e5
 AnaForce(FC2, disp)[3*(ii-1)+1:3*ii]
 
-# ╔═╡ 91b2cdd2-a797-4d92-982f-06aa4a63e705
+# ╔═╡ ac8e331b-bd9c-4170-8fd4-d349881038cb
+
+
+# ╔═╡ ed0cd8d1-4a37-4e2a-8ae5-960dd24563de
 FC2[3*(ii-1)+1:3*ii,1:3]
+
+# ╔═╡ 91b2cdd2-a797-4d92-982f-06aa4a63e705
+xyz3'*FC2[3*(ii-1)+1:3*ii,1:3]*xyz3
 
 # ╔═╡ 487abe49-9d23-4293-8abd-3404911f19c2
 F = AnaForce(FC2, disp)
@@ -357,6 +426,9 @@ ForwardDiff.jacobian( a -> AnaForce(FC2[3*(ii-1)+1:3*ii,1:3], a), disp[3*(ii-1)+
 # ╔═╡ eeb30f38-47b1-4b15-92ca-77eca59d96f9
 ForwardDiff.jacobian( a -> AnaForce(FC2, a), disp);
 
+# ╔═╡ faf95959-e2b8-4872-94bd-c5ee64efeb3f
+heatmap(1:48, 1:48, )
+
 # ╔═╡ 7bcd1233-5d85-4ee4-9bc7-b5a2755621d3
 function recon_FC2(FC2)
 	FC2_re = zeros(3,3,Int(size(FC2,1)/3),Int(size(FC2,1)/3));
@@ -405,7 +477,7 @@ Zygote = "~0.6.67"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.3"
+julia_version = "1.9.4"
 manifest_format = "2.0"
 project_hash = "258d88deb8a09166ba533908a3c52a960e36d54c"
 
@@ -954,12 +1026,12 @@ uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.3"
+version = "0.6.4"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "7.84.0+0"
+version = "8.4.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -968,7 +1040,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.10.2+0"
+version = "1.11.0+1"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1764,7 +1836,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.48.0+0"
+version = "1.52.0+1"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1805,6 +1877,7 @@ version = "1.4.1+1"
 # ╠═7f7b136e-8998-4aa3-919a-d1645b867237
 # ╠═26a1305e-7813-4b11-82eb-d309aebd13ea
 # ╠═9eb8a0cc-683e-4205-867d-c165afe816b0
+# ╠═ec391d1f-e592-43ce-9ac8-c480e0a70157
 # ╠═c7260c34-8aba-469a-a84c-8e0571697f72
 # ╠═6af7135f-49d8-4134-a7e6-73397ac6fa41
 # ╠═edfc8dc9-1bdc-4236-a7d6-95e652a2b2d1
@@ -1814,6 +1887,8 @@ version = "1.4.1+1"
 # ╠═18f2d264-6116-4847-aa59-2210e49765a8
 # ╠═526bf3e2-9c89-4e2d-be91-718117940ea8
 # ╠═bb8ecc08-b165-469b-b1f9-490c352ee8e5
+# ╠═ac8e331b-bd9c-4170-8fd4-d349881038cb
+# ╠═ed0cd8d1-4a37-4e2a-8ae5-960dd24563de
 # ╠═91b2cdd2-a797-4d92-982f-06aa4a63e705
 # ╠═487abe49-9d23-4293-8abd-3404911f19c2
 # ╠═bd69628b-fddd-4b1b-9dbe-c374ebb5f68f
@@ -1829,6 +1904,7 @@ version = "1.4.1+1"
 # ╠═9658b008-ccba-4712-be0c-9b077ce9eb8d
 # ╠═08468539-392b-4bfd-bfa7-20445126d502
 # ╠═eeb30f38-47b1-4b15-92ca-77eca59d96f9
+# ╠═faf95959-e2b8-4872-94bd-c5ee64efeb3f
 # ╠═7bcd1233-5d85-4ee4-9bc7-b5a2755621d3
 # ╠═86449827-aa4c-43c5-83f5-b9e142ab5af8
 # ╠═3c9e4221-6d45-467e-b541-b027c9453f21

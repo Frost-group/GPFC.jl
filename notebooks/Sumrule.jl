@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 44c8e082-8245-11ee-2d82-9527e5e5ba5e
+# ╔═╡ 08f2031c-87c8-11ee-140d-23db21459e52
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum
@@ -12,218 +12,42 @@ begin
 	using DataFrames
 	using DelimitedFiles
 	using Plots
+	using LaTeXStrings
 end
 
-# ╔═╡ 328bff98-7d24-4f46-8474-a8096c652529
-function kernelfunction(k, x₁, x₂, grad::Int64)
-	function f1st(x₁, x₂) 
-		Zygote.gradient( a -> k(a, x₂), x₁)[1]
-	end	
-	function f2nd(x₁, x₂)
-		Zygote.hessian(a -> k(a, x₂), x₁)
-	end
-	function f3rd(x₁, x₂) 
-		ForwardDiff.jacobian( a -> f2nd(a, x₂), x₁)
-	end 
-	function f4th(x₁, x₂)
-		ForwardDiff.jacobian( a -> f3rd(a, x₂), x₁)
-	end
-
-	if grad == 0
-		return k(x₁, x₂)
-	elseif grad == 1
-		return f1st(x₁, x₂)
-	elseif grad == 2
-		return f2nd(x₁, x₂)	
-	elseif grad == 3
-		return f3rd(x₁, x₂)
-	elseif grad == 4
-		return f4th(x₁, x₂)
-	else
-		println("Grad in btw [0, 4]")
-	end
-end
-
-# ╔═╡ e13cf0e5-5de4-4fdf-9b8c-9794342e5bfe
-function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
-	a  = 4 - dimA
-	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
-	
-	equi = feature[:,1]
-	
-	dim = size(feature,1)
-	num = size(feature,2)
-	
-	energy = (CSV.File(FileEnergy)|> Tables.matrix)[begin:numt,2]
-
-	force = -reshape((CSV.File(FileForce)|> Tables.matrix)[begin:a:end,2:numt+1], (dim*num,1))
-		
-	Target = vcat(energy, reshape(force, (dim*num,1)))
-	
-	
-	return equi, feature, energy, force, Target
-end
-
-# ╔═╡ 314b236f-39a9-432b-b5d9-678dae1c0568
-function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
-	dim = size(X,1)
-	num = size(X,2)
-	#building Marginal Likelihood containers
-	#For Energy + Force
-	KK = zeros(((1+dim)*num, (1+dim)*num))
-	#For Energy
-	K₀₀ = zeros(((1)*num, (1)*num))
-	#For Force
-	K₁₁ = zeros(((dim)*num, (dim)*num))
-	
-	for i in 1:num 
-		for j in 1:num 
-		#Fillin convarian of Energy vs Energy
-			KK[i, j] = kernelfunction(k, X[:,i], X[:,j], 0)
-		#Fillin convarian of Force vs Energy
-			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction(k, X[:,i], X[:,j], 1)
-		#Fillin convarian of Energy vs Force	
-			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]
-		#Fillin convarian of Energy vs Force
-			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -kernelfunction(k, X[:,i], X[:,j], 2)
-		end
-	end
-
-	Iee = σₑ^2 * Matrix(I, num, num)
-	Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
-	Ief = zeros(num, dim * num)
-	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
-
-	Kₘₘ = KK + II
-	
-	return Kₘₘ
-end
-
-# ╔═╡ 62405c5f-2f4a-4d65-91c5-54d073067610
-function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
-	dim = size(X,1)
-	num = size(X,2)
-	
-	#Covariance matrix for FC2 prediction
-	#building Covariance matrix containers	
-	K₂ₙₘ= zeros((dim, dim, (1+dim)*num))
-		
-	for j in 1:num
-		#Fillin convarian of Energy vs FC2
-		K₂ₙₘ[:,:,j] = reshape(
-					 kernelfunction(k, X[:,j], xₒ, 2)
-					, (dim, dim)
-				)
-		#Fillin convarian of Force vs FC2
-		K₂ₙₘ[:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
-					 kernelfunction(k, X[:,j], xₒ, 3)
-					, (dim, dim, dim)
-				)
-	end
-	return K₂ₙₘ
-end
-
-# ╔═╡ 22e0b8f5-3f90-4d6e-9a00-77f14356efb2
-function Posterior(Marginal, Covariance, Target)
-	dimₚ = size(Covariance, 1)
-	dimₜ = size(Marginal, 1)
-	Kₘₘ⁻¹ = inv(Marginal)   #
-	Kₙₘ = Covariance
-	
-	MarginalTar = zeros(dimₜ)
-	@einsum MarginalTar[m] = Kₘₘ⁻¹[m, n] * Target[n]
-
-	if size(Kₙₘ) == (dimₜ,)
-		Meanₚ = Kₙₘ'  * MarginalTar
-		
-	elseif size(Kₙₘ) == (dimₚ, dimₜ)
-		Meanₚ = zeros(dimₚ)
-		@einsum Meanₚ[i] = Kₙₘ[i, m] * MarginalTar[m]
-	
-	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₜ)
-		Meanₚ = zeros(dimₚ, dimₚ)
-		@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * MarginalTar[m]
-
-	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₚ, dimₜ)
-		Meanₚ = zeros(dimₚ, dimₚ, dimₚ)
-		@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * MarginalTar[m]
-	end
-
-	return Meanₚ 
-end
-
-# ╔═╡ 6ee83b8c-3215-41d3-9ac7-be93615820a9
+# ╔═╡ 48f10f1e-5fb1-4fe3-ae65-c2d874b84a3d
 begin
-	σₒ = 0.05                  # Kernel Scale
-	l = 0.4				    # Length Scale
-	σₑ = 1e-5 					# Energy Gaussian noise
-	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
-		
-	Num = 199                 # Number of training points
-	DIM = 3                     # Dimension of Materials
-	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
-	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
-		
-	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
-end;
+	PbTe = [478.834, 429.364, 378.193, 335.919, 289.961, 166.73, 86.1142, 12.275, 1.94481, 1.36049, 0.405952, 0.321987, 0.111758, 0.0241396]
+	Si2 = [663.231, 548.68, 459.382, 380.314, 286.179, 79.5129, 20.2168, 5.5683, 2.60258, 0.472595, 0.695432, 0.250762, 0.329402, 0.738597]
+	NaCl = [413.024, 368.635, 322.939, 250.758, 221.4, 101.458, 41.279, 5.11173, 1.58728, 1.001, 0.347564, 0.218002, 0.137059, 0.0211458]
+end
 
-# ╔═╡ 379ddedd-8095-4d8c-9fa7-b328c7fd63f1
+# ╔═╡ b42f2b09-f5dc-4283-8bbf-715ac33f0f12
+nd = [1,5,10,15,20,30,40,50,60,80,100,130,160,199]
+
+# ╔═╡ dd0377ce-1d90-43ba-93e6-3a1b3eddce7b
 begin
-	nd = [1,5,10,15,20,30,40,50,60,80,100,130,160,199]
-	P2 = zeros(( 48, 48, size(nd,1)))
-	P3= zeros(( 48, 48, size(nd,1)))
-	SumRule2 = zeros((size(nd,1)))
-	SumRule3 = zeros((size(nd,1)))
-end;
+	plot(nd, [PbTe Si2  NaCl],
+			xlabel="Training points",
+			ylabel= "Sum of" * L"\;\Phi_{2}\;" * "elements" ,
+			xlim = (-1, 105), 
+			ylim = (-20.0, 700.0),
+		    color = ["#F0BB62" "#6E9A50" "#C64756"],
+			labels = [L"\textbf{PbTe}" L"\textbf{Si}\;\textbf{bulk}" L"\textbf{NaCl}"],
+			linestyle = [:solid :dash :dot],
+			linewidth=[1.5 2 2.5],
+			title="Sum Rule of " * L"\Phi_{2}"
+		)
 
-# ╔═╡ 0b0e8238-d6b5-4969-a7f2-e891e071fb47
-@time for i in 1:size(nd,1)
-	numt1 = nd[i]
-	equi, feature, energy, force, Target = ASEFeatureTarget(
-    "feature", "energy", "force", numt1, DIM);
-
-	Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
-	K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
-	Mp = Posterior(Kₘₘ, K₂ₙₘ, Target);
-	
-	P2[:,:,i] = Mp 
-	
-	SumRule2[i] = abs(sum(Mp))
-end 
-
-# ╔═╡ 634b059a-5979-49a4-8e69-d3c81f3650d7
-animCar = @animate for i in 1:size(nd,1)
-	heatmap(1:size(P2[:,:,i],1),
-		    1:size(P2[:,:,i],2), P2[:,:,i],
-		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
-			aspectratio=:equal,
-			size=(700, 700),
-		    xlabel="feature coord. (n x d)",
-			ylabel="feature coord. (n x d)",
-		    title="Si2_FC2 (Traning Data = " *string(nd[i]) *")")
+	scatter!(nd, [PbTe Si2  NaCl],
+			xlim = (-1, 105), 
+			ylim = (-20.0, 700.0),
+		    color = ["#F0BB62" "#6E9A50" "#C64756"],
+			labels = ["PbTe" "Si" "NaCl"],
+			#legend = false,
+			linewidth=3,
+		)
 end
-
-# ╔═╡ ed3154cc-187a-43dd-be16-d19ef97f78f1
-gif(animCar, "Si_anim_Car.gif", fps=2)
-
-# ╔═╡ b47f0270-988c-4827-99f4-3a6b1a7bfb36
-anim5 = @animate for i in 1:size(nd,1)
-	scatter(nd[1:i], SumRule2[1:i],
-		xlabel="Training points",
-		ylabel="Sum of FC2 element",
-		xlim = (-1, 205), 
-		ylim = (-20.0, 700.0),
-		labels = "Cartesian",
-		linewidth=3,
-		title="Sum Rule relation (Traning Data = " *string(nd[i]) *")"
-	)
-end
-
-# ╔═╡ b338495a-2c98-42be-9f00-4098b4a7fbfc
-gif(anim5, "Si_FC2_CartesianCoord.gif", fps=2)
-
-# ╔═╡ d53dcdde-b5e5-40b5-aa7f-888fc9c9c4da
-SumRule2
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -234,6 +58,7 @@ DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Einsum = "b7d42ee7-0b51-5a75-98ca-779d3107e4c0"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 KernelFunctions = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
+LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
@@ -245,6 +70,7 @@ DelimitedFiles = "~1.9.1"
 Einsum = "~0.4.1"
 ForwardDiff = "~0.10.36"
 KernelFunctions = "~0.10.58"
+LaTeXStrings = "~1.3.1"
 Plots = "~1.39.0"
 Zygote = "~0.6.67"
 """
@@ -255,7 +81,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.4"
 manifest_format = "2.0"
-project_hash = "258d88deb8a09166ba533908a3c52a960e36d54c"
+project_hash = "152d8088b552022bf638348884c0cdeee4d5c31b"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -760,9 +586,9 @@ version = "6.4.0"
 
 [[deps.LLVMExtra_jll]]
 deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
-git-tree-sha1 = "a84f8f1e8caaaa4e3b4c101306b9e801d3883ace"
+git-tree-sha1 = "98eaee04d96d973e79c25d49167668c5c8fb50e2"
 uuid = "dad2f222-ce93-54a1-a47d-0025e8a3acab"
-version = "0.0.27+0"
+version = "0.0.27+1"
 
 [[deps.LLVMOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1070,10 +896,10 @@ uuid = "21216c6a-2e73-6563-6e65-726566657250"
 version = "1.4.1"
 
 [[deps.PrettyTables]]
-deps = ["Crayons", "LaTeXStrings", "Markdown", "Printf", "Reexport", "StringManipulation", "Tables"]
-git-tree-sha1 = "6842ce83a836fbbc0cfeca0b5a4de1a4dcbdb8d1"
+deps = ["Crayons", "LaTeXStrings", "Markdown", "PrecompileTools", "Printf", "Reexport", "StringManipulation", "Tables"]
+git-tree-sha1 = "3f43c2aae6aa4a2503b05587ab74f4f6aeff9fd0"
 uuid = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
-version = "2.2.8"
+version = "2.3.0"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -1639,19 +1465,9 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═44c8e082-8245-11ee-2d82-9527e5e5ba5e
-# ╠═328bff98-7d24-4f46-8474-a8096c652529
-# ╠═e13cf0e5-5de4-4fdf-9b8c-9794342e5bfe
-# ╠═314b236f-39a9-432b-b5d9-678dae1c0568
-# ╠═62405c5f-2f4a-4d65-91c5-54d073067610
-# ╠═22e0b8f5-3f90-4d6e-9a00-77f14356efb2
-# ╠═6ee83b8c-3215-41d3-9ac7-be93615820a9
-# ╠═379ddedd-8095-4d8c-9fa7-b328c7fd63f1
-# ╠═0b0e8238-d6b5-4969-a7f2-e891e071fb47
-# ╠═634b059a-5979-49a4-8e69-d3c81f3650d7
-# ╠═ed3154cc-187a-43dd-be16-d19ef97f78f1
-# ╠═b47f0270-988c-4827-99f4-3a6b1a7bfb36
-# ╠═b338495a-2c98-42be-9f00-4098b4a7fbfc
-# ╠═d53dcdde-b5e5-40b5-aa7f-888fc9c9c4da
+# ╠═08f2031c-87c8-11ee-140d-23db21459e52
+# ╠═48f10f1e-5fb1-4fe3-ae65-c2d874b84a3d
+# ╠═b42f2b09-f5dc-4283-8bbf-715ac33f0f12
+# ╠═dd0377ce-1d90-43ba-93e6-3a1b3eddce7b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
