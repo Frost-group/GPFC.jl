@@ -35,6 +35,7 @@ begin
 		    color = ["#F0BB62" "#6E9A50" "#C64756"],
 			labels = [L"\textbf{PbTe}" L"\textbf{Si}\;\textbf{bulk}" L"\textbf{NaCl}"],
 			linestyle = [:solid :dash :dot],
+		
 			linewidth=[1.5 2 2.5],
 			title="Sum Rule of " * L"\Phi_{2}"
 		)
@@ -43,7 +44,7 @@ begin
 			xlim = (-1, 105), 
 			ylim = (-20.0, 700.0),
 		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["PbTe" "Si" "NaCl"],
+			labels = ["" "" ""],
 			#legend = false,
 			linewidth=3,
 		)

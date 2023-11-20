@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 013966d8-824e-11ee-1e1e-3776b206f35e
+# ╔═╡ 2c7df698-87d1-11ee-3a5d-b7059418a49b
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum
@@ -14,7 +14,7 @@ begin
 	using Plots
 end
 
-# ╔═╡ e2810c0e-304b-41b9-9009-b78c526a6cd1
+# ╔═╡ c1d92ff8-b83e-4066-999a-9569c3625989
 function kernelfunction(k, x₁, x₂, grad::Int64)
 	function f1st(x₁, x₂) 
 		Zygote.gradient( a -> k(a, x₂), x₁)[1]
@@ -44,27 +44,7 @@ function kernelfunction(k, x₁, x₂, grad::Int64)
 	end
 end
 
-# ╔═╡ 41bd9799-3621-4ec8-a3e1-fb46624a5e4c
-function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
-	a  = 4 - dimA
-	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
-	
-	equi = feature[:,1]
-	
-	dim = size(feature,1)
-	num = size(feature,2)
-	
-	energy = (CSV.File(FileEnergy)|> Tables.matrix)[begin:numt,2]
-
-	force = -reshape((CSV.File(FileForce)|> Tables.matrix)[begin:a:end,2:numt+1], (dim*num,1))
-		
-	Target = vcat(energy, reshape(force, (dim*num,1)))
-	
-	
-	return equi, feature, energy, force, Target
-end
-
-# ╔═╡ 01705158-7674-41fb-bd97-ac9a1539938a
+# ╔═╡ 5e6218a2-63a6-4ce4-8ccc-06505c4094ef
 function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
 	num = size(X,2)
@@ -99,7 +79,7 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 	return Kₘₘ
 end
 
-# ╔═╡ 5623856e-8c11-403b-89b9-f257ecdc9329
+# ╔═╡ 76d4b81a-d4ce-4e63-bc97-62484a5c9813
 function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	dim = size(X,1)
 	num = size(X,2)
@@ -123,7 +103,7 @@ function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	return K₂ₙₘ
 end
 
-# ╔═╡ 6a65877f-2eab-46c5-aa92-058891e668eb
+# ╔═╡ 350df666-548c-4f6d-835b-57d93e710ce9
 function Posterior(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
 	dimₜ = size(Marginal, 1)
@@ -152,7 +132,7 @@ function Posterior(Marginal, Covariance, Target)
 	return Meanₚ 
 end
 
-# ╔═╡ 5321eb51-42ca-4a3d-8d10-68e756c7bc9e
+# ╔═╡ 7b8782ec-a36b-4366-8797-8fedff9e6729
 begin
 	σₒ = 0.05                  # Kernel Scale
 	l = 0.4				    # Length Scale
@@ -167,92 +147,8 @@ begin
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
 
-# ╔═╡ b0e339bc-f8f5-45fd-934d-5a8e66eb11f2
-begin
-	nd = [1,5,10,15,20,30,40,50,60,80,100,130,160,199]
-	P2 = zeros(( 48, 48, size(nd,1)))
-	P3= zeros(( 48, 48, size(nd,1)))
-	SumRule2 = zeros((size(nd,1)))
-	SumRule3 = zeros((size(nd,1)))
-end;
+# ╔═╡ 4e9dcc9c-939b-4043-969d-9720003a8546
 
-# ╔═╡ 557d91aa-b7ff-49a0-afd5-02adec2b6efd
-@time for i in 1:size(nd,1)
-	numt1 = nd[i]
-	equi, feature, energy, force, Target = ASEFeatureTarget(
-    "feature", "energy", "force", numt1, DIM);
-
-	Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
-	K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
-	Mp = Posterior(Kₘₘ, K₂ₙₘ, Target);
-	
-	P2[:,:,i] = Mp 
-	
-	SumRule2[i] = abs(sum(Mp))
-end 
-
-# ╔═╡ fd10d3c0-dee5-4ee9-8b6e-8bf503b8d58d
-animCar = @animate for i in 1:size(nd,1)
-	heatmap(1:size(P2[:,:,i],1),
-		    1:size(P2[:,:,i],2), P2[:,:,i],
-		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
-			aspectratio=:equal,
-			size=(700, 700),
-		    xlabel="feature coord. (n x d)",
-			ylabel="feature coord. (n x d)",
-		    title="PbTe_FC2 (Traning Data = " *string(nd[i]) *")")
-end
-
-# ╔═╡ 09e6cdea-70bb-4a9c-85fe-c9be419c11a0
-gif(animCar, "PbTe_anim_Car.gif", fps=2)
-
-# ╔═╡ b928a28b-12bb-4491-a922-d01f107ba2a4
-anim5 = @animate for i in 1:size(nd,1)
-	scatter(nd[1:i], SumRule2[1:i],
-		xlabel="Training points",
-		ylabel="Sum of FC2 element",
-		xlim = (-1, 205), 
-		ylim = (-20.0, 700.0),
-		labels = "Cartesian",
-		linewidth=3,
-		title="PbTe_Sum-Rule relation (Traning Data = " *string(nd[i]) *")"
-	)
-end
-
-# ╔═╡ 48454b4d-6c66-489a-925b-33e2adbdc7d0
-gif(anim5, "PbTe_FC2_CartesianCoord.gif", fps=2)
-
-# ╔═╡ c9aae520-10ef-4b54-9bb7-4ec2a64202cd
-plot(nd, SumRule2,
-		xlabel="Training points",
-		ylabel="Sum of FC2 element",
-		xlim = (-1, 205), 
-		ylim = (-20.0, 700.0),
-		labels = "PbTe_Car",
-		linewidth=3,
-		title="Sum Rule relation (Traning Data = " *string(nd[14]) *")"
-	)
-
-# ╔═╡ f7d0a393-bad8-4ac9-90f3-3e22f488cb43
-SumRule2
-
-# ╔═╡ 127b3695-b0a2-448c-a3de-b87ac05e3271
-begin
-	PbTe = [478.834, 429.364, 378.193, 335.919, 289.961, 166.73, 86.1142, 12.275, 1.94481, 1.36049, 0.405952, 0.321987, 0.111758, 0.0241396]
-	Si2 = [663.231, 548.68, 459.382, 380.314, 286.179, 79.5129, 20.2168, 5.5683, 2.60258, 0.472595, 0.695432, 0.250762, 0.329402, 0.738597]
-	NaCl = [413.024, 368.635, 322.939, 250.758, 221.4, 101.458, 41.279, 5.11173, 1.58728, 1.001, 0.347564, 0.218002, 0.137059, 0.0211458]
-end
-
-# ╔═╡ 88fe0d61-e6d9-4b89-a682-6364ab8b9dff
-plot(nd, SumRule2,
-		xlabel="Training points",
-		ylabel="Sum of FC2 element",
-		xlim = (-1, 205), 
-		ylim = (-20.0, 700.0),
-		labels = "PbTe_Car",
-		linewidth=3,
-		title="Sum Rule relation (Traning Data = " *string(nd[14]) *")"
-	)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -789,9 +685,9 @@ version = "6.4.0"
 
 [[deps.LLVMExtra_jll]]
 deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
-git-tree-sha1 = "a84f8f1e8caaaa4e3b4c101306b9e801d3883ace"
+git-tree-sha1 = "98eaee04d96d973e79c25d49167668c5c8fb50e2"
 uuid = "dad2f222-ce93-54a1-a47d-0025e8a3acab"
-version = "0.0.27+0"
+version = "0.0.27+1"
 
 [[deps.LLVMOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1099,10 +995,10 @@ uuid = "21216c6a-2e73-6563-6e65-726566657250"
 version = "1.4.1"
 
 [[deps.PrettyTables]]
-deps = ["Crayons", "LaTeXStrings", "Markdown", "Printf", "Reexport", "StringManipulation", "Tables"]
-git-tree-sha1 = "6842ce83a836fbbc0cfeca0b5a4de1a4dcbdb8d1"
+deps = ["Crayons", "LaTeXStrings", "Markdown", "PrecompileTools", "Printf", "Reexport", "StringManipulation", "Tables"]
+git-tree-sha1 = "3f43c2aae6aa4a2503b05587ab74f4f6aeff9fd0"
 uuid = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
-version = "2.2.8"
+version = "2.3.0"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -1668,22 +1564,12 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═013966d8-824e-11ee-1e1e-3776b206f35e
-# ╠═e2810c0e-304b-41b9-9009-b78c526a6cd1
-# ╠═41bd9799-3621-4ec8-a3e1-fb46624a5e4c
-# ╠═01705158-7674-41fb-bd97-ac9a1539938a
-# ╠═5623856e-8c11-403b-89b9-f257ecdc9329
-# ╠═6a65877f-2eab-46c5-aa92-058891e668eb
-# ╠═5321eb51-42ca-4a3d-8d10-68e756c7bc9e
-# ╠═b0e339bc-f8f5-45fd-934d-5a8e66eb11f2
-# ╠═557d91aa-b7ff-49a0-afd5-02adec2b6efd
-# ╠═fd10d3c0-dee5-4ee9-8b6e-8bf503b8d58d
-# ╠═09e6cdea-70bb-4a9c-85fe-c9be419c11a0
-# ╠═b928a28b-12bb-4491-a922-d01f107ba2a4
-# ╠═48454b4d-6c66-489a-925b-33e2adbdc7d0
-# ╠═c9aae520-10ef-4b54-9bb7-4ec2a64202cd
-# ╠═f7d0a393-bad8-4ac9-90f3-3e22f488cb43
-# ╠═127b3695-b0a2-448c-a3de-b87ac05e3271
-# ╠═88fe0d61-e6d9-4b89-a682-6364ab8b9dff
+# ╠═2c7df698-87d1-11ee-3a5d-b7059418a49b
+# ╠═c1d92ff8-b83e-4066-999a-9569c3625989
+# ╠═5e6218a2-63a6-4ce4-8ccc-06505c4094ef
+# ╠═76d4b81a-d4ce-4e63-bc97-62484a5c9813
+# ╠═350df666-548c-4f6d-835b-57d93e710ce9
+# ╠═7b8782ec-a36b-4366-8797-8fedff9e6729
+# ╠═4e9dcc9c-939b-4043-969d-9720003a8546
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
