@@ -44,6 +44,26 @@ function kernelfunction(k, x₁, x₂, grad::Int64)
 	end
 end
 
+# ╔═╡ c3136822-fad2-491e-866e-985dee528b7c
+function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
+	a  = 4 - dimA
+	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
+	
+	equi = feature[:,1]
+	
+	dim = size(feature,1)
+	num = size(feature,2)
+	
+	energy = (CSV.File(FileEnergy)|> Tables.matrix)[begin:numt,2]
+
+	force = -reshape((CSV.File(FileForce)|> Tables.matrix)[begin:a:end,2:numt+1], (dim*num,1))
+		
+	Target = vcat(energy, reshape(force, (dim*num,1)))
+	
+	
+	return equi, feature, energy, force, Target
+end
+
 # ╔═╡ 5e6218a2-63a6-4ce4-8ccc-06505c4094ef
 function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
@@ -148,7 +168,74 @@ begin
 end;
 
 # ╔═╡ 4e9dcc9c-939b-4043-969d-9720003a8546
+equi, feature, energy, force, Target = ASEFeatureTarget(
+    "feature", "energy", "force", Num, DIM);
 
+# ╔═╡ 45788611-fa80-4063-9679-4616354d498f
+@time Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
+
+# ╔═╡ 63940f32-21a2-466e-9552-d2ad6b674471
+@time K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
+
+# ╔═╡ 786d4ebe-d9d8-4eb7-8273-86e3ec1d0414
+FC2= Posterior(Kₘₘ, K₂ₙₘ, Target);
+
+# ╔═╡ aff40f13-fc02-4c72-b929-ba2b6b0bfda9
+begin
+	FC = FC2
+	natom = Int(size(FC,2)/3)
+	dist_norm = zeros((natom,natom))
+	disp = zeros(size(FC,2))
+	for jj in 1:natom
+		disp[3*(jj-1)+1:3*jj] = equi[3*(jj-1)+1:3*jj]-equi[1:3]
+		for ii in 1:natom
+			dist_norm[ii, jj] = norm(equi[3*(ii-1)+1:3*ii] - equi[3*(jj-1)+1:3*jj])
+		end
+	end
+end
+
+# ╔═╡ 6972648e-bb03-423b-b07e-66d7df02c351
+heatmap(1:size(dist_norm[:,:],1),
+	    1:size(dist_norm[:,:],2), dist_norm[:,:],
+	    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
+	    xlabel="feature coord. (n x d)",
+		ylabel="feature coord. (n x d)",
+		aspectratio=:equal,
+		size=(700, 700),
+	    title="PbTe_FC2 (Traning Data = " *string(199) *")" )
+
+# ╔═╡ 1d422e14-b8bf-438c-b615-8f7e0a1e9a6a
+heatmap(1:size(FC2[:,:],1),
+	    1:size(FC2[:,:],2), FC2[:,:],
+	    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
+	    xlabel="feature coord. (n x d)",
+		ylabel="feature coord. (n x d)",
+		aspectratio=:equal,
+		size=(700, 700),
+	    title="PbTe_FC2 [207.2u, 127.6u] (Traning Data = " *string(199) *")" )
+
+# ╔═╡ e675869b-5d3e-4f95-aab5-da6275f3048a
+127.6/207.2
+
+# ╔═╡ 691a9304-3321-491a-9bc5-8c808be87fb8
+FC2[1:3,:]
+
+# ╔═╡ 6946595a-cc7c-41f0-a4d5-78f9553490b8
+function recon_FC2(FC2)
+	FC2_re = zeros(3,3,Int(size(FC2,1)/3),Int(size(FC2,1)/3));
+	for i in 1:Int(size(FC2,1)/3)
+		for j in 1:Int(size(FC2,1)/3)
+			FC2_re[:,:,i,j] = FC2[3*(i-1)+1:3*i,3*(j-1)+1:3*j]
+		end
+	end
+	return FC2_re
+end
+
+# ╔═╡ 26b52496-911f-474d-bb44-7f555353b0de
+FC2_re = recon_FC2(FC2)
+
+# ╔═╡ 56d86a14-0044-442b-a86a-b956bb6ac86a
+FC2_re[:,:,1,:]
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -178,7 +265,7 @@ Zygote = "~0.6.67"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.4"
+julia_version = "1.9.3"
 manifest_format = "2.0"
 project_hash = "258d88deb8a09166ba533908a3c52a960e36d54c"
 
@@ -727,12 +814,12 @@ uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.4"
+version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "8.4.0+0"
+version = "7.84.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -741,7 +828,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.11.0+1"
+version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1537,7 +1624,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.52.0+1"
+version = "1.48.0+0"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1566,10 +1653,22 @@ version = "1.4.1+1"
 # ╔═╡ Cell order:
 # ╠═2c7df698-87d1-11ee-3a5d-b7059418a49b
 # ╠═c1d92ff8-b83e-4066-999a-9569c3625989
+# ╠═c3136822-fad2-491e-866e-985dee528b7c
 # ╠═5e6218a2-63a6-4ce4-8ccc-06505c4094ef
 # ╠═76d4b81a-d4ce-4e63-bc97-62484a5c9813
 # ╠═350df666-548c-4f6d-835b-57d93e710ce9
 # ╠═7b8782ec-a36b-4366-8797-8fedff9e6729
 # ╠═4e9dcc9c-939b-4043-969d-9720003a8546
+# ╠═45788611-fa80-4063-9679-4616354d498f
+# ╠═63940f32-21a2-466e-9552-d2ad6b674471
+# ╠═786d4ebe-d9d8-4eb7-8273-86e3ec1d0414
+# ╠═aff40f13-fc02-4c72-b929-ba2b6b0bfda9
+# ╠═6972648e-bb03-423b-b07e-66d7df02c351
+# ╠═1d422e14-b8bf-438c-b615-8f7e0a1e9a6a
+# ╠═e675869b-5d3e-4f95-aab5-da6275f3048a
+# ╠═691a9304-3321-491a-9bc5-8c808be87fb8
+# ╠═6946595a-cc7c-41f0-a4d5-78f9553490b8
+# ╠═26b52496-911f-474d-bb44-7f555353b0de
+# ╠═56d86a14-0044-442b-a86a-b956bb6ac86a
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
