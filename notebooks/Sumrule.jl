@@ -30,8 +30,10 @@ begin
 	plot(nd, [PbTe_FC2 Si2_FC2  NaCl_FC2],
 			xlabel="Training points",
 			ylabel= "Sum of" * L"\;\Phi_{2}\;" * "elements" ,
-			xlim = (-1, 105), 
-			ylim = (-20.0, 700.0),
+			#xlim = (-1, 105), 
+			#ylim = (-20.0, 700.0),
+			xscale=:log10,
+			yscale=:log10, 
 		    color = ["#F0BB62" "#6E9A50" "#C64756"],
 			labels = [L"\textbf{PbTe}" L"\textbf{Si}\;\textbf{bulk}" L"\textbf{NaCl}"],
 			linestyle = [:solid :dash :dot],
@@ -41,20 +43,24 @@ begin
 		)
 
 	scatter!(nd, [PbTe_FC2 Si2_FC2  NaCl_FC2],
-			xlim = (-1, 105), 
-			ylim = (-20.0, 700.0),
+			#xlim = (-1, 105), 
+			#ylim = (-20.0, 700.0),
+			xscale=:log10,
+			yscale=:log10, 
 		    color = ["#F0BB62" "#6E9A50" "#C64756"],
 			labels = ["" "" ""],
 			#legend = false,
 			linewidth=3,
 		)
-	savefig("FC2_sumrule.png")
+	#savefig("FC2_sumrule.png")
 end
 
 # ╔═╡ 707c4dad-482f-43bd-b2d6-2886ef7e1343
 begin
 	NaCl_FC3 = [1.1995e-9, 0.702368, 0.13584, 0.00110414, 0.0451975, 0.694288, 6.4927, 5.23002, 10.0276, 5.94526, 4.05301, 2.23883, 3.14209, 7.76684]
-	PbTe_FC3 = [ 1.65728e-12, 0.751072, 0.164429, 0.0115236, 0.262735, 2.98395, 1.90425, 10.123, 2.50932, 1.06999, 5.57, 2.62108, 7.64003, 8.78377]
+	
+	PbTe_FC3 = [ 1.65728e-12, 0.751072, 0.164429, 0.0115236, 0.262735, 2.98395, 1.90425, 10.123, 2.50932, 1.06999, 7.64003, 5.57, 2.62108, 8.78377] 
+	
 	Si2_FC3 =[1.79239e-9, 2.96734, 3.05551, 0.922552, 4.47072, 16.2466, 13.3136, 44.7593, 21.5664, 30.5772, 24.0235, 16.5839, 3.06282, 17.0364]
 end
 
@@ -63,8 +69,6 @@ begin
 	plot(nd, [PbTe_FC3 Si2_FC3 NaCl_FC3],
 			xlabel="Training points",
 			ylabel= "Sum of" * L"\;\Phi_{3}\;" * "elements" ,
-			xlim = (-1, 205), 
-			ylim = (-2.0, 50.0),
 		    color = ["#F0BB62" "#6E9A50" "#C64756"],
 			labels = [L"\textbf{PbTe}" L"\textbf{Si}\;\textbf{bulk}" L"\textbf{NaCl}"],
 			linestyle = [:solid :dash :dot],
@@ -74,14 +78,16 @@ begin
 		)
 
 	scatter!(nd, [PbTe_FC3 Si2_FC3 NaCl_FC3],
-			xlim = (-1, 205), 
-			ylim = (-2.0, 50.0),
+			#xlim = (-1, 205), 
+			#ylim = (-2.0, 50.0),
+			xscale=:log10,
+			yscale=:log10,
 		    color = ["#F0BB62" "#6E9A50" "#C64756"],
 			labels = ["" "" ""],
 			#legend = false,
 			linewidth=3,
 		)
-	savefig("FC3_sumrule.png")
+	#savefig("FC3_sumrule.png")
 end
 
 # ╔═╡ 8487126f-258b-40c0-83ad-5600ced08a06
@@ -105,8 +111,10 @@ begin
 		)
 
 	scatter!(nd, [PbTe_Dyn Si2_Dyn NaCl_Dyn],
-			xlim = (-1, 105), 
-			ylim = (-0.1, 3.5),
+			#xlim = (-1, 105), 
+			#ylim = (-0.1, 3.5),
+			xscale=:log10,
+			yscale=:log10,
 		    color = ["#F0BB62" "#6E9A50" "#C64756"],
 			labels = ["" "" ""],
 			#legend = false,
@@ -145,7 +153,7 @@ Zygote = "~0.6.67"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.4"
+julia_version = "1.9.3"
 manifest_format = "2.0"
 project_hash = "152d8088b552022bf638348884c0cdeee4d5c31b"
 
@@ -694,12 +702,12 @@ uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.4"
+version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "8.4.0+0"
+version = "7.84.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -708,7 +716,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.11.0+1"
+version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1504,7 +1512,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.52.0+1"
+version = "1.48.0+0"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
