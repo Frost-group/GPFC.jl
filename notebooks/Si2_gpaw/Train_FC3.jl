@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 8bf63602-82ff-11ee-1470-8d2419792464
+# ╔═╡ 261843d9-ddc9-4701-bd93-6ad1760441e5
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum
@@ -14,7 +14,7 @@ begin
 	using Plots
 end
 
-# ╔═╡ 9a62fef1-3aa3-460f-b07f-dee44f102b45
+# ╔═╡ 4bfe9fb7-d6a9-471f-a0b8-0ce9d60f696b
 function kernelfunction(k, x₁, x₂, grad::Int64)
 	function f1st(x₁, x₂) 
 		Zygote.gradient( a -> k(a, x₂), x₁)[1]
@@ -44,7 +44,7 @@ function kernelfunction(k, x₁, x₂, grad::Int64)
 	end
 end
 
-# ╔═╡ 2cb9a181-eefa-48d7-88f8-890ac23adcba
+# ╔═╡ 3fb4114c-ba02-42bf-9fce-eaa25a1b6f82
 function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
 	a  = 4 - dimA
 	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
@@ -64,7 +64,7 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 	return equi, feature, energy, force, Target
 end
 
-# ╔═╡ a4b53933-28e4-4754-ade1-8b6219607026
+# ╔═╡ e12136d3-27d9-475c-a015-39bd4a7f0dd0
 function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
 	num = size(X,2)
@@ -99,31 +99,29 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 	return Kₘₘ
 end
 
-# ╔═╡ d866792a-f9df-4de3-a8da-53d605b12083
-function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
+# ╔═╡ e4f3e0b2-0a13-479f-8e73-a028fce6193e
+function Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	dim = size(X,1)
 	num = size(X,2)
 	
-	#Covariance matrix for FC2 prediction
-	#building Covariance matrix containers	
-	K₂ₙₘ= zeros((dim, dim, (1+dim)*num))
-		
+	#building Covariance matrix containers
+	K₃ₙₘ= zeros((dim, dim, dim, (1+dim)*num))
 	for j in 1:num
-		#Fillin convarian of Energy vs FC2
-		K₂ₙₘ[:,:,j] = reshape(
-					 kernelfunction(k, X[:,j], xₒ, 2)
-					, (dim, dim)
-				)
-		#Fillin convarian of Force vs FC2
-		K₂ₙₘ[:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
-					 kernelfunction(k, X[:,j], xₒ, 3)
+		#Fillin convarian of Energy vs FC3
+		K₃ₙₘ[:,:,:,j] = reshape(
+					-  kernelfunction(k, X[:,j], xₒ, 3)
 					, (dim, dim, dim)
 				)
+		#Fillin convarian of Force vs FC3
+		K₃ₙₘ[:,:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
+					-  kernelfunction(k, X[:,j], xₒ, 4)
+					, (dim, dim, dim, dim)
+				)
 	end
-	return K₂ₙₘ
+	return K₃ₙₘ
 end
 
-# ╔═╡ bd5386d0-8ebf-4174-b99a-3b9cb307ee77
+# ╔═╡ 1357bcf5-b4fa-4d11-afe9-ad779b3f1505
 function Posterior(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
 	dimₜ = size(Marginal, 1)
@@ -152,14 +150,14 @@ function Posterior(Marginal, Covariance, Target)
 	return Meanₚ 
 end
 
-# ╔═╡ 67cea097-cdfe-4587-b93f-45af7fce2e94
+# ╔═╡ 752c9070-1da0-4054-bbdc-0f196442467d
 begin
 	σₒ = 0.05                  # Kernel Scale
 	l = 0.4				    # Length Scale
 	σₑ = 1e-5 					# Energy Gaussian noise
 	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
 		
-	Num = 199                 # Number of training points
+	Num = 298                 # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
 	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
@@ -167,287 +165,31 @@ begin
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
 
-# ╔═╡ aeeba1f6-620c-42b4-a91c-9c56a56c234d
+# ╔═╡ f03d236b-42d5-4487-947b-954c22cfa30f
 equi, feature, energy, force, Target = ASEFeatureTarget(
-    "feature", "energy", "force", Num, DIM);
+    "feature_new", "energy_new", "force_new", Num, DIM);
 
-# ╔═╡ 6324f904-89da-47e4-bbb9-fbcb63d58881
+# ╔═╡ 483c7d68-1a48-4fa9-98a6-851edc8c4e9c
 @time Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
 
-# ╔═╡ f83eff59-b191-4aae-b999-6a69deec7e6d
-@time K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
+# ╔═╡ 9eecaf99-678a-4ff0-b6c7-819aa35e8df5
+@time K₃ₙₘ = Coveriance_fc3(feature, equi, kernel);
 
-# ╔═╡ 7fa0ad86-6c33-49d3-8c2b-b150d39ca18a
-FC2= Posterior(Kₘₘ, K₂ₙₘ, Target);
+# ╔═╡ 5e12827b-472f-4c05-ba3c-8c32e092fbc1
+@time FC3 = Posterior(Kₘₘ, K₃ₙₘ, Target);
 
-# ╔═╡ 7f7b136e-8998-4aa3-919a-d1645b867237
-begin
-	FC = FC2
-	natom = Int(size(FC,2)/3)
-	dist_norm = zeros((natom,natom))
-	disp = zeros(size(FC,2))
-	for jj in 1:natom
-		disp[3*(jj-1)+1:3*jj] = equi[3*(jj-1)+1:3*jj]-equi[1:3]
-		for ii in 1:natom
-			dist_norm[ii, jj] = norm(equi[3*(ii-1)+1:3*ii] - equi[3*(jj-1)+1:3*jj])
+# ╔═╡ 60cf4dc4-42f1-4793-9934-8ca00b92e8bc
+function recon_FC3(FC3)
+	FC3_re = zeros(3,3,3,Int(size(FC3,1)/3),Int(size(FC3,1)/3),Int(size(FC3,1)/3));
+	for i in 1:Int(size(FC3,1)/3)
+		for j in 1:Int(size(FC3,1)/3)
+			for k in 1:Int(size(FC3,1)/3)
+				FC3_re[:,:,:,i,j,k] = FC3[3*(i-1)+1:3*i, 3*(j-1)+1:3*j, 3*(k-1)+1:3*k]
+			end
 		end
 	end
+	return FC3_re
 end
-
-# ╔═╡ 26a1305e-7813-4b11-82eb-d309aebd13ea
-heatmap(1:size(dist_norm[:,:],1),
-	    1:size(dist_norm[:,:],2), dist_norm[:,:],
-	    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
-	    xlabel="feature coord. (n x d)",
-		ylabel="feature coord. (n x d)",
-		aspectratio=:equal,
-		size=(700, 700),
-	    title="PbTe_FC2 (Traning Data = " *string(199) *")" )
-
-# ╔═╡ 9eb8a0cc-683e-4205-867d-c165afe816b0
-heatmap(1:size(FC2[:,:],1),
-	    1:size(FC2[:,:],2), FC2[:,:],
-	    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
-	    xlabel="feature coord. (n x d)",
-		ylabel="feature coord. (n x d)",
-		aspectratio=:equal,
-		size=(700, 700),
-	    title="PbTe_FC2 (Traning Data = " *string(199) *")" )
-
-# ╔═╡ ec391d1f-e592-43ce-9ac8-c480e0a70157
-FC2[1:3,46:48]
-
-# ╔═╡ c7260c34-8aba-469a-a84c-8e0571697f72
-begin
-	xyz = [[ 1 0 0 ]
-		 [ 0 1 0 ]	
-		 [ 0 0 1 ]]
-	xyz1 =[[ 1 0 0 ]
-		 [ 0 -1 0 ]	
-		 [ 0 0 -1]]
-	xyz2 =[[-1 0 0 ]
-		 [ 0 1 0 ]	
-		 [ 0 0 -1 ]]
-	xyz3 =[[-1 0 0 ]
-		 [ 0 -1 0 ]	
-		 [ 0 0 1 ]]
-	
-	zxy =[[ 0 0 1 ]
-		 [ 1 0 0 ]	
-		 [ 0 1 0 ]]
-	zxy1 =[[ 0 0 -1 ]
-		 [-1 0 0 ]	
-		 [ 0 1 0 ]]
-	zxy2 =[[ 0 0 1 ]
-		 [-1 0 0 ]	
-		 [ 0 -1 0 ]]
-	zxy3 =[[ 0 0 -1 ]
-		 [ 1 0 0 ]	
-		 [ 0 -1 0 ]]
-	
-	yzx = [[ 0 1 0 ]
-		 [ 0 0 1 ]	
-		 [ 1 0 0 ]]
-	yzx1 = [[ 0 -1 0 ]
-		 [ 0 0 -1 ]	
-		 [ 1 0 0 ]]
-	yzx2 = [[ 0 -1 0 ]
-		 [ 0 0 1 ]	
-		 [ -1 0 0 ]]
-	yzx3 = [[ 0 1 0 ]
-		 [ 0 0 -1 ]	
-		 [ -1 0 0 ]]
-
-	xzy = [[ 1 0 0 ]
-		 [ 0 0 1 ]	
-		 [ 0 1 0 ]]
-	xzy1 = [[ -1 0 0 ]
-		 [ 0 0 -1 ]	
-		 [ 0 1 0 ]]
-	xzy2 = [[ -1 0 0 ]
-		 [ 0 0 1 ]	
-		 [ 0 -1 0 ]]
-	xzy3 = [[ 1 0 0 ]
-		 [ 0 0 -1 ]	
-		 [ 0 -1 0 ]]
-
-
-	zyx = [[ 0 1 0 ]
-		 [ 1 0 0 ]	
-		 [ 0 0 1 ]]
-	zyx1 = [[ 0 -1 0 ]
-		 [ -1 0 0 ]	
-		 [ 0 0 1 ]]
-	zyx2 = [[ 0 -1 0 ]
-		 [ 1 0 0 ]	
-		 [ 0 0 -1 ]]
-	zyx3 = [[ 0 1 0 ]
-		 [ -1 0 0 ]	
-		 [ 0 0 -1 ]]
-	
-	yxz = [[ 0 0 1 ]
-		 [ 0 1 0 ]	
-		 [ 1 0 0 ]]
-	yxz1 = [[ 0 0 -1 ]
-		 [ 0 -1 0 ]	
-		 [ 1 0 0 ]]
-	yxz2 = [[ 0 0 -1 ]
-		 [ 0 1 0 ]	
-		 [ -1 0 0 ]]
-	yxz3 = [[ 0 0 1 ]
-		 [ 0 -1 0 ]	
-		 [ -1 0 0 ]]
-end;
-
-# ╔═╡ 6af7135f-49d8-4134-a7e6-73397ac6fa41
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	Fequi_new = zeros(size(disp,1))
-	for ii in 1:Int(size(disp,1)/3)
-			if i == 1
-				Fequi_new[3*(ii-1)+1:3*ii] = [0.0,0.0,0.0]
-			else
-				for sym in 1:size(S,1)
-					if 
-					else
-					end
-				end
-			
-				for jj in 1:Int(size(disp,1)/3)
-					for sym in 1:size(S,1)
-						if S[]
-
-	s = []
-	push!(s,a)
-	push!(s,b)
-	s[2]
-						
-end
-  ╠═╡ =#
-
-# ╔═╡ edfc8dc9-1bdc-4236-a7d6-95e652a2b2d1
-S = [e, a, b, c, d, f];
-
-# ╔═╡ c73df96f-7791-4744-89ed-c334a0011f5f
-function AnaForce(FC2,disp)
-	Fequi = FC2*disp
-	sum_error = sum(Fequi)
-	return Fequi
-end
-
-# ╔═╡ ee528e53-a553-4257-8854-42e341138925
-ii = 7
-
-# ╔═╡ ed850dd2-1b80-4bc7-bb01-deb40d884e84
-disp[3*(ii-1)+1:3*ii]
-
-# ╔═╡ 18f2d264-6116-4847-aa59-2210e49765a8
-disp[3*(ii-1)+1:3*ii]
-
-# ╔═╡ 526bf3e2-9c89-4e2d-be91-718117940ea8
-norm(disp[3*(ii-1)+1:3*ii])
-
-# ╔═╡ bb8ecc08-b165-469b-b1f9-490c352ee8e5
-AnaForce(FC2, disp)[3*(ii-1)+1:3*ii]
-
-# ╔═╡ ac8e331b-bd9c-4170-8fd4-d349881038cb
-
-
-# ╔═╡ ed0cd8d1-4a37-4e2a-8ae5-960dd24563de
-FC2[3*(ii-1)+1:3*ii,1:3]
-
-# ╔═╡ 91b2cdd2-a797-4d92-982f-06aa4a63e705
-xyz3'*FC2[3*(ii-1)+1:3*ii,1:3]*xyz3
-
-# ╔═╡ 487abe49-9d23-4293-8abd-3404911f19c2
-F = AnaForce(FC2, disp)
-
-# ╔═╡ bd69628b-fddd-4b1b-9dbe-c374ebb5f68f
-begin
-	F4 = (F[22:24] + a*F[34:36] + d*F[40:42])/3 
-end
-
-# ╔═╡ 06e9934f-45d3-48bb-8507-b4c153f37177
-F[1:3]
-
-# ╔═╡ 4c0bc5a9-a179-4117-8efc-247b3c0faa77
-F[46:48]
-
-# ╔═╡ 8fa4a7c0-33f5-4b4c-a6c2-3482aa0ee78e
-F[34:36] 
-
-# ╔═╡ de58d9c2-8427-40dc-9f94-c47d2b58a3f2
-F[40:42] 
-
-# ╔═╡ 28204730-e609-490d-8dd5-635b1ea05de2
-b*F[7:9] 
-
-# ╔═╡ c94daf21-0f3b-4f12-a28f-5d879d0b5f61
-size(disp,1)
-
-# ╔═╡ 22653b3c-a42e-4f97-83a7-a9284c091515
-(0.367388+0.634668+1.57297-0.433645+0.275849+0.703151)/6
-
-# ╔═╡ 77b3532c-d36d-4bc2-ac6e-1287d8e4f1d2
-begin
-	Fequi_new = zeros(size(disp,1))
-	Fequi_new[1:3] = [0.0,0.0,0.0] 
-	Fequi_new[4:6] =  -36.93070462767068*[1,1,1]
-	Fequi_new[7:9] = [33.60235, 33.60235, -28.7408]
-	Fequi_new[13:15] = b * [33.60235, 33.60235, -28.7408]
-	Fequi_new[25:27] = d * [33.60235, 33.60235, -28.7408]
-end
-
-# ╔═╡ ec8bb399-df38-442a-bbf8-c7aeb0aaa0ce
-begin
-	Fequi_new[10:12] = [-3.7342675, -3.7342675, -67.0623]
-	Fequi_new[16:18] = b * [-3.7342675, -3.7342675, -67.0623]
-	Fequi_new[28:30] = d * [-3.7342675, -3.7342675, -67.0623]
-	
-	Fequi_new[19:21] = [67.0623, 3.7342675, 3.7342675]
-	Fequi_new[31:33] = a * [67.0623, 3.7342675, 3.7342675]
-	Fequi_new[37:39] = d * [67.0623, 3.7342675, 3.7342675]
-end
-
-# ╔═╡ 9658b008-ccba-4712-be0c-9b077ce9eb8d
-begin
-	Fequi_new[22:24] = [28.7408, -33.60235, -33.60235]
-	Fequi_new[34:36] = a * [28.7408, -33.60235, -33.60235]
-	Fequi_new[40:42] = d * [28.7408, -33.60235, -33.60235]
-	
-	Fequi_new[43:45] = [36.93070462767068, 36.93070462767068, 36.93070462767068]
-	Fequi_new[46:48] = a * [0.5200635000000001,0.5200635000000001,0.5200635000000001]
-end
-
-# ╔═╡ 08468539-392b-4bfd-bfa7-20445126d502
-ForwardDiff.jacobian( a -> AnaForce(FC2[3*(ii-1)+1:3*ii,1:3], a), disp[3*(ii-1)+1:3*ii])
-
-# ╔═╡ eeb30f38-47b1-4b15-92ca-77eca59d96f9
-ForwardDiff.jacobian( a -> AnaForce(FC2, a), disp);
-
-# ╔═╡ faf95959-e2b8-4872-94bd-c5ee64efeb3f
-heatmap(1:48, 1:48, )
-
-# ╔═╡ 7bcd1233-5d85-4ee4-9bc7-b5a2755621d3
-function recon_FC2(FC2)
-	FC2_re = zeros(3,3,Int(size(FC2,1)/3),Int(size(FC2,1)/3));
-	for i in 1:Int(size(FC2,1)/3)
-		for j in 1:Int(size(FC2,1)/3)
-			FC2_re[:,:,i,j] = FC2[3*(i-1)+1:3*i,3*(j-1)+1:3*j]
-		end
-	end
-	return FC2_re
-end
-
-# ╔═╡ 86449827-aa4c-43c5-83f5-b9e142ab5af8
-FC2_re = recon_FC2(FC2)
-
-# ╔═╡ 3c9e4221-6d45-467e-b541-b027c9453f21
-FC2_re[:,:,1, 14]
-
-# ╔═╡ 05fd6622-8337-4bbf-b4f8-0998d0a9702c
-vec(FC2)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -984,9 +726,9 @@ version = "6.4.0"
 
 [[deps.LLVMExtra_jll]]
 deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
-git-tree-sha1 = "a84f8f1e8caaaa4e3b4c101306b9e801d3883ace"
+git-tree-sha1 = "98eaee04d96d973e79c25d49167668c5c8fb50e2"
 uuid = "dad2f222-ce93-54a1-a47d-0025e8a3acab"
-version = "0.0.27+0"
+version = "0.0.27+1"
 
 [[deps.LLVMOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1294,10 +1036,10 @@ uuid = "21216c6a-2e73-6563-6e65-726566657250"
 version = "1.4.1"
 
 [[deps.PrettyTables]]
-deps = ["Crayons", "LaTeXStrings", "Markdown", "Printf", "Reexport", "StringManipulation", "Tables"]
-git-tree-sha1 = "6842ce83a836fbbc0cfeca0b5a4de1a4dcbdb8d1"
+deps = ["Crayons", "LaTeXStrings", "Markdown", "PrecompileTools", "Printf", "Reexport", "StringManipulation", "Tables"]
+git-tree-sha1 = "3f43c2aae6aa4a2503b05587ab74f4f6aeff9fd0"
 uuid = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
-version = "2.2.8"
+version = "2.3.0"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -1863,51 +1605,17 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═8bf63602-82ff-11ee-1470-8d2419792464
-# ╠═9a62fef1-3aa3-460f-b07f-dee44f102b45
-# ╠═2cb9a181-eefa-48d7-88f8-890ac23adcba
-# ╠═a4b53933-28e4-4754-ade1-8b6219607026
-# ╠═d866792a-f9df-4de3-a8da-53d605b12083
-# ╠═bd5386d0-8ebf-4174-b99a-3b9cb307ee77
-# ╠═67cea097-cdfe-4587-b93f-45af7fce2e94
-# ╠═aeeba1f6-620c-42b4-a91c-9c56a56c234d
-# ╠═6324f904-89da-47e4-bbb9-fbcb63d58881
-# ╠═f83eff59-b191-4aae-b999-6a69deec7e6d
-# ╠═7fa0ad86-6c33-49d3-8c2b-b150d39ca18a
-# ╠═7f7b136e-8998-4aa3-919a-d1645b867237
-# ╠═26a1305e-7813-4b11-82eb-d309aebd13ea
-# ╠═9eb8a0cc-683e-4205-867d-c165afe816b0
-# ╠═ec391d1f-e592-43ce-9ac8-c480e0a70157
-# ╠═c7260c34-8aba-469a-a84c-8e0571697f72
-# ╠═6af7135f-49d8-4134-a7e6-73397ac6fa41
-# ╠═edfc8dc9-1bdc-4236-a7d6-95e652a2b2d1
-# ╠═c73df96f-7791-4744-89ed-c334a0011f5f
-# ╠═ed850dd2-1b80-4bc7-bb01-deb40d884e84
-# ╠═ee528e53-a553-4257-8854-42e341138925
-# ╠═18f2d264-6116-4847-aa59-2210e49765a8
-# ╠═526bf3e2-9c89-4e2d-be91-718117940ea8
-# ╠═bb8ecc08-b165-469b-b1f9-490c352ee8e5
-# ╠═ac8e331b-bd9c-4170-8fd4-d349881038cb
-# ╠═ed0cd8d1-4a37-4e2a-8ae5-960dd24563de
-# ╠═91b2cdd2-a797-4d92-982f-06aa4a63e705
-# ╠═487abe49-9d23-4293-8abd-3404911f19c2
-# ╠═bd69628b-fddd-4b1b-9dbe-c374ebb5f68f
-# ╠═06e9934f-45d3-48bb-8507-b4c153f37177
-# ╠═4c0bc5a9-a179-4117-8efc-247b3c0faa77
-# ╠═8fa4a7c0-33f5-4b4c-a6c2-3482aa0ee78e
-# ╠═de58d9c2-8427-40dc-9f94-c47d2b58a3f2
-# ╠═28204730-e609-490d-8dd5-635b1ea05de2
-# ╠═c94daf21-0f3b-4f12-a28f-5d879d0b5f61
-# ╠═22653b3c-a42e-4f97-83a7-a9284c091515
-# ╠═77b3532c-d36d-4bc2-ac6e-1287d8e4f1d2
-# ╠═ec8bb399-df38-442a-bbf8-c7aeb0aaa0ce
-# ╠═9658b008-ccba-4712-be0c-9b077ce9eb8d
-# ╠═08468539-392b-4bfd-bfa7-20445126d502
-# ╠═eeb30f38-47b1-4b15-92ca-77eca59d96f9
-# ╠═faf95959-e2b8-4872-94bd-c5ee64efeb3f
-# ╠═7bcd1233-5d85-4ee4-9bc7-b5a2755621d3
-# ╠═86449827-aa4c-43c5-83f5-b9e142ab5af8
-# ╠═3c9e4221-6d45-467e-b541-b027c9453f21
-# ╠═05fd6622-8337-4bbf-b4f8-0998d0a9702c
+# ╠═261843d9-ddc9-4701-bd93-6ad1760441e5
+# ╠═4bfe9fb7-d6a9-471f-a0b8-0ce9d60f696b
+# ╠═3fb4114c-ba02-42bf-9fce-eaa25a1b6f82
+# ╠═e12136d3-27d9-475c-a015-39bd4a7f0dd0
+# ╠═e4f3e0b2-0a13-479f-8e73-a028fce6193e
+# ╠═1357bcf5-b4fa-4d11-afe9-ad779b3f1505
+# ╠═752c9070-1da0-4054-bbdc-0f196442467d
+# ╠═f03d236b-42d5-4487-947b-954c22cfa30f
+# ╠═483c7d68-1a48-4fa9-98a6-851edc8c4e9c
+# ╠═9eecaf99-678a-4ff0-b6c7-819aa35e8df5
+# ╠═5e12827b-472f-4c05-ba3c-8c32e092fbc1
+# ╠═60cf4dc4-42f1-4793-9934-8ca00b92e8bc
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
