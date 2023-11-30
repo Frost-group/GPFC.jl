@@ -30,14 +30,9 @@ begin
 	plot(nd, [PbTe_FC2 Si2_FC2  NaCl_FC2],
 			xlabel="Training points",
 			ylabel= "Sum of" * L"\;\Phi_{2}\;" * "elements" ,
-			#xlim = (-1, 105), 
-			#ylim = (-20.0, 700.0),
-			xscale=:log10,
-			yscale=:log10, 
 		    color = ["#F0BB62" "#6E9A50" "#C64756"],
 			labels = [L"\textbf{PbTe}" L"\textbf{Si}\;\textbf{bulk}" L"\textbf{NaCl}"],
 			linestyle = [:solid :dash :dot],
-		
 			linewidth=[1.5 2 2.5],
 			title="Sum Rule of " * L"\Phi_{2}"
 		)
@@ -52,7 +47,7 @@ begin
 			#legend = false,
 			linewidth=3,
 		)
-	#savefig("FC2_sumrule.png")
+	#savefig("FC2_sumrule_log.png")
 end
 
 # ╔═╡ 707c4dad-482f-43bd-b2d6-2886ef7e1343
@@ -120,7 +115,46 @@ begin
 			#legend = false,
 			linewidth=3,
 		)
-	#savefig("Dyn_sumrule.png")
+	#savefig("Dyn_sumrule_log.png")
+end
+
+# ╔═╡ 37081e28-ee3b-4fa7-9e8e-6878d855702f
+begin
+	plot(nd, [PbTe_FC2 Si2_FC2  NaCl_FC2],
+		    color = ["#F0BB62" "#6E9A50" "#C64756"],
+			labels = [L"\textbf{PbTe}"*L"\;(\Phi_{2})"  L"\textbf{Si}\;\textbf{bulk}"*L"\;(\Phi_{2})" L"\textbf{NaCl}"*L"\;(\Phi_{2})"],
+			linestyle = :solid,
+			linewidth=1.5,
+		)
+
+	scatter!(nd, [PbTe_FC2 Si2_FC2  NaCl_FC2],
+		    color = ["#F0BB62" "#6E9A50" "#C64756"],
+			labels = ["" "" ""],
+		)
+
+	plot!(nd, [PbTe_Dyn Si2_Dyn NaCl_Dyn],
+		    color = ["#F0BB62" "#6E9A50" "#C64756"],
+			labels = [L"\textbf{PbTe}"*L"\;(\mathbf{D}_{\Gamma})" L"\textbf{Si}\;\textbf{bulk}"*L"\;(\mathbf{D}_{\Gamma})" L"\textbf{NaCl}"*L"\;(\mathbf{D}_{\Gamma})"],
+			linestyle = :dash ,
+			linewidth= 2.5,
+		)
+
+	scatter!(nd, [PbTe_Dyn Si2_Dyn NaCl_Dyn],
+			#xlim = (-1, 105), 
+			#ylim = (-0.1, 3.5),
+			xscale=:log10,
+			yscale=:log10,
+		    color = ["#F0BB62" "#6E9A50" "#C64756"],
+			labels = ["" "" ""],
+			#legend = false,
+			linewidth=3,
+		
+			xlabel="Training points",
+			ylabel= "Sum of correlation elements" ,
+			title="Sum Rule Relation ",
+			legend=:bottomleft
+		)
+	savefig("SumruleAll_log.png")
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -1547,5 +1581,6 @@ version = "1.4.1+1"
 # ╠═e6877cc5-a967-4da8-a07d-e9aacebccf02
 # ╠═8487126f-258b-40c0-83ad-5600ced08a06
 # ╠═cea8c5c2-837f-48cf-9fb7-0af50eaae576
+# ╠═37081e28-ee3b-4fa7-9e8e-6878d855702f
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
