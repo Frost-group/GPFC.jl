@@ -121,6 +121,35 @@ function Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	return K₃ₙₘ
 end
 
+# ╔═╡ 331b0ff4-c1b9-4679-9870-704e0211168e
+function Posterior(Marginal, Covariance, Target)
+	dimₚ = size(Covariance, 1)
+	dimₜ = size(Marginal, 1)
+	Kₘₘ⁻¹ = inv(Marginal)   #
+	Kₙₘ = Covariance
+	
+	MarginalTar = zeros(dimₜ)
+	@einsum MarginalTar[m] = Kₘₘ⁻¹[m, n] * Target[n]
+
+	if size(Kₙₘ) == (dimₜ,)
+		Meanₚ = Kₙₘ'  * MarginalTar
+		
+	elseif size(Kₙₘ) == (dimₚ, dimₜ)
+		Meanₚ = zeros(dimₚ)
+		@einsum Meanₚ[i] = Kₙₘ[i, m] * MarginalTar[m]
+	
+	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₜ)
+		Meanₚ = zeros(dimₚ, dimₚ)
+		@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * MarginalTar[m]
+
+	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₚ, dimₜ)
+		Meanₚ = zeros(dimₚ, dimₚ, dimₚ)
+		@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * MarginalTar[m]
+	end
+
+	return Meanₚ 
+end
+
 # ╔═╡ d49614ea-bb68-4ea2-b66d-c2699a155aff
 begin
 	σₒ = 0.05                  # Kernel Scale
@@ -190,53 +219,6 @@ begin
 	FC3ph = zeros(( 6, 6, 6, size(nd,1)))
 end;
 
-# ╔═╡ 861838e0-c7c1-485c-ac69-eb1eac192d18
-sqrt(28.085)
-
-# ╔═╡ 6866c503-6b63-4a12-90ae-fa92edffad26
-begin
-	 FC3ph_Norm = FC3ph/(sqrt(28.085^(3)))
-	Eph_Norm = Eph/(sqrt(28.085^(3)))
-end;
-
-# ╔═╡ dd8815cd-b2e6-4661-adc9-36c31aa7f38b
-Ecar
-
-# ╔═╡ 5102e5ed-e7e2-448e-ae28-9abeca5c4f30
-Eph_Norm
-
-# ╔═╡ 66fdc344-ac14-4838-89d2-2f48ac6e24d7
-j = 1
-
-# ╔═╡ 331b0ff4-c1b9-4679-9870-704e0211168e
-function Posterior(Marginal, Covariance, Target)
-	dimₚ = size(Covariance, 1)
-	dimₜ = size(Marginal, 1)
-	Kₘₘ⁻¹ = inv(Marginal)   #
-	Kₙₘ = Covariance
-	
-	MarginalTar = zeros(dimₜ)
-	@einsum MarginalTar[m] = Kₘₘ⁻¹[m, n] * Target[n]
-
-	if size(Kₙₘ) == (dimₜ,)
-		Meanₚ = Kₙₘ'  * MarginalTar
-		
-	elseif size(Kₙₘ) == (dimₚ, dimₜ)
-		Meanₚ = zeros(dimₚ)
-		@einsum Meanₚ[i] = Kₙₘ[i, m] * MarginalTar[m]
-	
-	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₜ)
-		Meanₚ = zeros(dimₚ, dimₚ)
-		@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * MarginalTar[m]
-
-	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₚ, dimₜ)
-		Meanₚ = zeros(dimₚ, dimₚ, dimₚ)
-		@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * MarginalTar[m]
-	end
-
-	return Meanₚ 
-end
-
 # ╔═╡ 79d11fae-9887-4f21-a485-9bae3513949b
 @time for k in 1:size(nd,1)
 	numt1 = nd[k]
@@ -257,20 +239,41 @@ end
 	Eph[k] = abs(sum(FC3ph[:,:,:,k]))
 end;
 
+# ╔═╡ 861838e0-c7c1-485c-ac69-eb1eac192d18
+sqrt(28.085)
+
+# ╔═╡ 6866c503-6b63-4a12-90ae-fa92edffad26
+begin
+	 FC3ph_Norm = FC3ph/(sqrt(28.085^(3)))
+	Eph_Norm = Eph/(sqrt(28.085^(3)))
+end;
+
+# ╔═╡ dd8815cd-b2e6-4661-adc9-36c31aa7f38b
+Ecar
+
+# ╔═╡ 5102e5ed-e7e2-448e-ae28-9abeca5c4f30
+Eph_Norm
+
+# ╔═╡ 66fdc344-ac14-4838-89d2-2f48ac6e24d7
+bb = 1
+
 # ╔═╡ 0970a739-2141-40cd-83ad-f082555796ca
-animCar = @animate for i in 1:size(nd,1)
-	heatmap(1:size(FC3ph[:,:,j,i],1),
-		    1:size(FC3ph[:,:,j,i],2), FC3ph[:,:,j,i],
+animCar = @animate for aa in 1:size(nd,1)
+	heatmap(1:size(FC3ph[:,:,bb,aa],1),
+		    1:size(FC3ph[:,:,bb,aa],2), FC3ph[:,:,bb,aa],
 		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
 			aspectratio=:equal,
 			size=(700, 700),
 		    xlabel="feature coord. (n x d)",
 			ylabel="feature coord. (n x d)",
-		    title="Si2_FC2 (Traning Data = " *string(nd[i]) *")")
+		    title="Si2_FC2 (Traning Data = " *string(nd[aa]) *")")
 end
 
 # ╔═╡ 02dcf41b-01f2-4ab1-9533-0d029e912516
 gif(animCar, "Si_anim_dyn3_1.gif", fps=2)
+
+# ╔═╡ 31ce46c2-4df9-4dea-a5fa-0e2bbf7efbe6
+FC3ph[:,:,j,i]
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -284,25 +287,15 @@ KernelFunctions = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
-
-[compat]
-CSV = "~0.10.11"
-DataFrames = "~1.6.1"
-DelimitedFiles = "~1.9.1"
-Einsum = "~0.4.1"
-ForwardDiff = "~0.10.36"
-KernelFunctions = "~0.10.60"
-Plots = "~1.39.0"
-Zygote = "~0.6.67"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.3"
+julia_version = "1.9.4"
 manifest_format = "2.0"
-project_hash = "d442712669f105569e48471438ace450cb493f53"
+project_hash = "c5bdba02590b96b8bb589e309379559caf1a066e"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -777,9 +770,9 @@ version = "2.1.91+0"
 
 [[deps.KernelFunctions]]
 deps = ["ChainRulesCore", "Compat", "CompositionsBase", "Distances", "FillArrays", "Functors", "IrrationalConstants", "LinearAlgebra", "LogExpFunctions", "Random", "Requires", "SpecialFunctions", "Statistics", "StatsBase", "TensorCore", "Test", "ZygoteRules"]
-git-tree-sha1 = "d9bcb5ec5205db043f01a35dee0da82eb3fd2afb"
+git-tree-sha1 = "c7f8315aa2e47be568be868bf6892e853bc7f1e1"
 uuid = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
-version = "0.10.60"
+version = "0.10.58"
 
 [[deps.LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -849,12 +842,12 @@ uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.3"
+version = "0.6.4"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "7.84.0+0"
+version = "8.4.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -863,7 +856,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.10.2+0"
+version = "1.11.0+1"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -957,9 +950,9 @@ uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
 [[deps.MbedTLS]]
 deps = ["Dates", "MbedTLS_jll", "MozillaCACerts_jll", "NetworkOptions", "Random", "Sockets"]
-git-tree-sha1 = "c067a280ddc25f196b5e7df3877c6b226d390aaf"
+git-tree-sha1 = "f512dc13e64e96f703fd92ce617755ee6b5adf0f"
 uuid = "739be429-bea8-5141-9913-cc70e7f3736d"
-version = "1.1.9"
+version = "1.1.8"
 
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1035,9 +1028,9 @@ uuid = "91d4177d-7536-5919-b921-800302f37372"
 version = "1.3.2+0"
 
 [[deps.OrderedCollections]]
-git-tree-sha1 = "dfdf5519f235516220579f949664f1bf44e741c5"
+git-tree-sha1 = "2e73fe17cac3c62ad1aebe70d44c963c3cfdc3e3"
 uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
-version = "1.6.3"
+version = "1.6.2"
 
 [[deps.PCRE2_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1392,9 +1385,9 @@ version = "1.6.1"
 
 [[deps.XML2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Zlib_jll"]
-git-tree-sha1 = "da69178aacc095066bad1f69d2f59a60a1dd8ad1"
+git-tree-sha1 = "24b81b59bd35b3c42ab84fa589086e19be919916"
 uuid = "02c8fc9c-b97f-50b9-bbe4-9be30ff0a78a"
-version = "2.12.0+0"
+version = "2.11.5+0"
 
 [[deps.XSLT_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgcrypt_jll", "Libgpg_error_jll", "Libiconv_jll", "Pkg", "XML2_jll", "Zlib_jll"]
@@ -1659,7 +1652,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.48.0+0"
+version = "1.52.0+1"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1705,5 +1698,6 @@ version = "1.4.1+1"
 # ╠═66fdc344-ac14-4838-89d2-2f48ac6e24d7
 # ╠═0970a739-2141-40cd-83ad-f082555796ca
 # ╠═02dcf41b-01f2-4ab1-9533-0d029e912516
+# ╠═31ce46c2-4df9-4dea-a5fa-0e2bbf7efbe6
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
