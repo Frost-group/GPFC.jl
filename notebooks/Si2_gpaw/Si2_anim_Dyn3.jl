@@ -254,13 +254,31 @@ Ecar
 # ╔═╡ 5102e5ed-e7e2-448e-ae28-9abeca5c4f30
 Eph_Norm
 
+# ╔═╡ 6be9a510-02c2-4a7a-9eb7-db08baca8d26
+
+
 # ╔═╡ 66fdc344-ac14-4838-89d2-2f48ac6e24d7
 bb = 1
 
-# ╔═╡ 0970a739-2141-40cd-83ad-f082555796ca
+# ╔═╡ b7baf678-6d43-45fe-b106-ca85d3802be8
 animCar = @animate for aa in 1:size(nd,1)
-	heatmap(1:size(FC3ph[:,:,bb,aa],1),
-		    1:size(FC3ph[:,:,bb,aa],2), FC3ph[:,:,bb,aa],
+	heatmap(1:size(FC3car[:,:,bb,aa],1),
+		    1:size(FC3car[:,:,bb,aa],2), FC3car[:,:,bb,aa],
+		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
+			aspectratio=:equal,
+			size=(700, 700),
+		    xlabel="feature coord. (n x d)",
+			ylabel="feature coord. (n x d)",
+		    title="Si2_FC2 (Traning Data = " *string(nd[aa]) *")")
+end
+
+# ╔═╡ e273bce7-3de3-44fc-8a04-43f8f49868c5
+gif(animCar, "Si_anim_dyn3_1.gif", fps=2)
+
+# ╔═╡ 0970a739-2141-40cd-83ad-f082555796ca
+animph = @animate for aa in 1:size(nd,1)
+	heatmap(1:size(FC3ph_Norm[:,:,bb,aa],1),
+		    1:size(FC3ph_Norm[:,:,bb,aa],2), FC3ph_Norm[:,:,bb,aa],
 		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
 			aspectratio=:equal,
 			size=(700, 700),
@@ -270,7 +288,7 @@ animCar = @animate for aa in 1:size(nd,1)
 end
 
 # ╔═╡ 02dcf41b-01f2-4ab1-9533-0d029e912516
-gif(animCar, "Si_anim_dyn3_1.gif", fps=2)
+gif(animph, "Si_anim_dyn3_1.gif", fps=2)
 
 # ╔═╡ 31ce46c2-4df9-4dea-a5fa-0e2bbf7efbe6
 FC3ph[:,:,j,i]
@@ -1695,7 +1713,10 @@ version = "1.4.1+1"
 # ╠═6866c503-6b63-4a12-90ae-fa92edffad26
 # ╠═dd8815cd-b2e6-4661-adc9-36c31aa7f38b
 # ╠═5102e5ed-e7e2-448e-ae28-9abeca5c4f30
+# ╠═6be9a510-02c2-4a7a-9eb7-db08baca8d26
 # ╠═66fdc344-ac14-4838-89d2-2f48ac6e24d7
+# ╠═b7baf678-6d43-45fe-b106-ca85d3802be8
+# ╠═e273bce7-3de3-44fc-8a04-43f8f49868c5
 # ╠═0970a739-2141-40cd-83ad-f082555796ca
 # ╠═02dcf41b-01f2-4ab1-9533-0d029e912516
 # ╠═31ce46c2-4df9-4dea-a5fa-0e2bbf7efbe6
