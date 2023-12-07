@@ -154,7 +154,7 @@ end
 begin
 	σₒ = 0.05                  # Kernel Scale
 	l = 0.4				    # Length Scale
-	σₑ = 1e-5 					# Energy Gaussian noise
+	σₑ = 1e-7 					# Energy Gaussian noise
 	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
 		
 	Num = 298                 # Number of training points
@@ -291,7 +291,7 @@ end
 gif(animph, "Si_anim_dyn3_1.gif", fps=2)
 
 # ╔═╡ 31ce46c2-4df9-4dea-a5fa-0e2bbf7efbe6
-FC3ph[:,:,j,i]
+FC3ph[:,:,bb,14]
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -311,7 +311,7 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.4"
+julia_version = "1.9.3"
 manifest_format = "2.0"
 project_hash = "c5bdba02590b96b8bb589e309379559caf1a066e"
 
@@ -860,12 +860,12 @@ uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.4"
+version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "8.4.0+0"
+version = "7.84.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -874,7 +874,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.11.0+1"
+version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1670,7 +1670,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.52.0+1"
+version = "1.48.0+0"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]

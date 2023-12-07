@@ -90,7 +90,7 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 	end
 
 	Iee = σₑ^2 * Matrix(I, num, num)
-	Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
+	Iff = (σₑ^2 / l) * Matrix(I, dim * num, dim * num)
 	Ief = zeros(num, dim * num)
 	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
 
@@ -152,18 +152,22 @@ end
 
 # ╔═╡ 752c9070-1da0-4054-bbdc-0f196442467d
 begin
-	σₒ = 0.05                  # Kernel Scale
-	l = 0.4				    # Length Scale
-	σₑ = 1e-6 					# Energy Gaussian noise
-	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
-		
-	Num = 298                 # Number of training points
+	σₒ = 0.05                   # Kernel Scale
+	l = 0.4				        # Length Scale
+	
+	Num = 298                  # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
 	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
 		
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
+
+# ╔═╡ 059494d2-4754-4181-8d2f-08898aed605b
+begin
+	σₑ = 1e-9 					# Energy Gaussian noise
+	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
+end
 
 # ╔═╡ f03d236b-42d5-4487-947b-954c22cfa30f
 equi, feature, energy, force, Target = ASEFeatureTarget(
@@ -193,6 +197,9 @@ end
 
 # ╔═╡ 8d6e8d24-ddc5-472b-9122-00f5654cb1bb
 FC3_re = recon_FC3(FC3);
+
+# ╔═╡ 277c664d-1790-4739-9e7e-bdd5eba28cf6
+FC3_re
 
 # ╔═╡ 291622e3-6340-4481-9bf8-5ccf74c0d91b
 sum(FC3_re)
@@ -225,7 +232,7 @@ Zygote = "~0.6.44"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.4"
+julia_version = "1.9.3"
 manifest_format = "2.0"
 project_hash = "eaa53ea7e3d7726766cfce87b93fb2845879b23d"
 
@@ -748,12 +755,12 @@ uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.4"
+version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "8.4.0+0"
+version = "7.84.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -762,7 +769,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.11.0+1"
+version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1542,7 +1549,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.52.0+1"
+version = "1.48.0+0"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1576,12 +1583,14 @@ version = "1.4.1+1"
 # ╠═e4f3e0b2-0a13-479f-8e73-a028fce6193e
 # ╠═1357bcf5-b4fa-4d11-afe9-ad779b3f1505
 # ╠═752c9070-1da0-4054-bbdc-0f196442467d
+# ╠═059494d2-4754-4181-8d2f-08898aed605b
 # ╠═f03d236b-42d5-4487-947b-954c22cfa30f
 # ╠═483c7d68-1a48-4fa9-98a6-851edc8c4e9c
 # ╠═9eecaf99-678a-4ff0-b6c7-819aa35e8df5
 # ╠═5e12827b-472f-4c05-ba3c-8c32e092fbc1
 # ╠═60cf4dc4-42f1-4793-9934-8ca00b92e8bc
 # ╠═8d6e8d24-ddc5-472b-9122-00f5654cb1bb
+# ╠═277c664d-1790-4739-9e7e-bdd5eba28cf6
 # ╠═291622e3-6340-4481-9bf8-5ccf74c0d91b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
