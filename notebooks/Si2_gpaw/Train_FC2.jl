@@ -90,7 +90,8 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 	end
 
 	Iee = σₑ^2 * Matrix(I, num, num)
-	Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
+	Iff = σₙ^2 * Matrix(I, dim * num, dim * num)
+	#Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
 	Ief = zeros(num, dim * num)
 	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
 
@@ -156,9 +157,7 @@ end
 begin
 	σₒ = 0.05                  # Kernel Scale
 	l = 0.4				    # Length Scale
-	σₑ = 1e-5 					# Energy Gaussian noise
-	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
-		
+	
 	Num = 199                 # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
@@ -166,6 +165,12 @@ begin
 		
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
+
+# ╔═╡ b60e35c0-4ca9-4761-88ec-faf7b209bc90
+begin
+	σₑ = 1e-9 					# Energy Gaussian noise
+	σₙ = 1e-9                   # Force Gaussian noise for Model 2 (σₑ independent)
+end 
 
 # ╔═╡ aeeba1f6-620c-42b4-a91c-9c56a56c234d
 equi, feature, energy, force, Target = ASEFeatureTarget(
@@ -178,7 +183,7 @@ equi, feature, energy, force, Target = ASEFeatureTarget(
 @time K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
 
 # ╔═╡ 7fa0ad86-6c33-49d3-8c2b-b150d39ca18a
-FC2= Posterior(Kₘₘ, K₂ₙₘ, Target);
+@time FC2= Posterior(Kₘₘ, K₂ₙₘ, Target);
 
 # ╔═╡ 7f7b136e-8998-4aa3-919a-d1645b867237
 begin
@@ -213,6 +218,17 @@ heatmap(1:size(FC2[:,:],1),
 		aspectratio=:equal,
 		size=(700, 700),
 	    title="PbTe_FC2 (Traning Data = " *string(199) *")" )
+
+# ╔═╡ f48875a1-9cba-496f-b5a7-14279768e667
+begin
+	A = collect(1:8)
+	B = [10,20]
+	C = findall(A.<=2)
+	A[C] = B
+end
+
+# ╔═╡ 07ad2546-52cc-49eb-b677-6a18d1965574
+
 
 # ╔═╡ 5a3173f8-317a-47b0-b5c9-6ed7334f212a
 Eq = equi
@@ -414,6 +430,21 @@ end
 # ╔═╡ 86449827-aa4c-43c5-83f5-b9e142ab5af8
 FC2_re = recon_FC2(FC2)
 
+# ╔═╡ 068daed7-d5ad-48ac-9d4c-6ecb8861a392
+FC2_re
+
+# ╔═╡ 36b89843-e274-4c8a-8b9a-178dc402122d
+sum(FC2_re)
+
+# ╔═╡ 0b7506d2-20fb-4555-a34b-b4253d70ba66
+begin
+	FC2_re[ 0.0 .< FC2_re .< 6.5e-2 ] .= 0.0
+	FC2_re[ 0.0 .> FC2_re .> -6.5e-2 ] .= 0.0
+end
+
+# ╔═╡ 28e01172-26ac-4038-9331-b54a92ca0f9b
+FC2_re 
+
 # ╔═╡ 3c9e4221-6d45-467e-b541-b027c9453f21
 FC2_re[:,:,1, 14]
 
@@ -460,6 +491,9 @@ y1zx'*FC2_re[:,:,jjj,2]*y1zx+
 x1zy'*FC2_re[:,:,iii,2]*x1zy+
 zyx'*FC2_re[:,:,iii,2]*zyx+
 yx1z'*FC2_re[:,:,iii,2]*yx1z)/6
+
+# ╔═╡ 02ce2fd8-1da5-4844-90d4-fe749fc2cc6e
+sum(FC2)
 
 # ╔═╡ 3f13f112-699c-4aea-9287-bf5e27b7a19d
 FC2_re[:,:,jjj,2]
@@ -1908,6 +1942,7 @@ version = "1.4.1+1"
 # ╠═d866792a-f9df-4de3-a8da-53d605b12083
 # ╠═bd5386d0-8ebf-4174-b99a-3b9cb307ee77
 # ╠═67cea097-cdfe-4587-b93f-45af7fce2e94
+# ╠═b60e35c0-4ca9-4761-88ec-faf7b209bc90
 # ╠═aeeba1f6-620c-42b4-a91c-9c56a56c234d
 # ╠═6324f904-89da-47e4-bbb9-fbcb63d58881
 # ╠═f83eff59-b191-4aae-b999-6a69deec7e6d
@@ -1915,6 +1950,10 @@ version = "1.4.1+1"
 # ╠═7f7b136e-8998-4aa3-919a-d1645b867237
 # ╠═26a1305e-7813-4b11-82eb-d309aebd13ea
 # ╠═9eb8a0cc-683e-4205-867d-c165afe816b0
+# ╠═068daed7-d5ad-48ac-9d4c-6ecb8861a392
+# ╠═f48875a1-9cba-496f-b5a7-14279768e667
+# ╠═36b89843-e274-4c8a-8b9a-178dc402122d
+# ╠═07ad2546-52cc-49eb-b677-6a18d1965574
 # ╠═5a3173f8-317a-47b0-b5c9-6ed7334f212a
 # ╠═62d3a97e-86c5-4360-8211-8c02aac384a4
 # ╠═ec391d1f-e592-43ce-9ac8-c480e0a70157
@@ -1943,6 +1982,8 @@ version = "1.4.1+1"
 # ╠═eeb30f38-47b1-4b15-92ca-77eca59d96f9
 # ╠═7bcd1233-5d85-4ee4-9bc7-b5a2755621d3
 # ╠═86449827-aa4c-43c5-83f5-b9e142ab5af8
+# ╠═0b7506d2-20fb-4555-a34b-b4253d70ba66
+# ╠═28e01172-26ac-4038-9331-b54a92ca0f9b
 # ╠═3c9e4221-6d45-467e-b541-b027c9453f21
 # ╠═05fd6622-8337-4bbf-b4f8-0998d0a9702c
 # ╠═cf11b5b5-e475-48a2-a8b7-8367a770c749
@@ -1954,6 +1995,7 @@ version = "1.4.1+1"
 # ╠═acb6095c-3fce-4ebd-8fa3-c96f69f9857a
 # ╠═e5d11bc7-08da-48c4-89be-95822bf7a941
 # ╠═dcc54e8e-596a-4ebc-9c5d-825e5a548d64
+# ╠═02ce2fd8-1da5-4844-90d4-fe749fc2cc6e
 # ╠═3f13f112-699c-4aea-9287-bf5e27b7a19d
 # ╠═4f164aa0-27dd-47b6-9ce6-e40a18732f91
 # ╠═c91a9df8-f227-4aa0-8153-934242153356

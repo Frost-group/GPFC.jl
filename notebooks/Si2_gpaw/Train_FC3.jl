@@ -90,7 +90,8 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 	end
 
 	Iee = σₑ^2 * Matrix(I, num, num)
-	Iff = (σₑ^2 / l) * Matrix(I, dim * num, dim * num)
+	#Iff = (σₑ^2 / l) * Matrix(I, dim * num, dim * num)
+	Iff = σₙ^2 * Matrix(I, dim * num, dim * num)
 	Ief = zeros(num, dim * num)
 	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
 
@@ -152,7 +153,7 @@ end
 
 # ╔═╡ 752c9070-1da0-4054-bbdc-0f196442467d
 begin
-	σₒ = 0.05                   # Kernel Scale
+	σₒ = 0.05                  # Kernel Scale
 	l = 0.4				        # Length Scale
 	
 	Num = 298                  # Number of training points
@@ -166,7 +167,7 @@ end;
 # ╔═╡ 059494d2-4754-4181-8d2f-08898aed605b
 begin
 	σₑ = 1e-9 					# Energy Gaussian noise
-	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
+	σₙ = 1e-9                   # Force Gaussian noise for Model 2 (σₑ independent)
 end
 
 # ╔═╡ f03d236b-42d5-4487-947b-954c22cfa30f
@@ -232,7 +233,7 @@ Zygote = "~0.6.44"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.3"
+julia_version = "1.9.4"
 manifest_format = "2.0"
 project_hash = "eaa53ea7e3d7726766cfce87b93fb2845879b23d"
 
@@ -755,12 +756,12 @@ uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.3"
+version = "0.6.4"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "7.84.0+0"
+version = "8.4.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -769,7 +770,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.10.2+0"
+version = "1.11.0+1"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1549,7 +1550,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.48.0+0"
+version = "1.52.0+1"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
