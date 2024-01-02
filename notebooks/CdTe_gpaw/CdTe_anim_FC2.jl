@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ a9a808d0-8a14-11ee-0c32-f5c32904f85d
+# ╔═╡ 14bb81e0-a998-11ee-126a-819ba01e5582
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum
@@ -14,7 +14,7 @@ begin
 	using Plots
 end
 
-# ╔═╡ 6567766b-3f5b-4868-a064-a4eb49e4e581
+# ╔═╡ a364b69e-6e99-4965-aa48-f25748631664
 function kernelfunction(k, x₁, x₂, grad::Int64)
 	function f1st(x₁, x₂) 
 		Zygote.gradient( a -> k(a, x₂), x₁)[1]
@@ -44,7 +44,7 @@ function kernelfunction(k, x₁, x₂, grad::Int64)
 	end
 end
 
-# ╔═╡ 69b7090a-90cf-4531-9fd5-368f0c977063
+# ╔═╡ 4d642d11-ec27-488c-a6dc-58a10dc7128c
 function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
 	a  = 4 - dimA
 	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
@@ -64,7 +64,7 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 	return equi, feature, energy, force, Target
 end
 
-# ╔═╡ 93033566-b268-4985-9731-2a844a049162
+# ╔═╡ 72ce8037-6fca-49a8-84d0-1b5a93449483
 function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
 	num = size(X,2)
@@ -99,7 +99,7 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 	return Kₘₘ
 end
 
-# ╔═╡ fa011d4d-1397-427c-82c6-a18a2e034e77
+# ╔═╡ e09db44c-f5cf-483c-a76f-48f5fbf389f8
 function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	dim = size(X,1)
 	num = size(X,2)
@@ -123,7 +123,7 @@ function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	return K₂ₙₘ
 end
 
-# ╔═╡ 597f6184-0914-4c94-9e8d-ce0976553c2f
+# ╔═╡ eaca6f36-aa10-4266-9eaf-85840075919b
 function Posterior(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
 	dimₜ = size(Marginal, 1)
@@ -152,14 +152,14 @@ function Posterior(Marginal, Covariance, Target)
 	return Meanₚ 
 end
 
-# ╔═╡ ed64be33-88a2-400f-983f-d9fcc84ce5e6
+# ╔═╡ 51b76852-5871-4d15-b1f9-a69522c545b3
 begin
-	σₒ = 0.05                   # Kernel Scale
-	l = 0.4	   # Length Scale
+	σₒ = 0.05                  # Kernel Scale
+	l = 0.4				    # Length Scale
 	σₑ = 1e-5 					# Energy Gaussian noise
 	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
 		
-	Num = 100                   # Number of training points
+	Num = 199                 # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
 	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
@@ -167,120 +167,66 @@ begin
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
 
-# ╔═╡ c3664750-736d-4e1b-b64f-566b1490d7c5
-equi, feature, energy, force, Target = ASEFeatureTarget(
-    "feature", "energy", "force", Num, DIM);
-
-# ╔═╡ 13acf126-c055-48b5-94cd-4701356874cd
-function phonon_Γ(natom::Int64, feature, force, Target)
-	dim = 3 * natom
-	SupercellSize = Int(size(feature, 1)/dim)
-	ndata = size(feature, 2)
-
-	feature_ph = zeros((dim, ndata))
-	for jj in 1:ndata
-		for kk in 1:SupercellSize
-			if kk == 1
-				feature_ph[1:dim, jj] = feature[1:dim, jj]
-			else
-				feature_ph[1:dim, jj] = feature_ph[1:dim, jj] + feature[dim*(kk-1)+1:dim*kk, jj]
-			end 
-		end
-	end	
-	equi_ph = feature_ph[1:dim,1]
-
-	force_r = reshape(force, (dim*SupercellSize, ndata))
-	
-	force_ph = zeros((dim, ndata))
-	for jj in 1:ndata
-		for kk in 1:SupercellSize
-			if kk == 1
-				force_ph[1:dim,jj] = force_r[1:dim,jj]
-			else
-				force_ph[1:dim,jj] =force_ph[1:dim,jj] + force_r[dim*(kk-1)+1:dim*kk,jj]
-			end 
-		end
-	end
-	Target_ph = zeros(((1+dim)*ndata))
-	Target_ph[1:ndata] = Target[1:ndata]
-	Target_ph[1+ndata:(1+dim)*ndata] = reshape(force_ph,(dim*ndata,1))
-	
-	
-	return equi_ph, feature_ph, Target_ph
-end
-
-# ╔═╡ 90decf89-cd90-434f-b41d-4b578ec33bb1
-equi_ph2, feature_ph2, Target_ph2 = phonon_Γ(2, feature, force, Target);
-
-# ╔═╡ be041261-f2ec-4386-95c9-f112afae87c1
+# ╔═╡ 5376a10e-2e55-4fe3-a5cc-010744173274
 begin
 	nd = [1,5,10,15,20,30,40,50,60,80,100,130,160,199]
-	Ecar = zeros((size(nd,1)))
-	Eph = zeros((size(nd,1)))
-	FC2car = zeros(( 48, 48, size(nd,1)))
-	FC2ph = zeros(( 6, 6, size(nd,1)))
+	P2 = zeros(( 48, 48, size(nd,1)))
+	P3= zeros(( 48, 48, size(nd,1)))
+	SumRule2 = zeros((size(nd,1)))
+	SumRule3 = zeros((size(nd,1)))
 end;
 
-# ╔═╡ 23d570cd-2f68-49b2-9aff-f8622dd1126d
-@time for k in 1:size(nd,1)
-	numt1 = nd[k]
-	equi, feature, energy, force, Target = ASEFeatureTarget("feature", "energy", "force", numt1, DIM);
+# ╔═╡ 56182fde-2c9f-4e58-91fe-d37ab537e950
 
-	
-	equi_ph, feature_ph, Target_ph = phonon_Γ(2, feature, force, Target);
-	
+
+# ╔═╡ 85a2ec7d-a95a-4dae-8c12-3ec8a15aa591
+@time for i in 1:size(nd,1)
+	numt1 = nd[i]
+	equi, feature, energy, force, Target = ASEFeatureTarget(
+    "feature_new", "energy_new", "force_new", numt1, DIM);
+
 	Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
-	Kₘₘph = Marginal(feature_ph, kernel, l, σₑ, σₙ);
-	
 	K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
-	K₂ₙₘph = Coveriance_fc2(feature_ph, equi_ph, kernel);
-
-	FC2car[:,:,k] = Posterior(Kₘₘ, K₂ₙₘ, Target);
-	FC2ph[:,:,k] = Posterior(Kₘₘph, K₂ₙₘph, Target_ph);
+	Mp = Posterior(Kₘₘ, K₂ₙₘ, Target);
 	
-	Ecar[k] = abs(sum(FC2car[:,:,k]))
-	Eph[k] = abs(sum(FC2ph[:,:,k]))
-end;
-
-# ╔═╡ 68751bbc-3c67-415e-8f30-86876cb4daf2
-begin
-	 FC2ph_Norm = FC2ph/28.085
-	Eph_Norm = Eph/28.085
-end;
-
-# ╔═╡ 77536d1b-9aa2-4244-94ce-2c141ac8b909
-anim = @animate for i in 1:size(nd,1)
-	scatter(nd[1:i], [Ecar[1:i], Eph_Norm[1:i]],
-		xlabel="Training points",
-		ylabel="Sum of FC2 element",
-		xlim = (-1, 105), 
-		ylim = (-20.0, 700.0),
-		labels = ["Cartesian" "Phonon"],
-		linewidth=3,
-		title="Sum Rule relation (Traning Data = " *string(nd[i]) *")"
-	)
+	P2[:,:,i] = Mp 
+	
+	SumRule2[i] = abs(sum(Mp))
 end
 
-# ╔═╡ cac735ed-50fa-49fc-9fbb-7a93aed273cd
-gif(anim, "Si_FC2_Cart_Phono.gif", fps=2)
-
-# ╔═╡ c308e55c-8203-4a08-9fdd-1b3784b7ceca
-Eph/28.085
-
-# ╔═╡ 6666c8ff-eef9-4eaa-b7ac-68af1e6e888b
-animPh = @animate for i in 1:size(nd,1)
-	heatmap(1:size(FC2ph[:,:,i],1),
-		    1:size(FC2ph[:,:,i],2), FC2ph[:,:,i],
+# ╔═╡ 4eef2368-c125-47c7-881f-ef0a81b4f31c
+animCar = @animate for i in 1:size(nd,1)
+	heatmap(1:size(P2[:,:,i],1),
+		    1:size(P2[:,:,i],2), P2[:,:,i],
 		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
 			aspectratio=:equal,
 			size=(700, 700),
 		    xlabel="feature coord. (n x d)",
 			ylabel="feature coord. (n x d)",
-		    title="Si2 Dynamical matrix (Traning Data = " *string(nd[i]) *")")
+		    title="CdTe_FC2 (Traning Data = " *string(nd[i]) *")")
 end
 
-# ╔═╡ 0d41fb9c-dbfc-4529-88d7-73fda7267540
-gif(animPh, "Si2_Dyn_corr.gif", fps=2)
+# ╔═╡ 398498d2-212c-45f6-885e-5ff206a211cf
+gif(animCar, "CdTe_anim_Car.gif", fps=2)
+
+# ╔═╡ 3b91ee6d-451b-4d76-921a-9c9f6cd15f56
+anim5 = @animate for i in 1:size(nd,1)
+	scatter(nd[1:i], SumRule2[1:i],
+		xlabel="Training points",
+		ylabel="Sum of FC2 element",
+		xlim = (-1, 205), 
+		ylim = (-20.0, 350.0),
+		labels = "Cartesian",
+		linewidth=3,
+		title="Sum Rule relation (Traning Data = " *string(nd[i]) *")"
+	)
+end
+
+# ╔═╡ 4166c0a0-e501-4686-a175-20559ecf4586
+gif(anim5, "CdTe_FC2_CartesianCoord.gif", fps=2)
+
+# ╔═╡ b7657f04-c804-4f94-8700-1b07ad8ef09d
+
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -301,7 +247,7 @@ DataFrames = "~1.6.1"
 DelimitedFiles = "~1.9.1"
 Einsum = "~0.4.1"
 ForwardDiff = "~0.10.36"
-KernelFunctions = "~0.10.58"
+KernelFunctions = "~0.10.60"
 Plots = "~1.39.0"
 Zygote = "~0.6.67"
 """
@@ -312,7 +258,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.3"
 manifest_format = "2.0"
-project_hash = "258d88deb8a09166ba533908a3c52a960e36d54c"
+project_hash = "d442712669f105569e48471438ace450cb493f53"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -787,9 +733,9 @@ version = "2.1.91+0"
 
 [[deps.KernelFunctions]]
 deps = ["ChainRulesCore", "Compat", "CompositionsBase", "Distances", "FillArrays", "Functors", "IrrationalConstants", "LinearAlgebra", "LogExpFunctions", "Random", "Requires", "SpecialFunctions", "Statistics", "StatsBase", "TensorCore", "Test", "ZygoteRules"]
-git-tree-sha1 = "c7f8315aa2e47be568be868bf6892e853bc7f1e1"
+git-tree-sha1 = "d9bcb5ec5205db043f01a35dee0da82eb3fd2afb"
 uuid = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
-version = "0.10.58"
+version = "0.10.60"
 
 [[deps.LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -967,9 +913,9 @@ uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
 [[deps.MbedTLS]]
 deps = ["Dates", "MbedTLS_jll", "MozillaCACerts_jll", "NetworkOptions", "Random", "Sockets"]
-git-tree-sha1 = "f512dc13e64e96f703fd92ce617755ee6b5adf0f"
+git-tree-sha1 = "c067a280ddc25f196b5e7df3877c6b226d390aaf"
 uuid = "739be429-bea8-5141-9913-cc70e7f3736d"
-version = "1.1.8"
+version = "1.1.9"
 
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1045,9 +991,9 @@ uuid = "91d4177d-7536-5919-b921-800302f37372"
 version = "1.3.2+0"
 
 [[deps.OrderedCollections]]
-git-tree-sha1 = "2e73fe17cac3c62ad1aebe70d44c963c3cfdc3e3"
+git-tree-sha1 = "dfdf5519f235516220579f949664f1bf44e741c5"
 uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
-version = "1.6.2"
+version = "1.6.3"
 
 [[deps.PCRE2_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1402,9 +1348,9 @@ version = "1.6.1"
 
 [[deps.XML2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Zlib_jll"]
-git-tree-sha1 = "24b81b59bd35b3c42ab84fa589086e19be919916"
+git-tree-sha1 = "da69178aacc095066bad1f69d2f59a60a1dd8ad1"
 uuid = "02c8fc9c-b97f-50b9-bbe4-9be30ff0a78a"
-version = "2.11.5+0"
+version = "2.12.0+0"
 
 [[deps.XSLT_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgcrypt_jll", "Libgpg_error_jll", "Libiconv_jll", "Pkg", "XML2_jll", "Zlib_jll"]
@@ -1696,23 +1642,20 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═a9a808d0-8a14-11ee-0c32-f5c32904f85d
-# ╠═6567766b-3f5b-4868-a064-a4eb49e4e581
-# ╠═69b7090a-90cf-4531-9fd5-368f0c977063
-# ╠═93033566-b268-4985-9731-2a844a049162
-# ╠═fa011d4d-1397-427c-82c6-a18a2e034e77
-# ╠═597f6184-0914-4c94-9e8d-ce0976553c2f
-# ╠═ed64be33-88a2-400f-983f-d9fcc84ce5e6
-# ╠═c3664750-736d-4e1b-b64f-566b1490d7c5
-# ╠═13acf126-c055-48b5-94cd-4701356874cd
-# ╠═90decf89-cd90-434f-b41d-4b578ec33bb1
-# ╠═be041261-f2ec-4386-95c9-f112afae87c1
-# ╠═23d570cd-2f68-49b2-9aff-f8622dd1126d
-# ╠═68751bbc-3c67-415e-8f30-86876cb4daf2
-# ╠═77536d1b-9aa2-4244-94ce-2c141ac8b909
-# ╠═cac735ed-50fa-49fc-9fbb-7a93aed273cd
-# ╠═c308e55c-8203-4a08-9fdd-1b3784b7ceca
-# ╠═6666c8ff-eef9-4eaa-b7ac-68af1e6e888b
-# ╠═0d41fb9c-dbfc-4529-88d7-73fda7267540
+# ╠═14bb81e0-a998-11ee-126a-819ba01e5582
+# ╠═a364b69e-6e99-4965-aa48-f25748631664
+# ╠═4d642d11-ec27-488c-a6dc-58a10dc7128c
+# ╠═72ce8037-6fca-49a8-84d0-1b5a93449483
+# ╠═e09db44c-f5cf-483c-a76f-48f5fbf389f8
+# ╠═eaca6f36-aa10-4266-9eaf-85840075919b
+# ╠═51b76852-5871-4d15-b1f9-a69522c545b3
+# ╠═5376a10e-2e55-4fe3-a5cc-010744173274
+# ╠═56182fde-2c9f-4e58-91fe-d37ab537e950
+# ╠═85a2ec7d-a95a-4dae-8c12-3ec8a15aa591
+# ╠═4eef2368-c125-47c7-881f-ef0a81b4f31c
+# ╠═398498d2-212c-45f6-885e-5ff206a211cf
+# ╠═3b91ee6d-451b-4d76-921a-9c9f6cd15f56
+# ╠═4166c0a0-e501-4686-a175-20559ecf4586
+# ╠═b7657f04-c804-4f94-8700-1b07ad8ef09d
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
