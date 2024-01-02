@@ -123,6 +123,46 @@ begin
 	#savefig("Dyn_sumrule_log.png")
 end
 
+# ╔═╡ 2ec8477f-58c4-4f3a-8a29-edcb70dbdf3c
+anim = @animate for i in 1:size(nd,1)
+	plot(nd[1:i], [PbTe_FC2[1:i] Si2_FC2[1:i] NaCl_FC2[1:i]],
+		    color = ["#F0BB62" "#6E9A50" "#C64756"],
+			labels = [L"\textbf{PbTe}"*L"\;(\Phi_{2})"  L"\textbf{Si}\;\textbf{bulk}"*L"\;(\Phi_{2})" L"\textbf{NaCl}"*L"\;(\Phi_{2})"],
+			linestyle = :solid,
+			linewidth=1.5
+		)
+
+	scatter!(nd[1:i], [PbTe_FC2[1:i] Si2_FC2[1:i] NaCl_FC2[1:i]],
+		    color = ["#F0BB62" "#6E9A50" "#C64756"],
+			labels = ["" "" ""],
+		)
+
+	plot!(nd[1:i], [PbTe_Dyn[1:i] Si2_Dyn[1:i] NaCl_Dyn[1:i]],
+		    color = ["#F0BB62" "#6E9A50" "#C64756"],
+			labels = [L"\textbf{PbTe}"*L"\;(\mathbf{D}_{\Gamma})" L"\textbf{Si}\;\textbf{bulk}"*L"\;(\mathbf{D}_{\Gamma})" L"\textbf{NaCl}"*L"\;(\mathbf{D}_{\Gamma})"],
+			linestyle = :dash ,
+			linewidth= 2.5
+		)
+
+	scatter!(nd[1:i], [PbTe_Dyn[1:i] Si2_Dyn[1:i] NaCl_Dyn[1:i]],
+			#xlim = (-1, 105), 
+			#ylim = (-0.1, 3.5),
+			xscale=:log10,
+			yscale=:log10,
+		    color = ["#F0BB62" "#6E9A50" "#C64756"],
+			labels = ["" "" ""],
+			#legend = false,
+			linewidth=3,
+			xlabel="Training points",
+			ylabel= "Sum of correlation elements" ,
+			title="Sum Rule Relation (Traning Data = " *string(nd[i]) *")",
+			legend=:bottomleft
+		)
+end
+
+# ╔═╡ 8f733a5a-5e08-44f0-8fb3-6dd27e66cb4e
+gif(anim, "FC2_all.gif", fps=2)
+
 # ╔═╡ 37081e28-ee3b-4fa7-9e8e-6878d855702f
 begin
 	plot(nd, [Si2_FC2 NaCl_FC2 PbTe_FC2],
@@ -137,16 +177,26 @@ begin
 		labels = ""
 	)
 
+<<<<<<< Updated upstream
 	scatter!(nd, [Si2_FC2 NaCl_FC2 PbTe_FC2],
 		    color = ["#F0BB62" "#C64756" "#6E9A50"],
 			labels = ["" "" ""],
+=======
+	scatter!(nd, [PbTe_FC2 Si2_FC2  NaCl_FC2],
+		    color = ["#F0BB62" "#6E9A50" "#C64756"],
+			labels = ["" "" ""]
+>>>>>>> Stashed changes
 		)
 
 	plot!(nd, [Si2_Dyn NaCl_Dyn PbTe_Dyn],
 		    color = ["#F0BB62" "#C64756" "#6E9A50"],
 			labels = [L"\textbf{Si}\;\textbf{bulk}"*L"\;(\mathbf{D}_{\Gamma})" L"\textbf{NaCl}"*L"\;(\mathbf{D}_{\Gamma})" L"\textbf{PbTe}"*L"\;(\mathbf{D}_{\Gamma})"],
 			linestyle = :dash ,
+<<<<<<< Updated upstream
 			linewidth= 1,
+=======
+			linewidth= 2.5
+>>>>>>> Stashed changes
 		)
 
 	scatter!(nd, [Si2_Dyn NaCl_Dyn PbTe_Dyn],
@@ -185,6 +235,33 @@ end
 17.0364
 19.4262
 10.4668]
+
+# ╔═╡ e795ec2a-3598-4840-be6f-fd68f1922c57
+anim2 = @animate for i in 1:size(nd,1)
+	plot(nd[1:i], [PbTe_FC2[1:i] Si2_FC2[1:i] NaCl_FC2[1:i]],
+		    color = ["#F0BB62" "#6E9A50" "#C64756"],
+			labels = [L"\textbf{PbTe}"*L"\;(\Phi_{2})"  L"\textbf{Si}\;\textbf{bulk}"*L"\;(\Phi_{2})" L"\textbf{NaCl}"*L"\;(\Phi_{2})"],
+			linestyle = :solid,
+			linewidth=1.5,
+		)
+
+	scatter!(nd[1:i], [PbTe_FC2[1:i] Si2_FC2[1:i] NaCl_FC2[1:i]],
+		    color = ["#F0BB62" "#6E9A50" "#C64756"],
+			labels = ["" "" ""],
+			xlim = (-1, 205), 
+			ylim = (-20.0, 700.0),
+			#legend = false,
+			linewidth=3,
+			xlabel="Training points",
+			ylabel= "Sum of correlation elements" ,
+			title="Sum Rule Relation (Traning Data = " *string(nd[i]) *")",
+			legend=:topright
+		)
+
+end
+
+# ╔═╡ 9fe84d8c-c81d-43ee-9406-4f25f38352ea
+gif(anim2, "FC2_Cart.gif", fps=2)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1610,7 +1687,11 @@ version = "1.4.1+1"
 # ╠═e6877cc5-a967-4da8-a07d-e9aacebccf02
 # ╠═8487126f-258b-40c0-83ad-5600ced08a06
 # ╠═cea8c5c2-837f-48cf-9fb7-0af50eaae576
+# ╠═2ec8477f-58c4-4f3a-8a29-edcb70dbdf3c
+# ╠═8f733a5a-5e08-44f0-8fb3-6dd27e66cb4e
 # ╠═37081e28-ee3b-4fa7-9e8e-6878d855702f
 # ╠═d4d8f121-7e92-4bca-a2aa-e9ecda546c96
+# ╠═e795ec2a-3598-4840-be6f-fd68f1922c57
+# ╠═9fe84d8c-c81d-43ee-9406-4f25f38352ea
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
