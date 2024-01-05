@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 8bf63602-82ff-11ee-1470-8d2419792464
+# ╔═╡ 41590e60-aafc-11ee-3566-e319964ecef6
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum
@@ -14,7 +14,7 @@ begin
 	using Plots
 end
 
-# ╔═╡ 9a62fef1-3aa3-460f-b07f-dee44f102b45
+# ╔═╡ 842eca1c-f2ff-47db-97fd-beaff1378676
 function kernelfunction(k, x₁, x₂, grad::Int64)
 	function f1st(x₁, x₂) 
 		Zygote.gradient( a -> k(a, x₂), x₁)[1]
@@ -44,7 +44,7 @@ function kernelfunction(k, x₁, x₂, grad::Int64)
 	end
 end
 
-# ╔═╡ 2cb9a181-eefa-48d7-88f8-890ac23adcba
+# ╔═╡ 3e9afcb9-935d-463f-9a42-c1eb5e2fc416
 function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
 	a  = 4 - dimA
 	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
@@ -64,7 +64,7 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 	return equi, feature, energy, force, Target
 end
 
-# ╔═╡ a4b53933-28e4-4754-ade1-8b6219607026
+# ╔═╡ 3287a961-0925-4f76-bd2b-52084edf228a
 function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
 	num = size(X,2)
@@ -90,8 +90,7 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 	end
 
 	Iee = σₑ^2 * Matrix(I, num, num)
-	Iff = σₙ^2 * Matrix(I, dim * num, dim * num)
-	#Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
+	Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
 	Ief = zeros(num, dim * num)
 	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
 
@@ -100,7 +99,7 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 	return Kₘₘ
 end
 
-# ╔═╡ d866792a-f9df-4de3-a8da-53d605b12083
+# ╔═╡ 3a918f1d-0283-490c-b9d1-51b2637983a1
 function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	dim = size(X,1)
 	num = size(X,2)
@@ -124,7 +123,35 @@ function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	return K₂ₙₘ
 end
 
-# ╔═╡ bd5386d0-8ebf-4174-b99a-3b9cb307ee77
+# ╔═╡ ffdb7fb4-9d82-476a-b189-a665a2b272ef
+begin
+	σₒ = 0.05                   # Kernel Scale
+	l = 0.4                	# Length Scale
+	Num = 199                 # Number of training points
+	DIM = 3                     # Dimension of Materials
+	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
+	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
+		
+	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
+end;
+
+# ╔═╡ ae0b852b-69b9-4034-804e-c6d017f460c4
+begin
+		σₑ = 1e-9					# Energy Gaussian noise
+		σₙ = 1e-9                   # Force Gaussian noise for Model 2 (σₑ independent)
+end
+
+# ╔═╡ 380aba15-3adc-46fb-be44-fa271a0daf8e
+equi, feature, energy, force, Target = ASEFeatureTarget(
+    "feature_new", "energy_new", "force_new", Num, DIM);
+
+# ╔═╡ 60e4afc8-75c3-456b-888a-971f1b645a46
+@time Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
+
+# ╔═╡ 3c7b33be-26b3-4b7e-ba1a-7f3ebd4dae43
+@time K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
+
+# ╔═╡ 9d647fde-fbfa-4fe0-87ac-6db5976e0143
 function Posterior(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
 	dimₜ = size(Marginal, 1)
@@ -153,63 +180,10 @@ function Posterior(Marginal, Covariance, Target)
 	return Meanₚ 
 end
 
-# ╔═╡ 67cea097-cdfe-4587-b93f-45af7fce2e94
-begin
-	σₒ = 0.05                  # Kernel Scale
-	l = 0.4				    # Length Scale
-	
-	Num = 199                 # Number of training points
-	DIM = 3                     # Dimension of Materials
-	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
-	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
-		
-	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
-end;
+# ╔═╡ f7530417-6b50-4b51-b9cc-0014b9435402
+ @time FC2 = Posterior(Kₘₘ, K₂ₙₘ, Target);
 
-# ╔═╡ b60e35c0-4ca9-4761-88ec-faf7b209bc90
-begin
-	σₑ = 1e-9 					# Energy Gaussian noise
-	σₙ = 1e-9                   # Force Gaussian noise for Model 2 (σₑ independent)
-end 
-
-# ╔═╡ aeeba1f6-620c-42b4-a91c-9c56a56c234d
-equi, feature, energy, force, Target = ASEFeatureTarget(
-    "feature", "energy", "force", Num, DIM);
-
-# ╔═╡ 6324f904-89da-47e4-bbb9-fbcb63d58881
-@time Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
-
-# ╔═╡ f83eff59-b191-4aae-b999-6a69deec7e6d
-@time K₂ₙₘ = Coveriance_fc2(feature, equi, kernel);
-
-# ╔═╡ 7fa0ad86-6c33-49d3-8c2b-b150d39ca18a
-@time FC2= Posterior(Kₘₘ, K₂ₙₘ, Target);
-
-# ╔═╡ 7f7b136e-8998-4aa3-919a-d1645b867237
-begin
-	FC = FC2
-	natom = Int(size(FC,2)/3)
-	dist_norm = zeros((natom,natom))
-	disp = zeros(size(FC,2))
-	for jj in 1:natom
-		disp[3*(jj-1)+1:3*jj] = equi[3*(jj-1)+1:3*jj]-equi[1:3]
-		for ii in 1:natom
-			dist_norm[ii, jj] = norm(equi[3*(ii-1)+1:3*ii] - equi[3*(jj-1)+1:3*jj])
-		end
-	end
-end
-
-# ╔═╡ 26a1305e-7813-4b11-82eb-d309aebd13ea
-heatmap(1:size(dist_norm[:,:],1),
-	    1:size(dist_norm[:,:],2), dist_norm[:,:],
-	    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
-	    xlabel="feature coord. (n x d)",
-		ylabel="feature coord. (n x d)",
-		aspectratio=:equal,
-		size=(700, 700),
-	    title="PbTe_FC2 (Traning Data = " *string(199) *")" )
-
-# ╔═╡ 9eb8a0cc-683e-4205-867d-c165afe816b0
+# ╔═╡ 2f285a82-133c-41a4-bc8a-3d4e34e13725
 heatmap(1:size(FC2[:,:],1),
 	    1:size(FC2[:,:],2), FC2[:,:],
 	    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
@@ -219,204 +193,7 @@ heatmap(1:size(FC2[:,:],1),
 		size=(700, 700),
 	    title="PbTe_FC2 (Traning Data = " *string(199) *")" )
 
-# ╔═╡ f48875a1-9cba-496f-b5a7-14279768e667
-begin
-	A = collect(1:8)
-	B = [10,20]
-	C = findall(A.<=2)
-	A[C] = B
-end
-
-# ╔═╡ 07ad2546-52cc-49eb-b677-6a18d1965574
-
-
-# ╔═╡ 5a3173f8-317a-47b0-b5c9-6ed7334f212a
-Eq = equi
-
-# ╔═╡ 62d3a97e-86c5-4360-8211-8c02aac384a4
-
-
-# ╔═╡ ec391d1f-e592-43ce-9ac8-c480e0a70157
-FC2[1:3,46:48]
-
-# ╔═╡ c7260c34-8aba-469a-a84c-8e0571697f72
-begin
-	xyz = [[ 1 0 0 ]
-		   [ 0 1 0 ]	
-	       [ 0 0 1 ]]
-	x1yz =[[ 1 0 0 ]
-		   [ 0 -1 0 ]	
-		   [ 0 0 -1]]
-	xy1z =[[-1 0 0 ]
-		   [ 0 1 0 ]	
-		   [ 0 0 -1]]
-	xyz1 =[[-1 0 0 ]
-		   [ 0 -1 0]	
-		   [ 0 0 1 ]]
-	
-	zxy = [[ 0 0 1 ]
-		   [ 1 0 0 ]	
-		   [ 0 1 0 ]]
-	zxy1 =[[ 0 0 -1 ]
-		   [-1 0 0 ]	
-		   [ 0 1 0 ]]
-	z1xy = [[ 0 0 1 ]
-		   [-1 0 0 ]	
-		   [ 0 -1 0 ]]
-	zx1y =[[ 0 0 -1 ]
-		   [ 1 0 0 ]	
-		   [ 0 -1 0 ]]
-	
-	yzx = [[ 0 1 0 ]
-		  [ 0 0 1 ]	
-		  [ 1 0 0 ]]
-	yzx1 = [[ 0 -1 0 ]
-		    [ 0 0 -1 ]	
-		    [ 1 0 0 ]]
-	yz1x = [[ 0 -1 0 ]
-		    [ 0 0 1 ]	
-		    [ -1 0 0 ]]
-	y1zx = [[ 0 1 0 ]
-		    [ 0 0 -1 ]	
-		    [ -1 0 0 ]]
-
-	xzy = [[ 1 0 0 ]
-		   [ 0 0 1 ]	
-		   [ 0 1 0 ]]
-	xzy1 = [[ -1 0 0 ]
-		    [ 0 0 -1 ]	
-		    [ 0 1 0 ]]
-	xz1y = [[ -1 0 0 ]
-		    [ 0 0 1 ]	
-		    [ 0 -1 0 ]]
-	x1zy = [[ 1 0 0 ]
-		    [ 0 0 -1 ]	
-		    [ 0 -1 0 ]]
-
-	zyx = [[ 0 1 0 ]
-		   [ 1 0 0 ]	
-		   [ 0 0 1 ]]
-	zyx1 = [[ 0 -1 0 ]
-		    [ -1 0 0 ]	
-		    [ 0 0 1 ]]
-	zy1x = [[ 0 -1 0 ]
-		    [ 1 0 0 ]	
-		    [ 0 0 -1 ]]
-	z1yx = [[ 0 1 0 ]
-		    [ -1 0 0 ]	
-		    [ 0 0 -1 ]]
-	
-	yxz = [[ 0 0 1 ]
-		   [ 0 1 0 ]	
-		   [ 1 0 0 ]]
-	yxz1 = [[ 0 0 -1 ]
-		    [ 0 -1 0 ]	
-		    [ 1 0 0 ]]
-	yx1z = [[ 0 0 -1 ]
-		    [ 0 1 0 ]	
-		    [ -1 0 0 ]]
-	y1xz = [[ 0 0 1 ]
-		    [ 0 -1 0 ]	
-		    [ -1 0 0 ]]
-end;
-
-# ╔═╡ 6af7135f-49d8-4134-a7e6-73397ac6fa41
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	Fequi_new = zeros(size(disp,1))
-	for ii in 1:Int(size(disp,1)/3)
-			if i == 1
-				Fequi_new[3*(ii-1)+1:3*ii] = [0.0,0.0,0.0]
-			else
-				for sym in 1:size(S,1)
-					if 
-					else
-					end
-				end
-			
-				for jj in 1:Int(size(disp,1)/3)
-					for sym in 1:size(S,1)
-						if S[]
-
-	s = []
-	push!(s,a)
-	push!(s,b)
-	s[2]
-						
-end
-  ╠═╡ =#
-
-# ╔═╡ edfc8dc9-1bdc-4236-a7d6-95e652a2b2d1
-S = [e, a, b, c, d, f];
-
-# ╔═╡ c73df96f-7791-4744-89ed-c334a0011f5f
-function AnaForce(FC2,disp)
-	Fequi = FC2*disp
-	sum_error = sum(Fequi)
-	return Fequi
-end
-
-# ╔═╡ ee528e53-a553-4257-8854-42e341138925
-ii = 7
-
-# ╔═╡ ed850dd2-1b80-4bc7-bb01-deb40d884e84
-disp[3*(ii-1)+1:3*ii]
-
-# ╔═╡ 18f2d264-6116-4847-aa59-2210e49765a8
-disp[3*(ii-1)+1:3*ii]
-
-# ╔═╡ 526bf3e2-9c89-4e2d-be91-718117940ea8
-norm(disp[3*(ii-1)+1:3*ii])
-
-# ╔═╡ bb8ecc08-b165-469b-b1f9-490c352ee8e5
-AnaForce(FC2, disp)[3*(ii-1)+1:3*ii]
-
-# ╔═╡ ac8e331b-bd9c-4170-8fd4-d349881038cb
-
-
-# ╔═╡ ed0cd8d1-4a37-4e2a-8ae5-960dd24563de
-FC2[3*(ii-1)+1:3*ii,1:3]
-
-# ╔═╡ 91b2cdd2-a797-4d92-982f-06aa4a63e705
-xyz3'*FC2[3*(ii-1)+1:3*ii,1:3]*xyz3
-
-# ╔═╡ 487abe49-9d23-4293-8abd-3404911f19c2
-F = AnaForce(FC2, disp)
-
-# ╔═╡ bd69628b-fddd-4b1b-9dbe-c374ebb5f68f
-begin
-	F4 = (F[22:24] + a*F[34:36] + d*F[40:42])/3 
-end
-
-# ╔═╡ 06e9934f-45d3-48bb-8507-b4c153f37177
-F[1:3]
-
-# ╔═╡ 4c0bc5a9-a179-4117-8efc-247b3c0faa77
-F[46:48]
-
-# ╔═╡ 8fa4a7c0-33f5-4b4c-a6c2-3482aa0ee78e
-F[34:36] 
-
-# ╔═╡ de58d9c2-8427-40dc-9f94-c47d2b58a3f2
-F[40:42] 
-
-# ╔═╡ 28204730-e609-490d-8dd5-635b1ea05de2
-b*F[7:9] 
-
-# ╔═╡ c94daf21-0f3b-4f12-a28f-5d879d0b5f61
-size(disp,1)
-
-# ╔═╡ 22653b3c-a42e-4f97-83a7-a9284c091515
-(0.367388+0.634668+1.57297-0.433645+0.275849+0.703151)/6
-
-# ╔═╡ 08468539-392b-4bfd-bfa7-20445126d502
-ForwardDiff.jacobian( a -> AnaForce(FC2[3*(ii-1)+1:3*ii,1:3], a), disp[3*(ii-1)+1:3*ii])
-
-# ╔═╡ eeb30f38-47b1-4b15-92ca-77eca59d96f9
-ForwardDiff.jacobian( a -> AnaForce(FC2, a), disp);
-
-# ╔═╡ 7bcd1233-5d85-4ee4-9bc7-b5a2755621d3
+# ╔═╡ a4b4a5d0-7e3c-4e34-a462-16b85a4d9482
 function recon_FC2(FC2)
 	FC2_re = zeros(3,3,Int(size(FC2,1)/3),Int(size(FC2,1)/3));
 	for i in 1:Int(size(FC2,1)/3)
@@ -427,99 +204,11 @@ function recon_FC2(FC2)
 	return FC2_re
 end
 
-# ╔═╡ 86449827-aa4c-43c5-83f5-b9e142ab5af8
+# ╔═╡ a21a8666-e747-4090-a4e4-3f191e4a9d09
 FC2_re = recon_FC2(FC2)
 
-# ╔═╡ 068daed7-d5ad-48ac-9d4c-6ecb8861a392
-FC2_re
-
-# ╔═╡ 36b89843-e274-4c8a-8b9a-178dc402122d
-sum(FC2_re)
-
-# ╔═╡ 0b7506d2-20fb-4555-a34b-b4253d70ba66
-begin
-	FC2_re[ 0.0 .< FC2_re .< 6.5e-2 ] .= 0.0
-	FC2_re[ 0.0 .> FC2_re .> -6.5e-2 ] .= 0.0
-end
-
-# ╔═╡ 28e01172-26ac-4038-9331-b54a92ca0f9b
-FC2_re 
-
-# ╔═╡ 3c9e4221-6d45-467e-b541-b027c9453f21
-FC2_re[:,:,1,10]
-
-# ╔═╡ 05fd6622-8337-4bbf-b4f8-0998d0a9702c
-vec(FC2)
-
-# ╔═╡ cf11b5b5-e475-48a2-a8b7-8367a770c749
-begin
-	atom1 = Eq[4:6]-Eq[4:6]
-	atom2 = Eq[1:3]-Eq[4:6]
-end;
-
-# ╔═╡ 93cc73b9-1547-48db-9057-5d8333e3939b
-begin
-	iii = 4
-	D1 = Eq[3*(iii-1)+1:3*iii]-Eq[4:6]
-end
-
-# ╔═╡ 07bb500e-322b-4b6e-b8aa-d862d270494e
-FC2_re[:,:,iii,2]
-
-# ╔═╡ 482735d4-c695-4a33-aa40-27b5fdb6427e
-z1xy
-
-# ╔═╡ 0c7fa787-28e1-42c7-a86a-cb7e772e4710
-(D1-atom2)-atom2 - zxy1*((D1-atom2)-atom2)
-
-# ╔═╡ e039addc-e21a-4b9b-8649-78c47b8b1cb1
-(D1-atom2)-atom2-atom2-atom2
-
-# ╔═╡ acb6095c-3fce-4ebd-8fa3-c96f69f9857a
-zxy1*((D1-atom2)-atom2)
-
-# ╔═╡ dcc54e8e-596a-4ebc-9c5d-825e5a548d64
-begin
-	jjj = 14
-	D2 = Eq[3*(jjj-1)+1:3*jjj]-Eq[4:6]
-end
-
-# ╔═╡ e5d11bc7-08da-48c4-89be-95822bf7a941
-(xyz'*FC2_re[:,:,iii,2]*xyz+
-zx1y'*FC2_re[:,:,iii,2]*zx1y+
-y1zx'*FC2_re[:,:,jjj,2]*y1zx+
-x1zy'*FC2_re[:,:,iii,2]*x1zy+
-zyx'*FC2_re[:,:,iii,2]*zyx+
-yx1z'*FC2_re[:,:,iii,2]*yx1z)/6
-
-# ╔═╡ 02ce2fd8-1da5-4844-90d4-fe749fc2cc6e
-sum(FC2)
-
-# ╔═╡ 3f13f112-699c-4aea-9287-bf5e27b7a19d
-FC2_re[:,:,jjj,2]
-
-# ╔═╡ 4f164aa0-27dd-47b6-9ce6-e40a18732f91
-zx1y
-
-# ╔═╡ c91a9df8-f227-4aa0-8153-934242153356
-zyx
-
-# ╔═╡ 08baec16-4b83-4c71-9aed-10eaaeb70457
-
-
-# ╔═╡ 189d9612-48b5-45cd-9879-f4e1220b1f4b
-zyx'*FC2_re[:,:,iii,2]*zyx
-
-# ╔═╡ 332d1db8-c898-4880-b067-fd05a89341cb
-SMat = [[0.0 2.71791 2.71791]
-		[2.71791 0.0 2.71791]
-		[2.71791 2.71791 0.0]]
-
-# ╔═╡ 682ecab4-a4d1-4aec-9eff-80784bf41283
-D2 - D1
-
-# ╔═╡ dfa88cfa-251b-452c-af26-afd8bb20a08a
-
+# ╔═╡ 6acd2c22-30a5-4fd5-bc89-a901b86711c6
+FC2_re[:,:,2,13]
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -540,7 +229,7 @@ DataFrames = "~1.6.1"
 DelimitedFiles = "~1.9.1"
 Einsum = "~0.4.1"
 ForwardDiff = "~0.10.36"
-KernelFunctions = "~0.10.58"
+KernelFunctions = "~0.10.60"
 Plots = "~1.39.0"
 Zygote = "~0.6.67"
 """
@@ -551,7 +240,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.3"
 manifest_format = "2.0"
-project_hash = "258d88deb8a09166ba533908a3c52a960e36d54c"
+project_hash = "d442712669f105569e48471438ace450cb493f53"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -1026,9 +715,9 @@ version = "2.1.91+0"
 
 [[deps.KernelFunctions]]
 deps = ["ChainRulesCore", "Compat", "CompositionsBase", "Distances", "FillArrays", "Functors", "IrrationalConstants", "LinearAlgebra", "LogExpFunctions", "Random", "Requires", "SpecialFunctions", "Statistics", "StatsBase", "TensorCore", "Test", "ZygoteRules"]
-git-tree-sha1 = "c7f8315aa2e47be568be868bf6892e853bc7f1e1"
+git-tree-sha1 = "d9bcb5ec5205db043f01a35dee0da82eb3fd2afb"
 uuid = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
-version = "0.10.58"
+version = "0.10.60"
 
 [[deps.LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1056,9 +745,9 @@ version = "6.4.0"
 
 [[deps.LLVMExtra_jll]]
 deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
-git-tree-sha1 = "a84f8f1e8caaaa4e3b4c101306b9e801d3883ace"
+git-tree-sha1 = "98eaee04d96d973e79c25d49167668c5c8fb50e2"
 uuid = "dad2f222-ce93-54a1-a47d-0025e8a3acab"
-version = "0.0.27+0"
+version = "0.0.27+1"
 
 [[deps.LLVMOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1206,9 +895,9 @@ uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
 [[deps.MbedTLS]]
 deps = ["Dates", "MbedTLS_jll", "MozillaCACerts_jll", "NetworkOptions", "Random", "Sockets"]
-git-tree-sha1 = "f512dc13e64e96f703fd92ce617755ee6b5adf0f"
+git-tree-sha1 = "c067a280ddc25f196b5e7df3877c6b226d390aaf"
 uuid = "739be429-bea8-5141-9913-cc70e7f3736d"
-version = "1.1.8"
+version = "1.1.9"
 
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1284,9 +973,9 @@ uuid = "91d4177d-7536-5919-b921-800302f37372"
 version = "1.3.2+0"
 
 [[deps.OrderedCollections]]
-git-tree-sha1 = "2e73fe17cac3c62ad1aebe70d44c963c3cfdc3e3"
+git-tree-sha1 = "dfdf5519f235516220579f949664f1bf44e741c5"
 uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
-version = "1.6.2"
+version = "1.6.3"
 
 [[deps.PCRE2_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1366,10 +1055,10 @@ uuid = "21216c6a-2e73-6563-6e65-726566657250"
 version = "1.4.1"
 
 [[deps.PrettyTables]]
-deps = ["Crayons", "LaTeXStrings", "Markdown", "Printf", "Reexport", "StringManipulation", "Tables"]
-git-tree-sha1 = "6842ce83a836fbbc0cfeca0b5a4de1a4dcbdb8d1"
+deps = ["Crayons", "LaTeXStrings", "Markdown", "PrecompileTools", "Printf", "Reexport", "StringManipulation", "Tables"]
+git-tree-sha1 = "3f43c2aae6aa4a2503b05587ab74f4f6aeff9fd0"
 uuid = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
-version = "2.2.8"
+version = "2.3.0"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -1641,9 +1330,9 @@ version = "1.6.1"
 
 [[deps.XML2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Zlib_jll"]
-git-tree-sha1 = "24b81b59bd35b3c42ab84fa589086e19be919916"
+git-tree-sha1 = "da69178aacc095066bad1f69d2f59a60a1dd8ad1"
 uuid = "02c8fc9c-b97f-50b9-bbe4-9be30ff0a78a"
-version = "2.11.5+0"
+version = "2.12.0+0"
 
 [[deps.XSLT_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgcrypt_jll", "Libgpg_error_jll", "Libiconv_jll", "Pkg", "XML2_jll", "Zlib_jll"]
@@ -1935,74 +1624,21 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═8bf63602-82ff-11ee-1470-8d2419792464
-# ╠═9a62fef1-3aa3-460f-b07f-dee44f102b45
-# ╠═2cb9a181-eefa-48d7-88f8-890ac23adcba
-# ╠═a4b53933-28e4-4754-ade1-8b6219607026
-# ╠═d866792a-f9df-4de3-a8da-53d605b12083
-# ╠═bd5386d0-8ebf-4174-b99a-3b9cb307ee77
-# ╠═67cea097-cdfe-4587-b93f-45af7fce2e94
-# ╠═b60e35c0-4ca9-4761-88ec-faf7b209bc90
-# ╠═aeeba1f6-620c-42b4-a91c-9c56a56c234d
-# ╠═6324f904-89da-47e4-bbb9-fbcb63d58881
-# ╠═f83eff59-b191-4aae-b999-6a69deec7e6d
-# ╠═7fa0ad86-6c33-49d3-8c2b-b150d39ca18a
-# ╠═7f7b136e-8998-4aa3-919a-d1645b867237
-# ╠═26a1305e-7813-4b11-82eb-d309aebd13ea
-# ╠═9eb8a0cc-683e-4205-867d-c165afe816b0
-# ╠═068daed7-d5ad-48ac-9d4c-6ecb8861a392
-# ╠═f48875a1-9cba-496f-b5a7-14279768e667
-# ╠═36b89843-e274-4c8a-8b9a-178dc402122d
-# ╠═07ad2546-52cc-49eb-b677-6a18d1965574
-# ╠═5a3173f8-317a-47b0-b5c9-6ed7334f212a
-# ╠═62d3a97e-86c5-4360-8211-8c02aac384a4
-# ╠═ec391d1f-e592-43ce-9ac8-c480e0a70157
-# ╠═c7260c34-8aba-469a-a84c-8e0571697f72
-# ╠═6af7135f-49d8-4134-a7e6-73397ac6fa41
-# ╠═edfc8dc9-1bdc-4236-a7d6-95e652a2b2d1
-# ╠═c73df96f-7791-4744-89ed-c334a0011f5f
-# ╠═ed850dd2-1b80-4bc7-bb01-deb40d884e84
-# ╠═ee528e53-a553-4257-8854-42e341138925
-# ╠═18f2d264-6116-4847-aa59-2210e49765a8
-# ╠═526bf3e2-9c89-4e2d-be91-718117940ea8
-# ╠═bb8ecc08-b165-469b-b1f9-490c352ee8e5
-# ╠═ac8e331b-bd9c-4170-8fd4-d349881038cb
-# ╠═ed0cd8d1-4a37-4e2a-8ae5-960dd24563de
-# ╠═91b2cdd2-a797-4d92-982f-06aa4a63e705
-# ╠═487abe49-9d23-4293-8abd-3404911f19c2
-# ╠═bd69628b-fddd-4b1b-9dbe-c374ebb5f68f
-# ╠═06e9934f-45d3-48bb-8507-b4c153f37177
-# ╠═4c0bc5a9-a179-4117-8efc-247b3c0faa77
-# ╠═8fa4a7c0-33f5-4b4c-a6c2-3482aa0ee78e
-# ╠═de58d9c2-8427-40dc-9f94-c47d2b58a3f2
-# ╠═28204730-e609-490d-8dd5-635b1ea05de2
-# ╠═c94daf21-0f3b-4f12-a28f-5d879d0b5f61
-# ╠═22653b3c-a42e-4f97-83a7-a9284c091515
-# ╠═08468539-392b-4bfd-bfa7-20445126d502
-# ╠═eeb30f38-47b1-4b15-92ca-77eca59d96f9
-# ╠═7bcd1233-5d85-4ee4-9bc7-b5a2755621d3
-# ╠═86449827-aa4c-43c5-83f5-b9e142ab5af8
-# ╠═0b7506d2-20fb-4555-a34b-b4253d70ba66
-# ╠═28e01172-26ac-4038-9331-b54a92ca0f9b
-# ╠═3c9e4221-6d45-467e-b541-b027c9453f21
-# ╠═05fd6622-8337-4bbf-b4f8-0998d0a9702c
-# ╠═cf11b5b5-e475-48a2-a8b7-8367a770c749
-# ╠═93cc73b9-1547-48db-9057-5d8333e3939b
-# ╠═07bb500e-322b-4b6e-b8aa-d862d270494e
-# ╠═482735d4-c695-4a33-aa40-27b5fdb6427e
-# ╠═0c7fa787-28e1-42c7-a86a-cb7e772e4710
-# ╠═e039addc-e21a-4b9b-8649-78c47b8b1cb1
-# ╠═acb6095c-3fce-4ebd-8fa3-c96f69f9857a
-# ╠═e5d11bc7-08da-48c4-89be-95822bf7a941
-# ╠═dcc54e8e-596a-4ebc-9c5d-825e5a548d64
-# ╠═02ce2fd8-1da5-4844-90d4-fe749fc2cc6e
-# ╠═3f13f112-699c-4aea-9287-bf5e27b7a19d
-# ╠═4f164aa0-27dd-47b6-9ce6-e40a18732f91
-# ╠═c91a9df8-f227-4aa0-8153-934242153356
-# ╠═08baec16-4b83-4c71-9aed-10eaaeb70457
-# ╠═189d9612-48b5-45cd-9879-f4e1220b1f4b
-# ╠═332d1db8-c898-4880-b067-fd05a89341cb
-# ╠═682ecab4-a4d1-4aec-9eff-80784bf41283
-# ╠═dfa88cfa-251b-452c-af26-afd8bb20a08a
+# ╠═41590e60-aafc-11ee-3566-e319964ecef6
+# ╠═842eca1c-f2ff-47db-97fd-beaff1378676
+# ╠═3e9afcb9-935d-463f-9a42-c1eb5e2fc416
+# ╠═3287a961-0925-4f76-bd2b-52084edf228a
+# ╠═3a918f1d-0283-490c-b9d1-51b2637983a1
+# ╠═ffdb7fb4-9d82-476a-b189-a665a2b272ef
+# ╠═ae0b852b-69b9-4034-804e-c6d017f460c4
+# ╠═380aba15-3adc-46fb-be44-fa271a0daf8e
+# ╠═60e4afc8-75c3-456b-888a-971f1b645a46
+# ╠═3c7b33be-26b3-4b7e-ba1a-7f3ebd4dae43
+# ╠═9d647fde-fbfa-4fe0-87ac-6db5976e0143
+# ╠═f7530417-6b50-4b51-b9cc-0014b9435402
+# ╠═2f285a82-133c-41a4-bc8a-3d4e34e13725
+# ╠═a4b4a5d0-7e3c-4e34-a462-16b85a4d9482
+# ╠═a21a8666-e747-4090-a4e4-3f191e4a9d09
+# ╠═6acd2c22-30a5-4fd5-bc89-a901b86711c6
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

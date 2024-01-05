@@ -126,10 +126,7 @@ end
 # ╔═╡ 4606ae8d-59f7-4a2d-ab69-e0cd94db25d4
 begin
 	σₒ = 0.05                   # Kernel Scale
-	l = 0.41                	# Length Scale
-	σₑ = 1e-5 					# Energy Gaussian noise
-	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
-		
+	l = 0.4                	# Length Scale
 	Num = 199                 # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
@@ -137,6 +134,12 @@ begin
 		
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
+
+# ╔═╡ 66530c3e-1581-430c-a10f-eeba68af7668
+begin
+		σₑ = 1e-9					# Energy Gaussian noise
+		σₙ = 1e-9                   # Force Gaussian noise for Model 2 (σₑ independent)
+end
 
 # ╔═╡ bd1d21d4-37ae-457d-8c50-ed7e2eaaa3ad
 equi, feature, energy, force, Target = ASEFeatureTarget(
@@ -178,7 +181,64 @@ function Posterior(Marginal, Covariance, Target)
 end
 
 # ╔═╡ af00b45c-6eb4-4d56-819c-77d724b8d69f
-FC2= Posterior(Kₘₘ, K₂ₙₘ, Target);
+ FC2 = Posterior(Kₘₘ, K₂ₙₘ, Target);
+
+# ╔═╡ 4cb13abf-9f69-4f0b-b60d-832c71b0768a
+heatmap(1:size(FC2[:,:],1),
+	    1:size(FC2[:,:],2), FC2[:,:],
+	    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
+	    xlabel="feature coord. (n x d)",
+		ylabel="feature coord. (n x d)",
+		aspectratio=:equal,
+		size=(700, 700),
+	    title="PbTe_FC2 (Traning Data = " *string(199) *")" )
+
+# ╔═╡ 095d3e71-b000-4eb8-9d45-1533a38a7946
+function recon_FC2(FC2)
+	FC2_re = zeros(3,3,Int(size(FC2,1)/3),Int(size(FC2,1)/3));
+	for i in 1:Int(size(FC2,1)/3)
+		for j in 1:Int(size(FC2,1)/3)
+			FC2_re[:,:,i,j] = FC2[3*(i-1)+1:3*i,3*(j-1)+1:3*j]
+		end
+	end
+	return FC2_re
+end
+
+# ╔═╡ cbba067b-5cb6-455d-bf7c-6d0089d6e472
+FC2_re = recon_FC2(FC2)
+
+# ╔═╡ 235e1bb8-5cae-402f-8bdf-d71f0236fbe2
+FC2_re2 = FC2_re;
+
+# ╔═╡ 44d883dc-fdcc-47e0-a542-d78694e42c4b
+FC2_re2[:,:,2,11:16]
+
+# ╔═╡ 2422edea-6d7c-40eb-8a8f-9f9f5c8a7bf9
+FC2_re2[:,:,8,9:10]
+
+# ╔═╡ b4a1863e-90dc-4cbd-9d26-b4f54034483c
+FC2_re2[:,:,1,15]
+
+# ╔═╡ 620ace3d-978b-420b-a535-7b683e59e966
+begin
+	FC2_re[ 0.0 .< FC2_re .< 5.e-2 ] .= 0.0
+	FC2_re[ 0.0 .> FC2_re .> -5.e-2 ] .= 0.0
+end
+
+# ╔═╡ 13d42a5b-11b4-403a-8306-3142dc444cd1
+FC2_re
+
+# ╔═╡ 50af58d8-ab90-4e03-b24d-33633c5dd4ac
+FC2_re[:,:,2,1]
+
+# ╔═╡ ae8a07f2-636a-47f7-afb8-2b5d2d4d6966
+
+
+# ╔═╡ f5e15861-b85b-4d95-be82-87fb022464ac
+begin
+	ii = 14
+	FC2[4:6, 3*(ii-1)+1:3*ii]
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1600,10 +1660,23 @@ version = "1.4.1+1"
 # ╠═a0a0bf33-72d9-4ff6-b4ff-53c0b71fa2d4
 # ╠═6f40d5b4-3b54-4662-a33d-76a08b0051e7
 # ╠═4606ae8d-59f7-4a2d-ab69-e0cd94db25d4
+# ╠═66530c3e-1581-430c-a10f-eeba68af7668
 # ╠═bd1d21d4-37ae-457d-8c50-ed7e2eaaa3ad
 # ╠═9233b8f8-9d6d-4d31-bd0c-22005827b967
 # ╠═da2075bf-7aca-454f-a760-a945340ef5e5
 # ╠═37ae8729-58e9-4c97-b222-b81a744b3b69
 # ╠═af00b45c-6eb4-4d56-819c-77d724b8d69f
+# ╠═4cb13abf-9f69-4f0b-b60d-832c71b0768a
+# ╠═095d3e71-b000-4eb8-9d45-1533a38a7946
+# ╠═cbba067b-5cb6-455d-bf7c-6d0089d6e472
+# ╠═235e1bb8-5cae-402f-8bdf-d71f0236fbe2
+# ╠═44d883dc-fdcc-47e0-a542-d78694e42c4b
+# ╠═2422edea-6d7c-40eb-8a8f-9f9f5c8a7bf9
+# ╠═b4a1863e-90dc-4cbd-9d26-b4f54034483c
+# ╠═620ace3d-978b-420b-a535-7b683e59e966
+# ╠═13d42a5b-11b4-403a-8306-3142dc444cd1
+# ╠═50af58d8-ab90-4e03-b24d-33633c5dd4ac
+# ╠═ae8a07f2-636a-47f7-afb8-2b5d2d4d6966
+# ╠═f5e15861-b85b-4d95-be82-87fb022464ac
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
