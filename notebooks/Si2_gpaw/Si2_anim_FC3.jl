@@ -153,10 +153,7 @@ end
 # ╔═╡ 215ba672-6767-43d5-83bf-f209ea756902
 begin
 	σₒ = 0.05                  # Kernel Scale
-	l = 0.4				    # Length Scale
-	σₑ = 1e-5 					# Energy Gaussian noise
-	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
-		
+	l = 0.4				    # Length Scale		
 	Num = 199                 # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
@@ -164,6 +161,10 @@ begin
 		
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
+
+# ╔═╡ eb6097cb-7fa0-4ad1-b422-e899c453ed53
+	σₑ = 1e-9					# Energy Gaussian noise
+	σₙ = 1e-9                  # Force Gaussian noise for Model 2 (σₑ independent)
 
 # ╔═╡ 053db0a4-70af-43ca-85a4-b4944c1cbb82
 begin
@@ -1615,6 +1616,7 @@ version = "1.4.1+1"
 # ╠═dbe46cff-33b3-4322-8853-f08d72fe95f2
 # ╠═1d1e2654-5415-49a4-944f-218d6e3ad31a
 # ╠═215ba672-6767-43d5-83bf-f209ea756902
+# ╠═eb6097cb-7fa0-4ad1-b422-e899c453ed53
 # ╠═053db0a4-70af-43ca-85a4-b4944c1cbb82
 # ╠═957087d5-1e07-4aab-839b-c6427b7f3c53
 # ╠═ed69b0c2-d648-4036-9e24-9fd90170057f
