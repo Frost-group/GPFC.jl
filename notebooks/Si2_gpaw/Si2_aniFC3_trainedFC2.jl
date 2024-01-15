@@ -16,10 +16,10 @@ end
 
 # ╔═╡ 7f470cbe-b81d-492b-9d79-c7aaa4f5b3c4
 begin
-	σₒ = 0.05                  # Kernel Scale
-	l = 0.4				    # Length Scale
+	σₒ = 0.05                   # Kernel Scale
+	l = 0.4				        # Length Scale
 		
-	Num = 199                 # Number of training points
+	Num = 5                     # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
 	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
@@ -34,21 +34,35 @@ begin
 	σ₂₂ = 1e-9
 end
 
-# ╔═╡ 035b1212-ce05-4075-8c79-35998b3eb4ba
+# ╔═╡ 00b497b7-1509-4bb5-bf9b-3f60a909d74f
+x = rand(Float64, (48,1))
+
+# ╔═╡ fdbac4cf-face-4497-8543-f8e4e20ee997
+
+
+# ╔═╡ 79ac0fa7-dad8-4a1b-8c85-ec0c28c64c86
+# ╠═╡ disabled = true
+#=╠═╡
 begin
-	function kernelfunction1(x₁, x₂)
-		return Zygote.gradient( a -> kernel(a, x₂), x₁)[1]
-	end
-	function kernelfunction2(x₁, x₂)
-		return Zygote.hessian(a -> kernel(a, x₂), x₁)
-	end
-	function kernelfunction3(x₁, x₂)
-		return ForwardDiff.jacobian(a -> kernelfunction2(a, x₂), x₁)
-	end
-	function kernelfunction4(x₁, x₂)
-		return ForwardDiff.jacobian(a -> kernelfunction3(a, x₂), x₁)
-	end
+	x = reshape(equi, (size(equi,1),1))
+	dimx = (size(x, 1))
+	reshape(ForwardDiff.jacobian(a -> reshape(kernelfunction4(a, x), 
+		(dimx, dimx, dimx, dimx)), x),
+			(dimx, dimx, dimx, dimx, dimx)
+		)
 end
+  ╠═╡ =#
+
+# ╔═╡ d759d6ad-3bf9-4b1c-8d40-7b44cc3366f6
+
+
+# ╔═╡ 639d31cd-2d6b-4115-bb66-b729c5bbc860
+#=╠═╡
+kernelfunction4(x, x)
+  ╠═╡ =#
+
+# ╔═╡ 2b9632be-2444-4629-a6e1-1b206faa6a01
+
 
 # ╔═╡ 30aff3a4-1d47-4e14-af78-e5562e55c640
 function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
@@ -74,52 +88,221 @@ end
 equi, feature, energy, force, Target = ASEFeatureTarget(
     "feature_new", "energy_new", "force_new", Num, DIM);
 
+# ╔═╡ 3ee87ab2-32ca-4c6b-8d98-a863ba7b428b
+dimx = size(equi, 1)
+
+# ╔═╡ 035b1212-ce05-4075-8c79-35998b3eb4ba
+begin
+	function kernelfunction1(x₁, x₂)
+		return Zygote.gradient(a -> kernel(a, x₂), x₁)[1]
+	end
+	function kernelfunction2(x₁, x₂)
+		return reshape(
+			ForwardDiff.jacobian(
+				a -> kernelfunction1(a, x₂),
+				x₁), (dimx, dimx)
+		)
+	end
+	function kernelfunction3(x₁, x₂)
+		return reshape(
+			ForwardDiff.jacobian(
+				a -> kernelfunction2(a, x₂),
+				x₁), (dimx, dimx, dimx)
+		)
+	end
+	function kernelfunction4(x₁, x₂)
+		return reshape(
+			ForwardDiff.jacobian(
+				a -> kernelfunction3(a, x₂),
+				x₁), (dimx, dimx, dimx, dimx)
+		)
+	end
+end
+
+# ╔═╡ b864979f-a227-4628-a871-c8967a633b0c
+kernelfunction4(x, x)
+
+# ╔═╡ 042a6eb1-026a-4d5d-8775-7b4bbe8b4420
+function kernelfunction5(x₁, x₂)
+		return ForwardDiff.jacobian(a ->
+				kernelfunction4(x₁, a),
+			x₂)
+end
+
+# ╔═╡ 315866a7-7681-4e08-a98d-613367dc5777
+kernelfunction5(feature[:,1], feature[:,2])
+
+# ╔═╡ 7ad0a49b-d851-4499-888e-34583dbe7a34
+reshape(equi, (size(equi,1),1))
+
 # ╔═╡ 7b077cec-b14f-11ee-1aa7-6da23bee7499
 function Marginal(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64, σ₂₂::Float64)
 	dim = size(X,1)
 	num = size(X,2)
 	#building Marginal Likelihood containers
 	#For Energy + Force
-	KK = zeros(((1 + dim)*num + dim^2, (1 + dim)*num + dim^2))
+	KK = zeros(((1 + dim) * num + dim^2, (1 + dim) * num + dim^2))
 	
 	for i in 1:num 
 		for j in 1:num 
 		#Fillin convarian of Energy vs Energy
 			KK[i, j] = kernel(X[:,i], X[:,j])
+			
 		#Fillin convarian of Force vs Energy
 			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction1(X[:,i], X[:,j])
-		#Fillin convarian of Energy vs Force	
-			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]
+			
+			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]'
+			
 		#Fillin convarian of Force vs Force
 			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -kernelfunction2(X[:,i], X[:,j])		
+
+		#Fillin convarian of FC2 vs energy
+			KK[(1 + dim) * num + 1: (1 + dim) * num + dim^2, j] = reshape(kernelfunction2(X[:,1], X[:,j]), (dim^2,1))
+		
+			KK[i, (1 + dim) * num + 1: (1 + dim) * num + dim^2] = KK[(1 + dim) * num + 1: (1 + dim) * num + dim^2, j]'
+			
+		#Fillin convarian of FC2 vs Force
+			KK[(1 + dim) * num + 1: (1 + dim) * num + dim^2, (num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -reshape(kernelfunction3(X[:,1], X[:,j]), (dim^2,dim))
+			
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1, (1 + dim) * num + 1: (1 + dim) * num + dim^2] = -KK[(1 + dim) * num + 1: (1 + dim) * num + dim^2, (num+1)+((j-1)*dim): (num+1)+((j)*dim)-1]'
 		end
 	end
 
-	#Fillin convarian of Energy vs FC2
-	
-
-	#Fillin convarian of Force vs FC2
-
 	
 	#Fillin convarian of FC2 vs FC2
+		KK[(1 + dim) * num + 1: (1 + dim) * num + dim^2, (1 + dim) * num + 1: (1 + dim) * num + dim^2] = reshape(kernelfunction4(X[:,1], X[:,1]), (dim^2,dim^2))
 
 		
 
 	Iee = σₑ^2 * Matrix(I, num, num)
 	Iff = σₙ^2 * Matrix(I, dim * num, dim * num)
 	Ief = zeros(num, dim * num)
+
+	Ie₂ = zeros(num, dim^2)
+	If₂ = zeros(dim * num, dim^2)
 	
 	I₂₂ = σ₂₂^2 * Matrix(I, dim^2, dim^2)
 	
-	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
+	II = vcat(
+		hcat(
+			vcat(
+				hcat(Iee, Ief),
+				hcat(Ief', Iff)
+			), 
+			vcat(Ie₂, If₂)),
+		hcat(
+			hcat(Ie₂', If₂'),
+			I₂₂)
+	)
 
 	Kₘₘ = KK + II
 	
 	return Kₘₘ
 end
 
+# ╔═╡ a2f01609-6b64-47d8-b11f-d2b6da637b85
+function Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64})
+	dim = size(X,1)
+	num = size(X,2)
+	
+	#building Covariance matrix containers
+	K₃ₙₘ= zeros((dim, dim, dim, (1+dim)*num + dim^2))
+	for j in 1:num
+		#Fillin convarian of Energy vs FC3
+		K₃ₙₘ[:,:,:,j] = reshape(
+					-  kernelfunction3(X[:,j], xₒ)
+					, (dim, dim, dim)
+				)
+		#Fillin convarian of Force vs FC3
+		K₃ₙₘ[:,:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
+					-  kernelfunction4(X[:,j], xₒ)
+					, (dim, dim, dim, dim)
+				)
+	end
+	K₃ₙₘ[:,:,:,(1 + dim) * num + 1: (1 + dim) * num + dim^2] = reshape(
+					-  kernelfunction5(xₒ, xₒ)
+					, (dim, dim, dim, dim^2)
+				)
+	
+	return K₃ₙₘ
+end
+
 # ╔═╡ ba26ce21-a422-4bff-ab67-a121cd172959
-Marginal(feature, σₑ, σₙ, σ₂₂)
+# ╠═╡ disabled = true
+#=╠═╡
+@time Kₘₘ = Marginal(feature, σₑ, σₙ, σ₂₂);
+  ╠═╡ =#
+
+# ╔═╡ e308f406-1ed7-45f2-947c-d0e7d3b495c2
+# ╠═╡ disabled = true
+#=╠═╡
+@time K₃ₙₘ = Coveriance_fc3(feature, equi);
+  ╠═╡ =#
+
+# ╔═╡ 11e80396-0311-471d-b417-ff5c805a074c
+function Posterior(Marginal, Covariance, Target)
+	dimₚ = size(Covariance, 1)
+	dimₜ = size(Marginal, 1)
+	Kₘₘ⁻¹ = inv(Marginal)   #
+	Kₙₘ = Covariance
+	
+	MarginalTar = zeros(dimₜ)
+	@einsum MarginalTar[m] = Kₘₘ⁻¹[m, n] * Target[n]
+
+	if size(Kₙₘ) == (dimₜ,)
+		Meanₚ = Kₙₘ'  * MarginalTar
+		
+	elseif size(Kₙₘ) == (dimₚ, dimₜ)
+		Meanₚ = zeros(dimₚ)
+		@einsum Meanₚ[i] = Kₙₘ[i, m] * MarginalTar[m]
+	
+	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₜ)
+		Meanₚ = zeros(dimₚ, dimₚ)
+		@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * MarginalTar[m]
+
+	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₚ, dimₜ)
+		Meanₚ = zeros(dimₚ, dimₚ, dimₚ)
+		@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * MarginalTar[m]
+	end
+
+	return Meanₚ 
+end
+
+# ╔═╡ bb90d0c7-08b3-4562-b6b4-750c4dfb3e65
+
+
+# ╔═╡ d4b60801-a9d5-4f0e-bce1-93b758930542
+begin
+	dim = 48
+	num = 50
+		Iee = σₑ^2 * Matrix(I, num, num)
+		Iff = σₙ^2 * Matrix(I, dim * num, dim * num)
+		Ief = zeros(num, dim * num)
+		Ie₂ = zeros(num, dim^2)
+		If₂ = zeros(dim * num, dim^2)
+		I₂₂ = σ₂₂^2 * Matrix(I, dim^2, dim^2)
+		II = vcat(
+			hcat(
+				vcat(
+					hcat(Iee, Ief),
+					hcat(Ief', Iff)
+				), 
+				vcat(Ie₂, If₂)),
+			hcat(
+				hcat(Ie₂', If₂'),
+				I₂₂)
+		)
+end;
+
+# ╔═╡ 23996f59-07d7-4251-934c-d3e46c947856
+heatmap(1:size(II[:,:],1),
+		    1:size(II[:,:],2), II[:,:],
+		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
+			aspectratio=:equal,
+			size=(700, 700),
+		    xlabel="feature coord. (n x d)",
+			ylabel="feature coord. (n x d)",
+		    title="Si_FC3 (Traning Data = )")
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1544,9 +1727,26 @@ version = "1.4.1+1"
 # ╠═7f470cbe-b81d-492b-9d79-c7aaa4f5b3c4
 # ╠═d916a522-82dc-4416-bd40-73e56ba8a97c
 # ╠═035b1212-ce05-4075-8c79-35998b3eb4ba
+# ╠═00b497b7-1509-4bb5-bf9b-3f60a909d74f
+# ╠═3ee87ab2-32ca-4c6b-8d98-a863ba7b428b
+# ╠═b864979f-a227-4628-a871-c8967a633b0c
+# ╠═042a6eb1-026a-4d5d-8775-7b4bbe8b4420
+# ╠═fdbac4cf-face-4497-8543-f8e4e20ee997
+# ╠═315866a7-7681-4e08-a98d-613367dc5777
+# ╠═7ad0a49b-d851-4499-888e-34583dbe7a34
+# ╠═79ac0fa7-dad8-4a1b-8c85-ec0c28c64c86
+# ╠═d759d6ad-3bf9-4b1c-8d40-7b44cc3366f6
+# ╠═639d31cd-2d6b-4115-bb66-b729c5bbc860
+# ╠═2b9632be-2444-4629-a6e1-1b206faa6a01
 # ╠═30aff3a4-1d47-4e14-af78-e5562e55c640
 # ╠═03815c4e-8c25-45f3-9bdd-5d8ebaae5de2
 # ╠═7b077cec-b14f-11ee-1aa7-6da23bee7499
+# ╠═a2f01609-6b64-47d8-b11f-d2b6da637b85
 # ╠═ba26ce21-a422-4bff-ab67-a121cd172959
+# ╠═e308f406-1ed7-45f2-947c-d0e7d3b495c2
+# ╠═11e80396-0311-471d-b417-ff5c805a074c
+# ╠═bb90d0c7-08b3-4562-b6b4-750c4dfb3e65
+# ╠═d4b60801-a9d5-4f0e-bce1-93b758930542
+# ╠═23996f59-07d7-4251-934c-d3e46c947856
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

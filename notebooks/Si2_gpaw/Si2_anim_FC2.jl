@@ -39,7 +39,7 @@ begin
 		return Zygote.gradient( a -> kernel(a, x₂), x₁)[1]
 	end
 	function kernelfunction2(x₁, x₂)
-		return Zygote.hessian(a -> kernel(a, x₂), x₁)
+		return ForwardDiff.jacobian(a -> kernelfunction1(a, x₂), x₁)
 	end
 	function kernelfunction3(x₁, x₂)
 		return ForwardDiff.jacobian(a -> kernelfunction2(a, x₂), x₁)
@@ -62,12 +62,17 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 	energy = (CSV.File(FileEnergy)|> Tables.matrix)[begin:numt,2]
 
 	force = -reshape((CSV.File(FileForce)|> Tables.matrix)[begin:a:end,2:numt+1], (dim*num,1))
-		
+    force[1:dim] = zeros(dim)
+	
 	Target = vcat(energy, reshape(force, (dim*num,1)))
 	
 	
 	return equi, feature, energy, force, Target
 end
+
+# ╔═╡ 9e1dc199-2130-4f89-9618-89f1e08f2de3
+equi, feature, energy, force, Target = ASEFeatureTarget(
+    "feature_new", "energy_new", "force_new", Num, DIM);
 
 # ╔═╡ 314b236f-39a9-432b-b5d9-678dae1c0568
 function Marginal(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
@@ -1634,6 +1639,7 @@ version = "1.4.1+1"
 # ╠═213ec94f-3ee4-47c2-8cff-73f8ab8bcf37
 # ╠═328bff98-7d24-4f46-8474-a8096c652529
 # ╠═e13cf0e5-5de4-4fdf-9b8c-9794342e5bfe
+# ╠═9e1dc199-2130-4f89-9618-89f1e08f2de3
 # ╠═314b236f-39a9-432b-b5d9-678dae1c0568
 # ╠═62405c5f-2f4a-4d65-91c5-54d073067610
 # ╠═22e0b8f5-3f90-4d6e-9a00-77f14356efb2
