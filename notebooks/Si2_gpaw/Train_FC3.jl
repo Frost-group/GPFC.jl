@@ -14,33 +14,38 @@ begin
 	using Plots
 end
 
-# ╔═╡ 4bfe9fb7-d6a9-471f-a0b8-0ce9d60f696b
-function kernelfunction(k, x₁, x₂, grad::Int64)
-	function f1st(x₁, x₂) 
-		Zygote.gradient( a -> k(a, x₂), x₁)[1]
-	end	
-	function f2nd(x₁, x₂)
-		Zygote.hessian(a -> k(a, x₂), x₁)
-	end
-	function f3rd(x₁, x₂) 
-		ForwardDiff.jacobian( a -> f2nd(a, x₂), x₁)
-	end 
-	function f4th(x₁, x₂)
-		ForwardDiff.jacobian( a -> f3rd(a, x₂), x₁)
-	end
+# ╔═╡ 01173140-ebcf-4b3f-a2f8-fc56e384defd
+begin
+	σₒ = 0.05                  # Kernel Scale
+	l = 0.4				    # Length Scale
+		
+	Num = 298                 # Number of training points
+	DIM = 3                     # Dimension of Materials
+	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
+	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
+		
+	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
+end;
 
-	if grad == 0
-		return k(x₁, x₂)
-	elseif grad == 1
-		return f1st(x₁, x₂)
-	elseif grad == 2
-		return f2nd(x₁, x₂)	
-	elseif grad == 3
-		return f3rd(x₁, x₂)
-	elseif grad == 4
-		return f4th(x₁, x₂)
-	else
-		println("Grad in btw [0, 4]")
+# ╔═╡ e2edc02f-b16c-4758-a601-cf72b14df6af
+begin
+	σₑ = 1e-9 					# Energy Gaussian noise
+	σₙ = 1e-9                   # Force Gaussian noise for Model 2 (σₑ independent)
+end
+
+# ╔═╡ 4bfe9fb7-d6a9-471f-a0b8-0ce9d60f696b
+begin
+	function kernelfunction1(x₁, x₂)
+		return Zygote.gradient( a -> kernel(a, x₂), x₁)[1]
+	end
+	function kernelfunction2(x₁, x₂)
+		return Zygote.hessian(a -> kernel(a, x₂), x₁)
+	end
+	function kernelfunction3(x₁, x₂)
+		return ForwardDiff.jacobian(a -> kernelfunction2(a, x₂), x₁)
+	end
+	function kernelfunction4(x₁, x₂)
+		return ForwardDiff.jacobian(a -> kernelfunction3(a, x₂), x₁)
 	end
 end
 
@@ -65,7 +70,7 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 end
 
 # ╔═╡ e12136d3-27d9-475c-a015-39bd4a7f0dd0
-function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
+function Marginal(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
 	num = size(X,2)
 	#building Marginal Likelihood containers
@@ -79,18 +84,17 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 	for i in 1:num 
 		for j in 1:num 
 		#Fillin convarian of Energy vs Energy
-			KK[i, j] = kernelfunction(k, X[:,i], X[:,j], 0)
+			KK[i, j] = kernel(X[:,i], X[:,j])
 		#Fillin convarian of Force vs Energy
-			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction(k, X[:,i], X[:,j], 1)
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction1(X[:,i], X[:,j])
 		#Fillin convarian of Energy vs Force	
 			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]
-		#Fillin convarian of Energy vs Force
-			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -kernelfunction(k, X[:,i], X[:,j], 2)
+		#Fillin convarian of Force vs Force
+			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -kernelfunction2(X[:,i], X[:,j])
 		end
 	end
 
 	Iee = σₑ^2 * Matrix(I, num, num)
-	#Iff = (σₑ^2 / l) * Matrix(I, dim * num, dim * num)
 	Iff = σₙ^2 * Matrix(I, dim * num, dim * num)
 	Ief = zeros(num, dim * num)
 	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
@@ -101,7 +105,7 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 end
 
 # ╔═╡ e4f3e0b2-0a13-479f-8e73-a028fce6193e
-function Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
+function Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64})
 	dim = size(X,1)
 	num = size(X,2)
 	
@@ -110,12 +114,12 @@ function Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	for j in 1:num
 		#Fillin convarian of Energy vs FC3
 		K₃ₙₘ[:,:,:,j] = reshape(
-					- kernelfunction(k, X[:,j], xₒ, 3)
+					-  kernelfunction3(X[:,j], xₒ)
 					, (dim, dim, dim)
 				)
 		#Fillin convarian of Force vs FC3
 		K₃ₙₘ[:,:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
-					-  kernelfunction(k, X[:,j], xₒ, 4)
+					-  kernelfunction4(X[:,j], xₒ)
 					, (dim, dim, dim, dim)
 				)
 	end
@@ -151,34 +155,15 @@ function Posterior(Marginal, Covariance, Target)
 	return Meanₚ 
 end
 
-# ╔═╡ 752c9070-1da0-4054-bbdc-0f196442467d
-begin
-	σₒ = 0.05                  # Kernel Scale
-	l = 0.4				        # Length Scale
-	
-	Num = 298                  # Number of training points
-	DIM = 3                     # Dimension of Materials
-	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
-	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
-		
-	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
-end;
-
-# ╔═╡ 059494d2-4754-4181-8d2f-08898aed605b
-begin
-	σₑ = 1e-9 					# Energy Gaussian noise
-	σₙ = 1e-9                   # Force Gaussian noise for Model 2 (σₑ independent)
-end
-
 # ╔═╡ f03d236b-42d5-4487-947b-954c22cfa30f
 equi, feature, energy, force, Target = ASEFeatureTarget(
     "feature_new", "energy_new", "force_new", Num, DIM);
 
 # ╔═╡ 483c7d68-1a48-4fa9-98a6-851edc8c4e9c
-@time Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
+@time Kₘₘ = Marginal(feature, σₑ, σₙ);
 
 # ╔═╡ 9eecaf99-678a-4ff0-b6c7-819aa35e8df5
-@time K₃ₙₘ = Coveriance_fc3(feature, equi, kernel);
+@time K₃ₙₘ = Coveriance_fc3(feature, equi);
 
 # ╔═╡ 5e12827b-472f-4c05-ba3c-8c32e092fbc1
 @time FC3 = Posterior(Kₘₘ, K₃ₙₘ, Target);
@@ -233,7 +218,7 @@ Zygote = "~0.6.44"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.4"
+julia_version = "1.9.3"
 manifest_format = "2.0"
 project_hash = "eaa53ea7e3d7726766cfce87b93fb2845879b23d"
 
@@ -756,12 +741,12 @@ uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.4"
+version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "8.4.0+0"
+version = "7.84.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -770,7 +755,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.11.0+1"
+version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1550,7 +1535,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.52.0+1"
+version = "1.48.0+0"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1578,13 +1563,13 @@ version = "1.4.1+1"
 
 # ╔═╡ Cell order:
 # ╠═261843d9-ddc9-4701-bd93-6ad1760441e5
+# ╠═01173140-ebcf-4b3f-a2f8-fc56e384defd
+# ╠═e2edc02f-b16c-4758-a601-cf72b14df6af
 # ╠═4bfe9fb7-d6a9-471f-a0b8-0ce9d60f696b
 # ╠═3fb4114c-ba02-42bf-9fce-eaa25a1b6f82
 # ╠═e12136d3-27d9-475c-a015-39bd4a7f0dd0
 # ╠═e4f3e0b2-0a13-479f-8e73-a028fce6193e
 # ╠═1357bcf5-b4fa-4d11-afe9-ad779b3f1505
-# ╠═752c9070-1da0-4054-bbdc-0f196442467d
-# ╠═059494d2-4754-4181-8d2f-08898aed605b
 # ╠═f03d236b-42d5-4487-947b-954c22cfa30f
 # ╠═483c7d68-1a48-4fa9-98a6-851edc8c4e9c
 # ╠═9eecaf99-678a-4ff0-b6c7-819aa35e8df5
