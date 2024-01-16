@@ -24,7 +24,7 @@ begin
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
 	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
 		
-	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
+	k = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
 
 # ╔═╡ d916a522-82dc-4416-bd40-73e56ba8a97c
@@ -34,32 +34,33 @@ begin
 	σ₂₂ = 1e-9
 end
 
+# ╔═╡ 035b1212-ce05-4075-8c79-35998b3eb4ba
+begin
+	k1(x₁,x₂) = ForwardDiff.gradient(a -> k(a,x₂), x₁)
+	k2(x₁,x₂) = ForwardDiff.jacobian(a -> k1(a,x₂), x₁)
+	k3(x₁,x₂) = ForwardDiff.jacobian(a -> k2(a,x₂), x₁)
+	k4(x₁,x₂) = ForwardDiff.jacobian(a -> k3(a,x₂), x₁)
+	k5(x₁,x₂) = ForwardDiff.jacobian(a -> k4(a,x₂), x₁)
+end
+
 # ╔═╡ 00b497b7-1509-4bb5-bf9b-3f60a909d74f
 x = rand(Float64, (48,1))
+
+# ╔═╡ b864979f-a227-4628-a871-c8967a633b0c
+kernelfunction4(x, x)
+
+# ╔═╡ 042a6eb1-026a-4d5d-8775-7b4bbe8b4420
+function kernelfunction5(x₁, x₂)
+		return ForwardDiff.jacobian(a ->
+				kernelfunction4(x₁, a),
+			x₂)[:,:,:,0]
+end
 
 # ╔═╡ fdbac4cf-face-4497-8543-f8e4e20ee997
 
 
-# ╔═╡ 79ac0fa7-dad8-4a1b-8c85-ec0c28c64c86
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	x = reshape(equi, (size(equi,1),1))
-	dimx = (size(x, 1))
-	reshape(ForwardDiff.jacobian(a -> reshape(kernelfunction4(a, x), 
-		(dimx, dimx, dimx, dimx)), x),
-			(dimx, dimx, dimx, dimx, dimx)
-		)
-end
-  ╠═╡ =#
-
 # ╔═╡ d759d6ad-3bf9-4b1c-8d40-7b44cc3366f6
 
-
-# ╔═╡ 639d31cd-2d6b-4115-bb66-b729c5bbc860
-#=╠═╡
-kernelfunction4(x, x)
-  ╠═╡ =#
 
 # ╔═╡ 2b9632be-2444-4629-a6e1-1b206faa6a01
 
@@ -88,49 +89,29 @@ end
 equi, feature, energy, force, Target = ASEFeatureTarget(
     "feature_new", "energy_new", "force_new", Num, DIM);
 
+# ╔═╡ 3b3e877e-5612-4c8a-80bc-e346b76de1c9
+begin
+	x₁ = feature[:,1]
+	x₂ = feature[:,3]
+end
+
+# ╔═╡ c437496f-00ff-4389-8a79-921c903f90c0
+@time k1(x₁,x₂)
+
+# ╔═╡ ae508cbd-8570-4815-959c-b7e89cfbc22e
+@time k2(x₁,x₂)
+
+# ╔═╡ b1e052c9-2293-4f30-ad20-01f1a0396130
+@time k3(x₁,x₂)
+
+# ╔═╡ 984bf460-6d4b-4417-b539-3c69d5dce993
+@time k4(x₁,x₂)
+
+# ╔═╡ ee21083e-d2ae-4412-b1fa-7c952d1ccadb
+@time k5(x₁,x₂)
+
 # ╔═╡ 3ee87ab2-32ca-4c6b-8d98-a863ba7b428b
 dimx = size(equi, 1)
-
-# ╔═╡ 035b1212-ce05-4075-8c79-35998b3eb4ba
-begin
-	function kernelfunction1(x₁, x₂)
-		return Zygote.gradient(a -> kernel(a, x₂), x₁)[1]
-	end
-	function kernelfunction2(x₁, x₂)
-		return reshape(
-			ForwardDiff.jacobian(
-				a -> kernelfunction1(a, x₂),
-				x₁), (dimx, dimx)
-		)
-	end
-	function kernelfunction3(x₁, x₂)
-		return reshape(
-			ForwardDiff.jacobian(
-				a -> kernelfunction2(a, x₂),
-				x₁), (dimx, dimx, dimx)
-		)
-	end
-	function kernelfunction4(x₁, x₂)
-		return reshape(
-			ForwardDiff.jacobian(
-				a -> kernelfunction3(a, x₂),
-				x₁), (dimx, dimx, dimx, dimx)
-		)
-	end
-end
-
-# ╔═╡ b864979f-a227-4628-a871-c8967a633b0c
-kernelfunction4(x, x)
-
-# ╔═╡ 042a6eb1-026a-4d5d-8775-7b4bbe8b4420
-function kernelfunction5(x₁, x₂)
-		return ForwardDiff.jacobian(a ->
-				kernelfunction4(x₁, a),
-			x₂)
-end
-
-# ╔═╡ 315866a7-7681-4e08-a98d-613367dc5777
-kernelfunction5(feature[:,1], feature[:,2])
 
 # ╔═╡ 7ad0a49b-d851-4499-888e-34583dbe7a34
 reshape(equi, (size(equi,1),1))
@@ -1727,16 +1708,19 @@ version = "1.4.1+1"
 # ╠═7f470cbe-b81d-492b-9d79-c7aaa4f5b3c4
 # ╠═d916a522-82dc-4416-bd40-73e56ba8a97c
 # ╠═035b1212-ce05-4075-8c79-35998b3eb4ba
+# ╠═3b3e877e-5612-4c8a-80bc-e346b76de1c9
+# ╠═c437496f-00ff-4389-8a79-921c903f90c0
+# ╠═ae508cbd-8570-4815-959c-b7e89cfbc22e
+# ╠═b1e052c9-2293-4f30-ad20-01f1a0396130
+# ╠═984bf460-6d4b-4417-b539-3c69d5dce993
+# ╠═ee21083e-d2ae-4412-b1fa-7c952d1ccadb
 # ╠═00b497b7-1509-4bb5-bf9b-3f60a909d74f
 # ╠═3ee87ab2-32ca-4c6b-8d98-a863ba7b428b
 # ╠═b864979f-a227-4628-a871-c8967a633b0c
 # ╠═042a6eb1-026a-4d5d-8775-7b4bbe8b4420
 # ╠═fdbac4cf-face-4497-8543-f8e4e20ee997
-# ╠═315866a7-7681-4e08-a98d-613367dc5777
 # ╠═7ad0a49b-d851-4499-888e-34583dbe7a34
-# ╠═79ac0fa7-dad8-4a1b-8c85-ec0c28c64c86
 # ╠═d759d6ad-3bf9-4b1c-8d40-7b44cc3366f6
-# ╠═639d31cd-2d6b-4115-bb66-b729c5bbc860
 # ╠═2b9632be-2444-4629-a6e1-1b206faa6a01
 # ╠═30aff3a4-1d47-4e14-af78-e5562e55c640
 # ╠═03815c4e-8c25-45f3-9bdd-5d8ebaae5de2
