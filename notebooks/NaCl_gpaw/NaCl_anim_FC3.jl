@@ -14,33 +14,38 @@ begin
 	using Plots
 end
 
-# ╔═╡ d133c4a3-a0ca-492b-9060-c263e7df5048
-function kernelfunction(k, x₁, x₂, grad::Int64)
-	function f1st(x₁, x₂) 
-		Zygote.gradient( a -> k(a, x₂), x₁)[1]
-	end	
-	function f2nd(x₁, x₂)
-		Zygote.hessian(a -> k(a, x₂), x₁)
-	end
-	function f3rd(x₁, x₂) 
-		ForwardDiff.jacobian( a -> f2nd(a, x₂), x₁)
-	end 
-	function f4th(x₁, x₂)
-		ForwardDiff.jacobian( a -> f3rd(a, x₂), x₁)
-	end
+# ╔═╡ 4276263f-981d-4ffe-a03e-b5bb5a5dd21f
+begin
+	σₒ = 0.05                  # Kernel Scale
+	l = 0.4				    # Length Scale
+		
+	Num = 199                 # Number of training points
+	DIM = 3                     # Dimension of Materials
+	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
+	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
+		
+	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
+end;
 
-	if grad == 0
-		return k(x₁, x₂)
-	elseif grad == 1
-		return f1st(x₁, x₂)
-	elseif grad == 2
-		return f2nd(x₁, x₂)	
-	elseif grad == 3
-		return f3rd(x₁, x₂)
-	elseif grad == 4
-		return f4th(x₁, x₂)
-	else
-		println("Grad in btw [0, 4]")
+# ╔═╡ 2050e5ad-a7c6-4a64-ada8-e4f71e17d38d
+begin
+	σₑ = 1e-8 					# Energy Gaussian noise
+	σₙ = 1e-8                   # Force Gaussian noise for Model 2 (σₑ independent)
+end
+
+# ╔═╡ 9b86bb4f-2e26-489f-a281-0b38f8bf3e84
+begin
+	function kernelfunction1(x₁, x₂)
+		return Zygote.gradient( a -> kernel(a, x₂), x₁)[1]
+	end
+	function kernelfunction2(x₁, x₂)
+		return Zygote.hessian(a -> kernel(a, x₂), x₁)
+	end
+	function kernelfunction3(x₁, x₂)
+		return ForwardDiff.jacobian(a -> kernelfunction2(a, x₂), x₁)
+	end
+	function kernelfunction4(x₁, x₂)
+		return ForwardDiff.jacobian(a -> kernelfunction3(a, x₂), x₁)
 	end
 end
 
@@ -65,7 +70,7 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 end
 
 # ╔═╡ 3822fdaa-f13f-421c-919c-f615bc3f1fc0
-function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Float64)
+function Marginal(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
 	num = size(X,2)
 	#building Marginal Likelihood containers
@@ -79,18 +84,18 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 	for i in 1:num 
 		for j in 1:num 
 		#Fillin convarian of Energy vs Energy
-			KK[i, j] = kernelfunction(k, X[:,i], X[:,j], 0)
+			KK[i, j] = kernel(X[:,i], X[:,j])
 		#Fillin convarian of Force vs Energy
-			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction(k, X[:,i], X[:,j], 1)
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction1(X[:,i], X[:,j])
 		#Fillin convarian of Energy vs Force	
 			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]
-		#Fillin convarian of Energy vs Force
-			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -kernelfunction(k, X[:,i], X[:,j], 2)
+		#Fillin convarian of Force vs Force
+			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -kernelfunction2(X[:,i], X[:,j])
 		end
 	end
 
 	Iee = σₑ^2 * Matrix(I, num, num)
-	Iff = (σₑ / l)^2 * Matrix(I, dim * num, dim * num)
+	Iff = σₙ^2 * Matrix(I, dim * num, dim * num)
 	Ief = zeros(num, dim * num)
 	II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
 
@@ -100,7 +105,7 @@ function Marginal(X::Matrix{Float64}, k, l::Float64, σₑ::Float64, σₙ::Floa
 end
 
 # ╔═╡ 5e17aa70-c9a4-4cd6-b008-eb65b82b2588
-function Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
+function Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64})
 	dim = size(X,1)
 	num = size(X,2)
 	
@@ -109,12 +114,12 @@ function Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64}, k)
 	for j in 1:num
 		#Fillin convarian of Energy vs FC3
 		K₃ₙₘ[:,:,:,j] = reshape(
-					-  kernelfunction(k, X[:,j], xₒ, 3)
+					-  kernelfunction3(X[:,j], xₒ)
 					, (dim, dim, dim)
 				)
 		#Fillin convarian of Force vs FC3
 		K₃ₙₘ[:,:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
-					-  kernelfunction(k, X[:,j], xₒ, 4)
+					-  kernelfunction4(X[:,j], xₒ)
 					, (dim, dim, dim, dim)
 				)
 	end
@@ -150,24 +155,9 @@ function Posterior(Marginal, Covariance, Target)
 	return Meanₚ 
 end
 
-# ╔═╡ b707ae28-65fd-4a72-b3d1-301046b2c663
-begin
-	σₒ = 0.05                  # Kernel Scale
-	l = 0.4				    # Length Scale
-	σₑ = 1e-5 					# Energy Gaussian noise
-	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
-		
-	Num = 199                 # Number of training points
-	DIM = 3                     # Dimension of Materials
-	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
-	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
-		
-	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
-end;
-
 # ╔═╡ 01fe7d68-9e71-419b-96be-14c58ace33a1
 begin
-	nd = [1,5,10,15,20,30,40,50,60,80,100,130,160,199]
+	nd = [1,5,10,15,20,30,40,50,60,80,100,120,140,160,199]
 	P3 = zeros(( 48, 48, 48, size(nd,1)))
 	SumRule3 = zeros((size(nd,1)))
 end;
@@ -178,8 +168,8 @@ end;
 	equi, feature, energy, force, Target = ASEFeatureTarget(
     "feature", "energy", "force", numt1, DIM);
 
-	Kₘₘ = Marginal(feature, kernel, l, σₑ, σₙ);
-	K₃ₙₘ = Coveriance_fc3(feature, equi, kernel);
+	Kₘₘ = Marginal(feature, σₑ, σₙ);
+	K₃ₙₘ = Coveriance_fc3(feature, equi);
 	Mp = Posterior(Kₘₘ, K₃ₙₘ, Target);
 	
 	P3[:,:,:,i] = Mp 
@@ -1636,12 +1626,13 @@ version = "1.4.1+1"
 
 # ╔═╡ Cell order:
 # ╠═02ae5c76-8935-11ee-33af-9b924d81b8ff
-# ╠═d133c4a3-a0ca-492b-9060-c263e7df5048
+# ╠═4276263f-981d-4ffe-a03e-b5bb5a5dd21f
+# ╠═2050e5ad-a7c6-4a64-ada8-e4f71e17d38d
+# ╠═9b86bb4f-2e26-489f-a281-0b38f8bf3e84
 # ╠═b654fb9e-5650-42ac-befc-9c939bb11a89
 # ╠═3822fdaa-f13f-421c-919c-f615bc3f1fc0
 # ╠═5e17aa70-c9a4-4cd6-b008-eb65b82b2588
 # ╠═a4f08e60-58be-4770-8d16-3bc6da4d05af
-# ╠═b707ae28-65fd-4a72-b3d1-301046b2c663
 # ╠═01fe7d68-9e71-419b-96be-14c58ace33a1
 # ╠═4c08923d-0374-449c-b52b-7df870cb7b67
 # ╠═3b72136e-9554-49bb-b409-a56c207df90e

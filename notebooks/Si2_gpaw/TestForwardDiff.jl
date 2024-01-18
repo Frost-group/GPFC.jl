@@ -34,12 +34,12 @@ begin
 end
 
 # ╔═╡ 1792cc32-0caf-4e85-b670-6ba0eadb77a9
-f(x,y) = exp.(x'*y)
+f(x,y) = (x'*y)^5
 
 # ╔═╡ 833b6868-e506-4d54-bcf4-ee28e0c72dcf
 begin
-	x = rand(Float64,(10,1))
-	y = rand(Float64,(10,1))
+	x = rand(Float64,(48,1))
+	y = rand(Float64,(48,1))
 	dim = size(x,1)
 end
 
@@ -52,20 +52,8 @@ begin
 	f5(x,y) = ForwardDiff.jacobian(a -> f4(a,y), x)
 end
 
-# ╔═╡ c014bbb7-77dd-4165-9274-217fd21bf3f0
-f1(x,y)
-
-# ╔═╡ 3cbbaf51-ce99-4239-ba24-e84f804d2796
-f2(x,y)
-
-# ╔═╡ 1edafc74-5f0c-4b81-bfe0-5a176bbe957f
-f3(x,y)
-
-# ╔═╡ 83903318-9334-4a19-90e9-8f1c0c43f29c
-f4(x,y) 
-
 # ╔═╡ c06ab4ce-fed8-461f-a499-6bf59a1a8cf9
-f5(x,y)
+reshape(f5(x,y), (dim,dim,dim,dim,dim))
 
 # ╔═╡ 2d84f6bd-98c0-45a9-9082-ff22c47609c0
 begin
@@ -108,9 +96,6 @@ end
 
 # ╔═╡ 8faa99e5-bad9-485e-a5f2-303a4a998e6e
 @time reshape(k4(x,y), (dim,dim,dim,dim))
-
-# ╔═╡ ba1043c8-0480-4a4a-9e79-71c434f4f226
-@time k5(x,y)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1586,10 +1571,6 @@ version = "1.4.1+1"
 # ╠═1792cc32-0caf-4e85-b670-6ba0eadb77a9
 # ╠═833b6868-e506-4d54-bcf4-ee28e0c72dcf
 # ╠═20b2565b-105d-499e-af00-0864af4b5a8c
-# ╠═c014bbb7-77dd-4165-9274-217fd21bf3f0
-# ╠═3cbbaf51-ce99-4239-ba24-e84f804d2796
-# ╠═1edafc74-5f0c-4b81-bfe0-5a176bbe957f
-# ╠═83903318-9334-4a19-90e9-8f1c0c43f29c
 # ╠═c06ab4ce-fed8-461f-a499-6bf59a1a8cf9
 # ╠═2d84f6bd-98c0-45a9-9082-ff22c47609c0
 # ╠═daa361a4-f8c5-4aef-808b-b42a18c19f84
@@ -1601,6 +1582,5 @@ version = "1.4.1+1"
 # ╠═0894e5d1-2ff5-406f-a17b-8f16cdc8cda0
 # ╠═ee5673b9-30e0-4921-849f-efa797104397
 # ╠═8faa99e5-bad9-485e-a5f2-303a4a998e6e
-# ╠═ba1043c8-0480-4a4a-9e79-71c434f4f226
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

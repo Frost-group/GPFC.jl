@@ -34,9 +34,12 @@ begin
 	σ₂₂ = 1e-9
 end
 
+# ╔═╡ ee847192-300f-454f-883a-2c89142a0ee0
+
+
 # ╔═╡ 035b1212-ce05-4075-8c79-35998b3eb4ba
 begin
-	k1(x₁,x₂) = ForwardDiff.gradient(a -> k(a,x₂), x₁)
+	k1(x₁,x₂) = Zygote.gradient(a -> k(a,x₂), x₁)[1]
 	k2(x₁,x₂) = ForwardDiff.jacobian(a -> k1(a,x₂), x₁)
 	k3(x₁,x₂) = ForwardDiff.jacobian(a -> k2(a,x₂), x₁)
 	k4(x₁,x₂) = ForwardDiff.jacobian(a -> k3(a,x₂), x₁)
@@ -1707,6 +1710,7 @@ version = "1.4.1+1"
 # ╠═d99af3ab-d4ac-43bf-ada6-7df3e593dc01
 # ╠═7f470cbe-b81d-492b-9d79-c7aaa4f5b3c4
 # ╠═d916a522-82dc-4416-bd40-73e56ba8a97c
+# ╠═ee847192-300f-454f-883a-2c89142a0ee0
 # ╠═035b1212-ce05-4075-8c79-35998b3eb4ba
 # ╠═3b3e877e-5612-4c8a-80bc-e346b76de1c9
 # ╠═c437496f-00ff-4389-8a79-921c903f90c0
