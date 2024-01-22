@@ -269,8 +269,8 @@ Eph/28.085
 
 # ╔═╡ 6666c8ff-eef9-4eaa-b7ac-68af1e6e888b
 animPh = @animate for i in 1:size(nd,1)
-	heatmap(1:size(FC2ph[:,:,i],1),
-		    1:size(FC2ph[:,:,i],2), FC2ph[:,:,i],
+	heatmap(1:size(FC2ph_Norm[:,:,i],1),
+		    1:size(FC2ph_Norm[:,:,i],2), FC2ph_Norm[:,:,i],
 		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
 			aspectratio=:equal,
 			size=(700, 700),
@@ -281,6 +281,9 @@ end
 
 # ╔═╡ 0d41fb9c-dbfc-4529-88d7-73fda7267540
 gif(animPh, "Si2_Dyn_corr.gif", fps=2)
+
+# ╔═╡ 348761d0-8a83-4e42-9983-adeb3983267c
+FC2ph
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -310,7 +313,7 @@ Zygote = "~0.6.67"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.3"
+julia_version = "1.9.4"
 manifest_format = "2.0"
 project_hash = "258d88deb8a09166ba533908a3c52a960e36d54c"
 
@@ -859,12 +862,12 @@ uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.3"
+version = "0.6.4"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "7.84.0+0"
+version = "8.4.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -873,7 +876,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.10.2+0"
+version = "1.11.0+1"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1669,7 +1672,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.48.0+0"
+version = "1.52.0+1"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1714,5 +1717,6 @@ version = "1.4.1+1"
 # ╠═c308e55c-8203-4a08-9fdd-1b3784b7ceca
 # ╠═6666c8ff-eef9-4eaa-b7ac-68af1e6e888b
 # ╠═0d41fb9c-dbfc-4529-88d7-73fda7267540
+# ╠═348761d0-8a83-4e42-9983-adeb3983267c
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

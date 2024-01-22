@@ -29,14 +29,14 @@ end;
 
 # ╔═╡ 1bf9b819-06ac-4e71-82d8-4f553e0da0c0
 begin
-	σₑ = 1e-9 					# Energy Gaussian noise
-	σₙ = 1e-9                   # Force Gaussian noise for Model 2 (σₑ independent)
+	σₑ = 1e-7					# Energy Gaussian noise
+	σₙ = 1e-7                   # Force Gaussian noise for Model 2 (σₑ independent)
+	σ₂₂ = 1e-8
 end
 
 # ╔═╡ cb281246-bfa1-4520-a79a-c51432be745e
 begin
 	kernelfunction1(x₁,x₂) = Zygote.gradient(a -> kernel(a,x₂), x₁)[1]
-	kernelfunction22(x₁,x₂) = Zygote.hessian(a -> kernel(a,x₂), x₁)
 	kernelfunction2(x₁,x₂) = ForwardDiff.jacobian(a -> kernelfunction1(a,x₂), x₁)
 	kernelfunction3(x₁,x₂) = ForwardDiff.jacobian(a -> kernelfunction2(a,x₂), x₁)
 	kernelfunction4(x₁,x₂) = ForwardDiff.jacobian(a -> kernelfunction3(a,x₂), x₁)
@@ -44,30 +44,264 @@ begin
 end
 
 # ╔═╡ b0aa6b55-f0fa-4027-bb6b-f9be023e0d60
+function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
+	a  = 4 - dimA
+	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
+	
+	equi = feature[:,1]
+	
+	dim = size(feature,1)
+	num = size(feature,2)
+	
+	energy = (CSV.File(FileEnergy)|> Tables.matrix)[begin:numt,2]
 
+	force = -reshape((CSV.File(FileForce)|> Tables.matrix)[begin:a:end,2:numt+1], (dim*num,1))
+
+	force[1:dim] = zeros(dim)
+	
+	Target = vcat(energy, reshape(force, (dim*num,1)))
+	
+	
+	return equi, feature, energy, force, Target
+end
+
+# ╔═╡ 39a9b44f-862a-4750-835c-ff1389028276
+function Marginal(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64, σ₂₂::Float64)
+	dim = size(X,1)
+	num = size(X,2)
+	#building Marginal Likelihood containers
+	#For Energy + Force
+	KK = zeros(((1 + dim) * num + dim^2, (1 + dim) * num + dim^2))
+	
+	for i in 1:num 
+		for j in 1:num 
+		#Fillin convarian of Energy vs Energy
+			KK[i, j] = kernel(X[:,i], X[:,j])
+			
+		#Fillin convarian of Force vs Energy
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction1(X[:,i], X[:,j])
+			
+			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]'
+			
+		#Fillin convarian of Force vs Force
+			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -kernelfunction2(X[:,i], X[:,j])		
+
+		#Fillin convarian of FC2 vs energy
+			KK[(1 + dim) * num + 1: (1 + dim) * num + dim^2, j] = reshape(kernelfunction2(X[:,1], X[:,j]), (dim^2,1))
+		
+			KK[i, (1 + dim) * num + 1: (1 + dim) * num + dim^2] = KK[(1 + dim) * num + 1: (1 + dim) * num + dim^2, j]'
+			
+		#Fillin convarian of FC2 vs Force
+			KK[(1 + dim) * num + 1: (1 + dim) * num + dim^2, (num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -reshape(kernelfunction3(X[:,1], X[:,j]), (dim^2,dim))
+			
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1, (1 + dim) * num + 1: (1 + dim) * num + dim^2] = -KK[(1 + dim) * num + 1: (1 + dim) * num + dim^2, (num+1)+((j-1)*dim): (num+1)+((j)*dim)-1]'
+		end
+	end
+
+	
+	#Fillin convarian of FC2 vs FC2
+		KK[(1 + dim) * num + 1: (1 + dim) * num + dim^2, (1 + dim) * num + 1: (1 + dim) * num + dim^2] = reshape(kernelfunction4(X[:,1], X[:,1]), (dim^2,dim^2))
+
+		
+
+	Iee = σₑ^2 * Matrix(I, num, num)
+	Iff = σₙ^2 * Matrix(I, dim * num, dim * num)
+	Ief = zeros(num, dim * num)
+
+	Ie₂ = zeros(num, dim^2)
+	If₂ = zeros(dim * num, dim^2)
+	
+	I₂₂ = σ₂₂^2 * Matrix(I, dim^2, dim^2)
+	
+	II = vcat(
+		hcat(
+			vcat(
+				hcat(Iee, Ief),
+				hcat(Ief', Iff)
+			), 
+			vcat(Ie₂, If₂)),
+		hcat(
+			hcat(Ie₂', If₂'),
+			I₂₂)
+	)
+
+	Kₘₘ = KK + II
+	
+	return Kₘₘ
+end
+
+# ╔═╡ 7dfb89d5-dabc-4d9d-a364-ec02b22d89b3
+function Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64})
+	dim = size(X,1)
+	num = size(X,2)
+	
+	#building Covariance matrix containers
+	K₃ₙₘ= zeros((dim, dim, dim, (1+dim)*num + dim^2))
+	for j in 1:num
+		#Fillin convarian of Energy vs FC3
+		K₃ₙₘ[:,:,:,j] = reshape(
+					-  kernelfunction3(X[:,j], xₒ)
+					, (dim, dim, dim)
+				)
+		#Fillin convarian of Force vs FC3
+		K₃ₙₘ[:,:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
+					-  kernelfunction4(X[:,j], xₒ)
+					, (dim, dim, dim, dim)
+				)
+	end
+		K₃ₙₘ[:,:,:,(1 + dim) * num + 1: (1 + dim) * num + dim^2] = reshape(
+					-  kernelfunction5(xₒ, xₒ)
+					, (dim, dim, dim, dim^2)
+				)
+	
+	return K₃ₙₘ
+end
+
+# ╔═╡ 1c4a25dd-1beb-41d5-aae7-f4676fedd732
+begin
+	a = (13.6793 + 13.6769 + 13.7112 + 13.7058 + 13.6514 + 13.6112 + 13.6769 + 13.695 + 13.7058 + 13.7159 + 13.6112 + 13.6129)/12
+	A1 = a*Matrix(I, 3, 3)
+	A2 = -a*Matrix(I, 3, 3)
+	DynΓ = hcat(vcat(A1, A2), vcat(A2, A1))
+	d = size(DynΓ,1)
+	Lin_DynΓ = reshape(DynΓ, (d^2,1))
+end;
 
 # ╔═╡ 9c5a362f-0de0-4c14-9edc-3f2c323de73e
 begin
-	ii = 3*5
-	x = rand(Complex{Float64},(ii,1))
-	y = rand(Complex{Float64},(ii,1))
+	ii = 3*2
+	x = rand(Float64,(ii,1))
+	y = rand(Float64,(ii,1))
 end
 
-# ╔═╡ 1a2194fc-43f4-4505-8dca-9fd11f0867eb
-@time kernelfunction1(x,y)
+# ╔═╡ 6fa3350c-491e-4719-862f-1de718d1d2d3
+function Posterior(Marginal, Covariance, Target)
+	dimₚ = size(Covariance, 1)
+	dimₜ = size(Marginal, 1)
+	Kₘₘ⁻¹ = inv(Marginal)
+	Kₙₘ = Covariance
 
-# ╔═╡ 47b3fb89-5e11-445f-9a61-3ac61a73e3e8
-function ∂z(f, z₁, z₂)
-  _, back = Zygote.pullback(a -> f(a, z₂), z₁)
-  du, dv = back(1)[1], back(im)[1]
-  (du' + im*dv')/2
+	MarginalTar = zeros(dimₜ)
+	@einsum MarginalTar[m] = Kₘₘ⁻¹[m, n] * Target[n]
+
+	Meanₚ = zeros(dimₚ, dimₚ, dimₚ)
+	@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * MarginalTar[m]
+
+	return Meanₚ 
 end
 
-# ╔═╡ e30e8019-7063-491b-a031-4f097c332590
- reshape(∂z(kernel, x, y), (ii,1))
+# ╔═╡ 11f67e32-5315-45d4-956d-7c04b1d39d4b
+function phonon_Γ(natom::Int64, feature, force, Target)
+	dim = 3 * natom
+	SupercellSize = Int(size(feature, 1)/dim)
+	ndata = size(feature, 2)
 
-# ╔═╡ 1460b83b-4683-4586-9854-864b9b307ea6
-@time kernelfunction2(x,y)
+	feature_ph = zeros((dim, ndata))
+	for jj in 1:ndata
+		for kk in 1:SupercellSize
+			if kk == 1
+				feature_ph[1:dim, jj] = feature[1:dim, jj]
+			else
+				feature_ph[1:dim, jj] = feature_ph[1:dim, jj] + feature[dim*(kk-1)+1:dim*kk, jj]
+			end 
+		end
+	end	
+	equi_ph = feature_ph[1:dim,1]
+
+	force_r = reshape(force, (dim*SupercellSize, ndata))
+	
+	force_ph = zeros((dim, ndata))
+	for jj in 1:ndata
+		for kk in 1:SupercellSize
+			if kk == 1
+				force_ph[1:dim,jj] = force_r[1:dim,jj]
+			else
+				force_ph[1:dim,jj] =force_ph[1:dim,jj] + force_r[dim*(kk-1)+1:dim*kk,jj]
+			end 
+		end
+	end
+	Target_ph = zeros(((1+dim)*ndata))
+	Target_ph[1:ndata] = Target[1:ndata]
+	Target_ph[1+ndata:(1+dim)*ndata] = reshape(force_ph,(dim*ndata,1))
+	
+	
+	return equi_ph, feature_ph, Target_ph
+end
+
+# ╔═╡ 722e427e-d750-4f67-9ef9-61fee43e9686
+begin
+	nd = [1, 5, 7, 9, 10, 13, 15, 20, 25, 30, 35, 40, 45, 50, 60, 80, 100, 130, 160, 199]
+	Eph = zeros((size(nd,1)))
+	FC3ph = zeros(( 6, 6, 6, size(nd,1)))
+end;
+
+# ╔═╡ a19930fc-6abb-48fe-8f94-8ff643e9d92b
+equi, feature, energy, force, Target = ASEFeatureTarget(
+    "feature_new", "energy_new", "force_new", Num, DIM);
+
+# ╔═╡ b929da50-d56d-4bdf-81d0-1b8f670b9e3b
+equi_ph2, feature_ph2, Target_ph2 = phonon_Γ(2, feature, force, Target);
+
+# ╔═╡ a8c771dc-027b-4179-843c-72cb6edda184
+@time for k in 1:size(nd,1)
+	numt1 = nd[k]
+	equi, feature, energy, force, Target = ASEFeatureTarget("feature_new", "energy_new", "force_new", numt1, DIM);
+
+	equi_ph, feature_ph, Target_ph = phonon_Γ(2, feature, force, Target);
+
+	Target_ph2 = vcat(Target_ph,Lin_DynΓ)
+	
+	Kₘₘph = Marginal(feature_ph, σₑ, σₙ, σ₂₂);
+	
+	K₃ₙₘph = Coveriance_fc3(feature_ph, equi_ph);
+
+	FC3ph[:,:,:,k] = Posterior(Kₘₘph, K₃ₙₘph, Target_ph2);
+	
+	Eph[k] = abs(sum(FC3ph[:,:,:,k]))
+end;
+
+# ╔═╡ 7fe2f80e-d8c6-40b2-87e0-65496c32933e
+begin
+	FC3ph_Norm = FC3ph/(sqrt(28.085^(3)))
+	Eph_Norm = Eph/(sqrt(28.085^(3)))
+end;
+
+# ╔═╡ 9c9e86af-39aa-4559-bf73-c1b622cf2bd9
+bb = 1
+
+# ╔═╡ c29e870d-5c18-417e-b990-4bfd7e128e74
+animph = @animate for aa in 1:size(nd,1)
+	heatmap(1:size(FC3ph_Norm[:,:,bb,aa],1),
+		    1:size(FC3ph_Norm[:,:,bb,aa],2), FC3ph_Norm[:,:,bb,aa],
+		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
+			aspectratio=:equal,
+			size=(700, 700),
+		    xlabel="feature coord. (n x d)",
+			ylabel="feature coord. (n x d)",
+		    title="Si2_FC3 (Traning Data = " *string(nd[aa]) *")")
+end
+
+# ╔═╡ 0d4b0929-0106-45f6-81a5-67e36667a9cd
+gif(animph, "Si_Dyn3_Phono.gif", fps=2)
+
+# ╔═╡ 3c06ca28-029c-43eb-a462-1d20c47937c0
+Eph_Norm
+
+# ╔═╡ df3ac080-51a7-4448-8281-2e76ce09c2b2
+animPh = @animate for i in 1:size(nd,1)
+	scatter(nd[1:i], Eph_Norm[1:i],
+		xlabel="Training points",
+		ylabel="Sum of FC2 element",
+		xlim = (-1, 200), 
+		ylim = (-0.1, 1.0),
+		labels = ["Cartesian" "Phonon"],
+		linewidth=3,
+		title="Sum Rule relation (Traning Data = " *string(nd[i]) *")"
+	)
+end
+
+# ╔═╡ a98ac406-f722-4f83-afc7-78ab63ed7d6e
+gif(animPh, "Si_Dyn3_Phono.gif", fps=2)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1542,10 +1776,22 @@ version = "1.4.1+1"
 # ╠═1bf9b819-06ac-4e71-82d8-4f553e0da0c0
 # ╠═cb281246-bfa1-4520-a79a-c51432be745e
 # ╠═b0aa6b55-f0fa-4027-bb6b-f9be023e0d60
+# ╠═39a9b44f-862a-4750-835c-ff1389028276
+# ╠═7dfb89d5-dabc-4d9d-a364-ec02b22d89b3
+# ╠═1c4a25dd-1beb-41d5-aae7-f4676fedd732
 # ╠═9c5a362f-0de0-4c14-9edc-3f2c323de73e
-# ╠═1a2194fc-43f4-4505-8dca-9fd11f0867eb
-# ╠═47b3fb89-5e11-445f-9a61-3ac61a73e3e8
-# ╠═e30e8019-7063-491b-a031-4f097c332590
-# ╠═1460b83b-4683-4586-9854-864b9b307ea6
+# ╠═6fa3350c-491e-4719-862f-1de718d1d2d3
+# ╠═11f67e32-5315-45d4-956d-7c04b1d39d4b
+# ╠═722e427e-d750-4f67-9ef9-61fee43e9686
+# ╠═a19930fc-6abb-48fe-8f94-8ff643e9d92b
+# ╠═b929da50-d56d-4bdf-81d0-1b8f670b9e3b
+# ╠═a8c771dc-027b-4179-843c-72cb6edda184
+# ╠═7fe2f80e-d8c6-40b2-87e0-65496c32933e
+# ╠═9c9e86af-39aa-4559-bf73-c1b622cf2bd9
+# ╠═c29e870d-5c18-417e-b990-4bfd7e128e74
+# ╠═0d4b0929-0106-45f6-81a5-67e36667a9cd
+# ╠═3c06ca28-029c-43eb-a462-1d20c47937c0
+# ╠═df3ac080-51a7-4448-8281-2e76ce09c2b2
+# ╠═a98ac406-f722-4f83-afc7-78ab63ed7d6e
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

@@ -46,6 +46,21 @@ begin
 	k5(x₁,x₂) = ForwardDiff.jacobian(a -> k4(a,x₂), x₁)
 end
 
+# ╔═╡ c437496f-00ff-4389-8a79-921c903f90c0
+@time k1(x₁,x₂)
+
+# ╔═╡ ae508cbd-8570-4815-959c-b7e89cfbc22e
+@time k2(x₁,x₂)
+
+# ╔═╡ b1e052c9-2293-4f30-ad20-01f1a0396130
+@time k3(x₁,x₂)
+
+# ╔═╡ 984bf460-6d4b-4417-b539-3c69d5dce993
+@time k4(x₁,x₂)
+
+# ╔═╡ ee21083e-d2ae-4412-b1fa-7c952d1ccadb
+@time k5(x₁,x₂)
+
 # ╔═╡ 00b497b7-1509-4bb5-bf9b-3f60a909d74f
 x = rand(Float64, (48,1))
 
@@ -97,21 +112,6 @@ begin
 	x₁ = feature[:,1]
 	x₂ = feature[:,3]
 end
-
-# ╔═╡ c437496f-00ff-4389-8a79-921c903f90c0
-@time k1(x₁,x₂)
-
-# ╔═╡ ae508cbd-8570-4815-959c-b7e89cfbc22e
-@time k2(x₁,x₂)
-
-# ╔═╡ b1e052c9-2293-4f30-ad20-01f1a0396130
-@time k3(x₁,x₂)
-
-# ╔═╡ 984bf460-6d4b-4417-b539-3c69d5dce993
-@time k4(x₁,x₂)
-
-# ╔═╡ ee21083e-d2ae-4412-b1fa-7c952d1ccadb
-@time k5(x₁,x₂)
 
 # ╔═╡ 3ee87ab2-32ca-4c6b-8d98-a863ba7b428b
 dimx = size(equi, 1)
@@ -203,7 +203,7 @@ function Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64})
 					, (dim, dim, dim, dim)
 				)
 	end
-	K₃ₙₘ[:,:,:,(1 + dim) * num + 1: (1 + dim) * num + dim^2] = reshape(
+		K₃ₙₘ[:,:,:,(1 + dim) * num + 1: (1 + dim) * num + dim^2] = reshape(
 					-  kernelfunction5(xₒ, xₒ)
 					, (dim, dim, dim, dim^2)
 				)

@@ -266,7 +266,7 @@ animph = @animate for aa in 1:size(nd,1)
 end
 
 # ╔═╡ 02dcf41b-01f2-4ab1-9533-0d029e912516
-gif(animph, "Si_anim_dyn3_1.gif", fps=2)
+gif(animph, "Si_anim_dyn3_1.gif", fps=1)
 
 # ╔═╡ 8ddb4de7-186d-403c-b85b-7eca21a790b3
 
