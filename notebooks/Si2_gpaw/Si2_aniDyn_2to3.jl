@@ -31,7 +31,7 @@ end;
 begin
 	σₑ = 1e-7					# Energy Gaussian noise
 	σₙ = 1e-7                   # Force Gaussian noise for Model 2 (σₑ independent)
-	σ₂₂ = 1e-8
+	σ₂₂ = 1e-5
 end
 
 # ╔═╡ cb281246-bfa1-4520-a79a-c51432be745e
@@ -287,13 +287,16 @@ gif(animph, "Si_Dyn3_Phono.gif", fps=2)
 # ╔═╡ 3c06ca28-029c-43eb-a462-1d20c47937c0
 Eph_Norm
 
+# ╔═╡ 3b52077f-bd6b-493c-8599-35ca6540dbd7
+nd
+
 # ╔═╡ df3ac080-51a7-4448-8281-2e76ce09c2b2
 animPh = @animate for i in 1:size(nd,1)
 	scatter(nd[1:i], Eph_Norm[1:i],
 		xlabel="Training points",
 		ylabel="Sum of FC2 element",
 		xlim = (-1, 200), 
-		ylim = (-0.1, 1.0),
+		ylim = (-2., 40.0),
 		labels = ["Cartesian" "Phonon"],
 		linewidth=3,
 		title="Sum Rule relation (Traning Data = " *string(nd[i]) *")"
@@ -333,7 +336,7 @@ Zygote = "~0.6.67"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.4"
+julia_version = "1.9.3"
 manifest_format = "2.0"
 project_hash = "74488a878c6406724a2837fcbc4bcb392fae600a"
 
@@ -916,12 +919,12 @@ uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.4"
+version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "8.4.0+0"
+version = "7.84.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -930,7 +933,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.11.0+1"
+version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1744,7 +1747,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.52.0+1"
+version = "1.48.0+0"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1791,6 +1794,7 @@ version = "1.4.1+1"
 # ╠═c29e870d-5c18-417e-b990-4bfd7e128e74
 # ╠═0d4b0929-0106-45f6-81a5-67e36667a9cd
 # ╠═3c06ca28-029c-43eb-a462-1d20c47937c0
+# ╠═3b52077f-bd6b-493c-8599-35ca6540dbd7
 # ╠═df3ac080-51a7-4448-8281-2e76ce09c2b2
 # ╠═a98ac406-f722-4f83-afc7-78ab63ed7d6e
 # ╟─00000000-0000-0000-0000-000000000001
