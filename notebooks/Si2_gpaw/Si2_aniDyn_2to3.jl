@@ -29,8 +29,8 @@ end;
 
 # ╔═╡ 1bf9b819-06ac-4e71-82d8-4f553e0da0c0
 begin
-	σₑ = 1e-7					# Energy Gaussian noise
-	σₙ = 1e-7                   # Force Gaussian noise for Model 2 (σₑ independent)
+	σₑ = 1e-8					# Energy Gaussian noise
+	σₙ = 1e-8                   # Force Gaussian noise for Model 2 (σₑ independent)
 	σ₂₂ = 1e-5
 end
 
@@ -230,7 +230,7 @@ end
 
 # ╔═╡ 722e427e-d750-4f67-9ef9-61fee43e9686
 begin
-	nd = [1, 5, 7, 9, 10, 13, 15, 20, 25, 30, 35, 40, 45, 50, 60, 80, 100, 130, 160, 199]
+	nd = [1, 5, 7, 9, 11, 13, 15, 20, 25, 30, 35, 40, 45, 50, 60, 80, 100, 130, 160, 199]
 	Eph = zeros((size(nd,1)))
 	FC3ph = zeros(( 6, 6, 6, size(nd,1)))
 end;
@@ -295,7 +295,7 @@ animPh = @animate for i in 1:size(nd,1)
 	scatter(nd[1:i], Eph_Norm[1:i],
 		xlabel="Training points",
 		ylabel="Sum of FC2 element",
-		xlim = (-1, 200), 
+		xlim = (-1, 300), 
 		ylim = (-2., 40.0),
 		labels = ["Cartesian" "Phonon"],
 		linewidth=3,
@@ -305,6 +305,12 @@ end
 
 # ╔═╡ a98ac406-f722-4f83-afc7-78ab63ed7d6e
 gif(animPh, "Si_Dyn3_Phono.gif", fps=2)
+
+# ╔═╡ ab94384c-9571-4ffa-b363-ade231dc28c5
+FC3ph_Norm[1:3,1:3,1:3,10]
+
+# ╔═╡ d18b8cae-1a05-4185-9640-5d09e5bfbbbe
+Eph_Norm
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1797,5 +1803,7 @@ version = "1.4.1+1"
 # ╠═3b52077f-bd6b-493c-8599-35ca6540dbd7
 # ╠═df3ac080-51a7-4448-8281-2e76ce09c2b2
 # ╠═a98ac406-f722-4f83-afc7-78ab63ed7d6e
+# ╠═ab94384c-9571-4ffa-b363-ade231dc28c5
+# ╠═d18b8cae-1a05-4185-9640-5d09e5bfbbbe
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

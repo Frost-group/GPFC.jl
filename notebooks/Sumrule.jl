@@ -163,6 +163,38 @@ end
 # ╔═╡ 8f733a5a-5e08-44f0-8fb3-6dd27e66cb4e
 gif(anim, "FC2_all.gif", fps=2)
 
+# ╔═╡ ff35334a-6643-41b2-aef7-b82f733bd973
+begin
+	ndt = [1, 5, 7, 9, 11, 13, 15, 20, 25, 30, 35, 40, 45, 50, 60, 80, 100, 130, 160, 199]
+	Si2_FC3_k = [0.0, 25.3055, 46.019, 524.358, 43.2673, 45.3316, 2.41614, 15.5758, 0.66428, 0.396849, 1.31505, 0.0293254, 1.19151, 0.0479263, 0.172714, 0.291073, 0.212593, 0.253801, 0.0246688, 0.112543]
+	NaCl_FC3_k = [0.0, 51.6915, 141.599, 4899.52, 835.73, 4846.32, 233.667, 5.66646, 24.5348, 25.0001, 8.09625, 1.93998, 2.52396, 6.12298, 3.88055, 0.549805, 1.51097, 0.928284, 0.476788, 0.423315]
+	PbTe_FC3_k = [0.0, 88.892, 97.5775, 2691.41, 228.16, 57.9297, 33.8429, 9.39819, 3.80888, 2.69125, 2.7702, 7.29222, 0.0953727, 0.746546, 0.162459, 1.14234, 0.402207, 0.319287, 0.180194, 0.107803]
+	
+end
+
+# ╔═╡ ce169d57-79af-47b6-a49a-47a34e6b5565
+animFC3 = @animate for i in 1:size(ndt,1)
+	plot(ndt[1:i], [PbTe_FC3_k[1:i] Si2_FC3_k[1:i] NaCl_FC3_k[1:i]],
+		    color = ["#F0BB62" "#6E9A50" "#C64756"],
+			labels = [L"\textbf{PbTe}"*L"\;(\Phi_{3}(\textbf{q}))"  L"\textbf{Si}\;\textbf{bulk}"*L"\;(\Phi_{3}(\textbf{q}))" L"\textbf{NaCl}"*L"\;(\Phi_{3}(\textbf{q}))"],
+			linestyle = :solid,
+			linewidth=1.5
+		)
+
+	scatter!(ndt[1:i], [PbTe_FC3_k[1:i] Si2_FC3_k[1:i] NaCl_FC3_k[1:i]],
+		    color = ["#F0BB62" "#6E9A50" "#C64756"],
+			labels = ["" "" ""],
+			xlim = (-1, 105), 
+			ylim = (-20.0, 700.0),
+			xlabel="Training points",
+			ylabel= "Sum of correlation elements",
+			title="Sum Rule Relation (Traning Data = " *string(ndt[i]) *")"
+		)
+end
+
+# ╔═╡ d94b5133-04a3-460c-b5dd-de424d09f012
+gif(animFC3, "FC3_all.gif", fps=2)
+
 # ╔═╡ 37081e28-ee3b-4fa7-9e8e-6878d855702f
 begin
 	plot(nd, [Si2_FC2 NaCl_FC2 PbTe_FC2],
@@ -263,6 +295,9 @@ end
 # ╔═╡ 9fe84d8c-c81d-43ee-9406-4f25f38352ea
 gif(anim2, "FC2_Cart.gif", fps=2)
 
+# ╔═╡ 84c6c5ea-ad13-4367-b573-b332cbb4064f
+
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -293,7 +328,7 @@ Zygote = "~0.6.67"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.4"
+julia_version = "1.9.3"
 manifest_format = "2.0"
 project_hash = "152d8088b552022bf638348884c0cdeee4d5c31b"
 
@@ -842,12 +877,12 @@ uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.4"
+version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "8.4.0+0"
+version = "7.84.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -856,7 +891,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.11.0+1"
+version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1652,7 +1687,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.52.0+1"
+version = "1.48.0+0"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1689,9 +1724,13 @@ version = "1.4.1+1"
 # ╠═cea8c5c2-837f-48cf-9fb7-0af50eaae576
 # ╠═2ec8477f-58c4-4f3a-8a29-edcb70dbdf3c
 # ╠═8f733a5a-5e08-44f0-8fb3-6dd27e66cb4e
+# ╠═ff35334a-6643-41b2-aef7-b82f733bd973
+# ╠═ce169d57-79af-47b6-a49a-47a34e6b5565
+# ╠═d94b5133-04a3-460c-b5dd-de424d09f012
 # ╠═37081e28-ee3b-4fa7-9e8e-6878d855702f
 # ╠═d4d8f121-7e92-4bca-a2aa-e9ecda546c96
 # ╠═e795ec2a-3598-4840-be6f-fd68f1922c57
 # ╠═9fe84d8c-c81d-43ee-9406-4f25f38352ea
+# ╠═84c6c5ea-ad13-4367-b573-b332cbb4064f
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
