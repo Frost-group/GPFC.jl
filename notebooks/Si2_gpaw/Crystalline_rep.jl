@@ -49,6 +49,12 @@ begin
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
 
+# ╔═╡ e6da5fbe-f413-4976-93f9-958f43ff687c
+begin
+	σₑ = 1e-9 					# Energy Gaussian noise
+	σₙ = 1e-9                   # Force Gaussian noise for Model 2 (σₑ independent)
+end
+
 # ╔═╡ 03caf57b-07ac-4c5f-bb1a-f640e16b4c96
 equi, feature, energy, force, Target = ASEFeatureTarget(
     "feature_new", "energy_new", "force_new", Num, DIM);
@@ -62,10 +68,14 @@ Supar = hcat(equi[7:9]-equi[1:3], equi[13:15]-equi[1:3], equi[25:27]-equi[1:3])
 # ╔═╡ 1195d4ba-5fad-487f-bd3b-f159db318db8
 begin
 	SuCell = []
-	for ii in 1:Int(size(equi,1)/3)
-		push!(SuCell,equi[4:6]-equi[3*(ii-1)+1:3*ii])
+	N = Int(size(equi,1)/3)
+	for ii in 1:N
+		push!(SuCell, equi[4:6]-equi[3*(ii-1)+1:3*ii])
 	end
 end
+
+# ╔═╡ a57e27c7-3107-4fc9-927d-de6b2d32551d
+Equi = reshape(equi,(3,N))
 
 # ╔═╡ 29ee7900-87ba-445c-a105-5d06c58c6d29
 SuCell[1]
@@ -84,7 +94,10 @@ S2 = reshape(sg[2][1:9],(3,3))
 T2 = reshape(sg[2][10:12],(3,1))
 
 # ╔═╡ 12721c7c-43ac-4faa-a22f-2a717b7ce92a
-S2*equi[1:3]-SuCell[6]
+S2*equi[1:3] + 2*Supar[1:3]
+
+# ╔═╡ 15fbb603-40f7-45c6-871a-72fa76d8e867
+
 
 # ╔═╡ a0d995c9-978e-4bbc-b892-158bb5bd46e1
 MultTable(sg)
@@ -97,6 +110,78 @@ end
 
 # ╔═╡ acd9d153-ce5f-4cec-8d7f-50321d3914f4
 op2 = SymOperation{3}("z+3/4,x+1/4,y+1/2")
+
+# ╔═╡ 19e8a99f-6b47-498d-b0ba-9bde13f09d08
+
+
+# ╔═╡ 27c71ced-3648-456f-8e27-0f2f6c5f97b5
+
+
+# ╔═╡ d3fe61da-c459-4f6c-a75f-9afb6733986e
+
+
+# ╔═╡ 8a315b2c-b5cb-45af-9297-a1ee17083b5d
+lgirsd = lgirreps(227, Val(3))
+
+# ╔═╡ bc187246-a4db-4c20-8bef-128040d821a7
+
+
+# ╔═╡ 7b4488ca-e940-4a01-b366-1305f4489936
+begin
+	lgirs = lgirsd["L"] # little group irreps at the Γ point
+	characters(lgirs)
+end
+
+# ╔═╡ c92eb830-40e4-4c38-8d6c-5ea86344612e
+characters(lgirs).irlabs
+
+# ╔═╡ ab6cfebd-9a17-454b-acf5-64ddd910cb8f
+begin
+	L₁⁺ = zeros((3,3))
+	L₂⁺ = zeros((3,3))
+	L₃⁺ = zeros((3,3))
+	L₁⁻ = zeros((3,3))
+	L₂⁻ = zeros((3,3))
+	L₃⁻ = zeros((3,3))
+	for i in 1:size(characters(lgirs).ops,1)
+		L₁⁺ += characters(lgirs).table[i,1]*reshape(characters(lgirs).ops[i][1:9],(3,3))
+		L₂⁺ += characters(lgirs).table[i,2]*reshape(characters(lgirs).ops[i][1:9],(3,3))
+		L₃⁺ += characters(lgirs).table[i,3]*reshape(characters(lgirs).ops[i][1:9],(3,3))
+		L₁⁻ += characters(lgirs).table[i,4]*reshape(characters(lgirs).ops[i][1:9],(3,3))
+		L₂⁻ += characters(lgirs).table[i,5]*reshape(characters(lgirs).ops[i][1:9],(3,3))
+		L₃⁻ += characters(lgirs).table[i,6]*reshape(characters(lgirs).ops[i][1:9],(3,3))
+	end
+end
+
+# ╔═╡ db787f02-e7e6-40a1-a1c5-325a6aadf584
+L₁⁺
+
+# ╔═╡ 134d3074-da6d-43d5-a064-9a3824bd4794
+L₂⁺ 
+
+# ╔═╡ de5d66ec-d091-44c0-b2a3-eaa7971da0ae
+L₃⁺
+
+# ╔═╡ 0aa46a24-bd01-4420-8255-1574f9426c45
+L₁⁻
+
+# ╔═╡ 00900389-e3b6-4b25-95ee-a22c88ba9f5b
+L₂⁻
+
+# ╔═╡ 96cdfea4-c959-4e65-b77a-bc541c264088
+L₃⁻
+
+# ╔═╡ 1c2e5ce8-a309-41cc-913b-f6c858a4313d
+characters(lgirs).characters
+
+# ╔═╡ f20a67de-d3c3-47b1-b85e-118604f2b8c2
+lgirsd.keys
+
+# ╔═╡ 20bf42c5-cf1c-4c5e-a141-6e63a2d4bd3c
+lgirs[2,3]
+
+# ╔═╡ 92eee783-24a0-433a-96a9-f826a848cb28
+brs = bandreps(227, 3)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1702,17 +1787,38 @@ version = "1.4.1+1"
 # ╠═2070877e-bec4-11ee-1298-d11fc2ea0b9a
 # ╠═39a44ea3-71fc-4b39-8003-b0cec5663dbb
 # ╠═cbae6851-1e6b-4576-bfc0-65d4d61bc51a
+# ╠═e6da5fbe-f413-4976-93f9-958f43ff687c
 # ╠═03caf57b-07ac-4c5f-bb1a-f640e16b4c96
 # ╠═858f915c-c85b-4923-a9aa-a26f354ea21a
 # ╠═7eb7819b-204a-45f9-84d3-f5ac0d4f494f
 # ╠═1195d4ba-5fad-487f-bd3b-f159db318db8
+# ╠═a57e27c7-3107-4fc9-927d-de6b2d32551d
 # ╠═29ee7900-87ba-445c-a105-5d06c58c6d29
 # ╠═992b3884-0365-4a9a-96a1-15467dd4773f
 # ╠═425fd5ad-3364-4eef-87d4-a540135bd104
 # ╠═3847b5e5-d390-4e84-b4cf-637b07fc81c0
 # ╠═12721c7c-43ac-4faa-a22f-2a717b7ce92a
+# ╠═15fbb603-40f7-45c6-871a-72fa76d8e867
 # ╠═a0d995c9-978e-4bbc-b892-158bb5bd46e1
 # ╠═dd5e2265-0e89-41d4-a151-cf270adb5e3b
 # ╠═acd9d153-ce5f-4cec-8d7f-50321d3914f4
+# ╠═19e8a99f-6b47-498d-b0ba-9bde13f09d08
+# ╠═27c71ced-3648-456f-8e27-0f2f6c5f97b5
+# ╠═d3fe61da-c459-4f6c-a75f-9afb6733986e
+# ╠═8a315b2c-b5cb-45af-9297-a1ee17083b5d
+# ╠═bc187246-a4db-4c20-8bef-128040d821a7
+# ╠═7b4488ca-e940-4a01-b366-1305f4489936
+# ╠═c92eb830-40e4-4c38-8d6c-5ea86344612e
+# ╠═ab6cfebd-9a17-454b-acf5-64ddd910cb8f
+# ╠═db787f02-e7e6-40a1-a1c5-325a6aadf584
+# ╠═134d3074-da6d-43d5-a064-9a3824bd4794
+# ╠═de5d66ec-d091-44c0-b2a3-eaa7971da0ae
+# ╠═0aa46a24-bd01-4420-8255-1574f9426c45
+# ╠═00900389-e3b6-4b25-95ee-a22c88ba9f5b
+# ╠═96cdfea4-c959-4e65-b77a-bc541c264088
+# ╠═1c2e5ce8-a309-41cc-913b-f6c858a4313d
+# ╠═f20a67de-d3c3-47b1-b85e-118604f2b8c2
+# ╠═20bf42c5-cf1c-4c5e-a141-6e63a2d4bd3c
+# ╠═92eee783-24a0-433a-96a9-f826a848cb28
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

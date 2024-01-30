@@ -312,6 +312,46 @@ FC3ph_Norm[1:3,1:3,1:3,10]
 # ╔═╡ d18b8cae-1a05-4185-9640-5d09e5bfbbbe
 Eph_Norm
 
+# ╔═╡ a03d33e0-0c03-4248-9cd4-e54274dc23cb
+DynΓ
+
+# ╔═╡ 80302d72-fe42-4770-b02d-334d1db4b1e8
+q = [1/2, 1/2, 1/2]
+
+# ╔═╡ dc927995-d6b8-4226-951d-54eb084e1bf3
+begin
+	phase = []
+	N = Int(size(equi,1)/3)
+	D = zeros((6,6))
+	for ii in 1:N
+		push!(phase, 1/sqrt(N)*exp(-q'*equi[3*(ii-1)+1: 3*ii]im)* DynΓ)
+		D += phase[ii]
+	end
+end
+
+# ╔═╡ 935afa6c-0882-4d90-8e64-74353eb67c4e
+D
+
+# ╔═╡ 15c056a7-5a49-46b6-bb18-9983308e1be7
+sum(D,1)
+
+# ╔═╡ 93feb320-50bb-43e8-b1e7-1fc51323e9a3
+A  = hcat([ 0.4975292-0im, 0.0358682+0im, 0.0358682+0im, -0.18440406-0.18440406im, 0.1123133+0.1123133im, 0.1123133+0.1123133im],
+[ 0.0358682-0im,  0.4975292-0im, 0.0358682+0im, 0.1123133+0.1123133im, -0.18440406-0.18440406im, 0.1123133+0.1123133im],
+[ 0.0358682-0im, 0.0358682-0im, 0.4975292-0im, 0.1123133+0.1123133im, 0.1123133+0.1123133im, -0.18440406-0.18440406im],
+[-0.18440406+0.18440406im, 0.1123133-0.1123133im, 0.1123133-0.1123133im, 0.4975292-0im, 0.0358682+0im, 0.0358682+0im],
+[0.1123133-0.1123133im, -0.18440406+0.18440406im, 0.1123133-0.1123133im, 0.0358682-0im, 0.4975292-0im, 0.0358682+0im], 
+[0.1123133-0.1123133im, 0.1123133-0.1123133im, -0.18440406+0.18440406im, 0.0358682-0im, 0.0358682-0im, 0.4975292-0im])
+
+# ╔═╡ b495331c-869a-4922-9123-7f135dd9ddb9
+D_q = (1/sqrt(N))*sum(D, 1)
+
+# ╔═╡ 5deb3e32-2321-4195-b187-b8a64b74f83d
+Phase
+
+# ╔═╡ dd6ed086-373b-4932-880d-9e22f68ec609
+exp(1im)
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -342,7 +382,7 @@ Zygote = "~0.6.67"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.3"
+julia_version = "1.9.4"
 manifest_format = "2.0"
 project_hash = "74488a878c6406724a2837fcbc4bcb392fae600a"
 
@@ -925,12 +965,12 @@ uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.3"
+version = "0.6.4"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "7.84.0+0"
+version = "8.4.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -939,7 +979,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.10.2+0"
+version = "1.11.0+1"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1753,7 +1793,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.48.0+0"
+version = "1.52.0+1"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1805,5 +1845,14 @@ version = "1.4.1+1"
 # ╠═a98ac406-f722-4f83-afc7-78ab63ed7d6e
 # ╠═ab94384c-9571-4ffa-b363-ade231dc28c5
 # ╠═d18b8cae-1a05-4185-9640-5d09e5bfbbbe
+# ╠═a03d33e0-0c03-4248-9cd4-e54274dc23cb
+# ╠═80302d72-fe42-4770-b02d-334d1db4b1e8
+# ╠═dc927995-d6b8-4226-951d-54eb084e1bf3
+# ╠═935afa6c-0882-4d90-8e64-74353eb67c4e
+# ╠═15c056a7-5a49-46b6-bb18-9983308e1be7
+# ╠═93feb320-50bb-43e8-b1e7-1fc51323e9a3
+# ╟─b495331c-869a-4922-9123-7f135dd9ddb9
+# ╠═5deb3e32-2321-4195-b187-b8a64b74f83d
+# ╠═dd6ed086-373b-4932-880d-9e22f68ec609
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
