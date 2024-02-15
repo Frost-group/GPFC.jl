@@ -1,5 +1,9 @@
 ### A Pluto.jl notebook ###
+<<<<<<< Updated upstream
 # v0.19.27
+=======
+# v0.19.38
+>>>>>>> Stashed changes
 
 using Markdown
 using InteractiveUtils
@@ -438,8 +442,8 @@ sum(FC2_re)
 
 # ╔═╡ 0b7506d2-20fb-4555-a34b-b4253d70ba66
 begin
-	FC2_re[ 0.0 .< FC2_re .< 6.5e-2 ] .= 0.0
-	FC2_re[ 0.0 .> FC2_re .> -6.5e-2 ] .= 0.0
+	FC2_re[ 0.0 .< FC2_re .< 1e-2 ] .= 0.0
+	FC2_re[ 0.0 .> FC2_re .> -1e-2 ] .= 0.0
 end
 
 # ╔═╡ 28e01172-26ac-4038-9331-b54a92ca0f9b
