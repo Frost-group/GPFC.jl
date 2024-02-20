@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 346974a0-8249-11ee-075d-33c092b30816
+# ╔═╡ 2340d700-cf96-11ee-3ae5-639536629beb
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum, Statistics
@@ -15,7 +15,7 @@ begin
 	using StatsBase
 end
 
-# ╔═╡ d8b8b25d-e716-47e9-b2e4-12731df9e7c0
+# ╔═╡ ccae8777-91f5-46c7-ba09-45619c7345d2
 begin
 	σₒ = 0.05                  # Kernel Scale
 	l = 0.4			    # Length Scale
@@ -28,13 +28,13 @@ begin
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
 
-# ╔═╡ 39a72f49-6efb-4ad5-a3b0-7b6a6954d6a6
+# ╔═╡ 06fe43c1-6919-419d-892e-e236f77c93fb
 begin
-	σₑ = 1e-10				      # Energy Gaussian noise
-	σₙ = 1e-6/l                   # Force Gaussian noise for Model 2 (σₑ independent)
+	σₑ = 1e-5				      # Energy Gaussian noise
+	σₙ = 1e-10/l                   # Force Gaussian noise for Model 2 (σₑ independent)
 end
 
-# ╔═╡ e79b6a06-5285-44b2-81ea-e3a96247db8f
+# ╔═╡ 1d95bac5-ff8f-472e-aaec-b69db737b023
 begin
 	function kernelfunction1(x₁, x₂)
 		return Zygote.gradient( a -> kernel(a, x₂), x₁)[1]
@@ -50,7 +50,7 @@ begin
 	end
 end
 
-# ╔═╡ e1d8fc9e-00fd-4fd9-975d-6b6a4f79068a
+# ╔═╡ ee59ad8c-f669-48dd-ac29-2ae2f8667cf6
 function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
 	a  = 4 - dimA
 	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
@@ -71,11 +71,11 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 	return equi, feature, energy, force, Target
 end
 
-# ╔═╡ a6a54c75-f12d-4694-a876-30f0a14ad8a1
+# ╔═╡ e1720ab7-548f-4986-bf3d-edaaa8959246
 equi, feature, energy, force, Target = ASEFeatureTarget(
     "feature_new", "energy_new", "force_new", Num, DIM);
 
-# ╔═╡ cbd94f02-b08d-4208-9e2a-b24a35d2646a
+# ╔═╡ fbf2dfbe-27a5-45a3-bf91-bcd169d5470e
 function Marginal(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
 	num = size(X,2)
@@ -110,7 +110,7 @@ function Marginal(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
 	return Kₘₘ
 end
 
-# ╔═╡ e9efaf81-6634-435c-8030-45cc949d8068
+# ╔═╡ cd051a66-dd49-458d-a926-f50f4981b682
 function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64})
 	dim = size(X,1)
 	num = size(X,2)
@@ -134,7 +134,7 @@ function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64})
 	return K₂ₙₘ
 end
 
-# ╔═╡ 79d1e9f9-56d1-4425-9362-ff86a5c452f5
+# ╔═╡ 607f0494-c5bb-4195-b65d-9f8530cbd542
 function Posterior(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
 	dimₜ = size(Marginal, 1)
@@ -163,42 +163,13 @@ function Posterior(Marginal, Covariance, Target)
 	return Meanₚ 
 end
 
-# ╔═╡ 25f5cb64-40e5-4a2a-9a0d-42878a3aa9ae
-@time Kₘₘ = Marginal(feature, σₑ, σₙ);
+# ╔═╡ 6fb5ac89-5e70-4f20-9c06-529faed15fa7
+Phon = [2.92999594, 0.04717251, -0.31205117, -0.17018929, -0.2541165, -0.09757366, -1.39262983, 0.05100078, 2.08113829, 0.04717251, -0.31271797, -0.6251722, -0.09217561, -0.01833669, -1.34983008, 0.05144025]
 
-# ╔═╡ b2ced1ff-11f5-46df-9e4a-a961ab8f0a63
+# ╔═╡ 252528e2-4892-4000-817a-d40707e9abc5
 @time K₂ₙₘ = Coveriance_fc2(feature, equi);
 
-# ╔═╡ be8cba06-01f0-4ad5-861f-5a4c556a9cc4
-@time FC2 = Posterior(Kₘₘ, K₂ₙₘ, Target);
-
-# ╔═╡ 4451bffe-18c9-4da3-ba22-9df2cb2e6472
-heatmap(1:size(FC2[:,:],1),
-	    1:size(FC2[:,:],2), FC2[:,:],
-	    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
-	    xlabel="feature coord. (n x d)",
-		ylabel="feature coord. (n x d)",
-		aspectratio=:equal,
-		size=(700, 700),
-	    title="PbTe_FC2 (Traning Data = " *string(199) *")" )
-
-# ╔═╡ 21c3b05d-0134-4d5f-a7a3-822538be104c
-begin
-	FC2[ 0.0 .< FC2 .< 1.e-2 ] .= 0.0
-	FC2[ 0.0 .> FC2 .> -1.e-2 ] .= 0.0
-end
-
-# ╔═╡ d0528b25-b21f-4c98-a029-5f8df0286f08
-heatmap(1:size(FC2[:,:],1),
-	    1:size(FC2[:,:],2), FC2[:,:],
-	    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
-	    xlabel="feature coord. (n x d)",
-		ylabel="feature coord. (n x d)",
-		aspectratio=:equal,
-		size=(700, 700),
-	    title="PbTe_FC2 (Traning Data = " *string(199) *")" )
-
-# ╔═╡ 1dd85737-f044-4c59-bf4b-714dedd6629b
+# ╔═╡ f491a99e-ce25-471b-a1e3-fe4a579d9d7d
 function recon_FC2(FC2)
 	FC2_re = zeros(3,3,Int(size(FC2,1)/3),Int(size(FC2,1)/3));
 	for i in 1:Int(size(FC2,1)/3)
@@ -209,38 +180,10 @@ function recon_FC2(FC2)
 	return FC2_re
 end
 
-# ╔═╡ 81c979c7-f0a3-4cd4-bfc0-e47676a4ad14
-FC2_re = recon_FC2(FC2);
-
-# ╔═╡ bfed3725-ab73-4b0e-a673-4f26be3992d8
-FC2_re[1:3,1:3,1,1:8]
-
-# ╔═╡ cba31d94-4779-4db1-928f-5e58f83784f7
-FC2_re[1:3,1:3,1,4]
-
-# ╔═╡ 5e85a345-c83f-4f1c-b6bf-b93dd49500bc
-FC2_re[1:3,1:3,1,6]
-
-# ╔═╡ 8fe8b911-0e96-4159-8649-dddfdb896559
-FC2_re[1:3,1:3,1,8]
-
-# ╔═╡ 688e8cda-81cb-4729-8d90-a65a35f4cea0
-FC2_re[1:3,1:3,1,10]
-
-# ╔═╡ 1bef7de1-490e-4b01-8af3-ea9fd80c0075
-FC2_re[1:3,1:3,1,12]
-
-# ╔═╡ 7abb24bb-c752-4b13-b241-51a0b1617b8f
-FC2_re[1:3,1:3,1,14]
-
-# ╔═╡ 17d45498-853b-4aca-977d-cc46acf248d9
-sum(FC2*equi)
-
-# ╔═╡ 07d3592c-b5a6-49f5-92c9-093603ba42e1
-sum(FC2)
-
-# ╔═╡ e2b3d5cf-7f4f-4f22-b9f7-99d45b75166a
-begin
+# ╔═╡ 6a766e2b-29a2-4a90-a012-7e990a3856ac
+function element(FC2)
+	FC2_re = recon_FC2(FC2)
+	begin
 	a1 = mean(
 		[FC2_re[:,:,1,1][1,1] FC2_re[:,:,1,1][2,2] FC2_re[:,:,1,1][3,3]]
 	)
@@ -283,9 +226,6 @@ begin
 		FC2_re[:,:,1,14][1,1] FC2_re[:,:,1,14][2,2]]	
 	)
 end
-
-
-# ╔═╡ 8de1931a-f582-4d6a-be6d-650d85ae27c5
 begin
 	a2 = mean(
 		[FC2_re[:,:,2,2][1,1] FC2_re[:,:,2,2][2,2] FC2_re[:,:,2,2][3,3]]
@@ -330,21 +270,94 @@ begin
 		FC2_re[:,:,2,13][1,1] FC2_re[:,:,2,13][2,2]]	
 	)
 end
+	Predict = [a1, b1, c1, d1, e1, f1, g1 ,h1, a2, b2, c2, d2, e2, f2, g2 ,h2]
+	return Predict
+end
 
-# ╔═╡ 341e193a-587d-409d-9eb9-af3e2412f76b
-Predict = [a1, b1, c1, d1, e1, f1, g1 ,h1, a2, b2, c2, d2, e2, f2, g2 ,h2]
+# ╔═╡ 1ed20c04-677e-4e3f-9bef-e704361d3665
+begin
+	Σₑ = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10]
+	Σₙ = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10]/l
+	numHyper = size(Σₑ,1)
+	Asum = zeros(numHyper,numHyper)
+	Osum = zeros(numHyper,numHyper)
+	RMSE = zeros(numHyper,numHyper)
+end;
 
-# ╔═╡ de09fb74-d4d3-49a8-badc-4a0751a5680b
-g1
+# ╔═╡ 37f889c7-bb6a-49ce-a7b5-b36c6bc85442
+@time for i in 1:numHyper
+	for j in 1:numHyper
+		σₑ = Σₑ[i]
+		σₙ = Σₙ[j]
+		Kₘₘ = Marginal(feature, σₑ, σₙ)
+		@time FC2 = Posterior(Kₘₘ, K₂ₙₘ, Target);
+		Predict = element(FC2)
+		
+		Asum[i,j] = sum(FC2)
+		Osum[i,j] = sum(FC2*equi)
+		RMSE[i,j] = rmsd(Phon, Predict; normalize=false)
+	end
+end
 
-# ╔═╡ 84cd6bd3-8834-4c82-873c-9d97f5c94b43
-Phon = [2.92999594, 0.04717251, -0.31205117, -0.17018929, -0.2541165, -0.09757366, -1.39262983, 0.05100078, 2.08113829, 0.04717251, -0.31271797, -0.6251722, -0.09217561, -0.01833669, -1.34983008, 0.05144025]
+# ╔═╡ 900cf7cc-dd66-476b-b9c7-3abdc70d22b9
+begin
+	heatmap(1:numHyper,
+		    1:numHyper, broadcast(abs, Asum),
+		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
+		    xlabel="log Force Gaussian noise",
+			ylabel="log Energy Gaussian noise",
+			aspectratio=:equal,
+			size=(700, 700),
+		    title="Acoustic Sum-rule" )
+	savefig("Acoustic_Gnoise.png")
+end
 
-# ╔═╡ daff8f4f-f5d8-4723-be86-ff065056a8f2
-rmsd(Phon, Predict; normalize=false)
+# ╔═╡ 436903b3-5a46-426c-92f7-9c7c60d28062
+begin
+	heatmap(1:numHyper,
+		    1:numHyper, broadcast(abs, Osum),
+		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
+		    xlabel="log Force Gaussian noise",
+			ylabel="log Energy Gaussian noise",
+			aspectratio=:equal,
+			size=(700, 700),
+		    title="Net forces" )
+	savefig("NetForce_Gnoise.png")
+end
 
-# ╔═╡ 326c5fb9-70f5-4999-ad0c-da88d8689af3
-sum(broadcast(abs, Phon - Predict)./ broadcast(abs, Phon))/size(Phon,1)
+# ╔═╡ be126f9d-daf2-4869-9648-10dc5a1eb753
+begin
+	heatmap(1:numHyper,
+		    1:numHyper, RMSE,
+		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
+		    xlabel="log Force Gaussian noise",
+			ylabel="log Energy Gaussian noise",
+			aspectratio=:equal,
+			size=(700, 700),
+		    title="RMSE" )
+	savefig("RMSE_Gnoise.png")
+end
+
+# ╔═╡ ab181515-70a4-4969-b32c-c5c1cd151785
+broadcast(abs, Asum)[10,6]
+
+# ╔═╡ 8682ebe0-3eeb-45e4-9042-9340e992700a
+broadcast(abs, Osum)[10,6]
+
+# ╔═╡ 1a293520-0f8c-47b9-a39d-e27ce2382b99
+findmin(broadcast(abs, Asum))
+
+# ╔═╡ a3535b4f-6fa0-4992-b56e-e0f380186f54
+findmin(broadcast(abs, Osum))
+
+# ╔═╡ ae857633-bc64-4879-885b-ba5957ba0aba
+findmin(RMSE)
+
+# ╔═╡ 48144967-98a5-40c4-af96-1e3f2d1c8e37
+broadcast(abs, Asum)
+
+# ╔═╡ 0c52d48a-0e68-4005-a0c4-e40ee6d57fc1
+RMSE
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1768,38 +1781,30 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═346974a0-8249-11ee-075d-33c092b30816
-# ╠═d8b8b25d-e716-47e9-b2e4-12731df9e7c0
-# ╠═39a72f49-6efb-4ad5-a3b0-7b6a6954d6a6
-# ╠═e79b6a06-5285-44b2-81ea-e3a96247db8f
-# ╠═e1d8fc9e-00fd-4fd9-975d-6b6a4f79068a
-# ╠═a6a54c75-f12d-4694-a876-30f0a14ad8a1
-# ╠═cbd94f02-b08d-4208-9e2a-b24a35d2646a
-# ╠═e9efaf81-6634-435c-8030-45cc949d8068
-# ╠═79d1e9f9-56d1-4425-9362-ff86a5c452f5
-# ╠═25f5cb64-40e5-4a2a-9a0d-42878a3aa9ae
-# ╠═b2ced1ff-11f5-46df-9e4a-a961ab8f0a63
-# ╠═be8cba06-01f0-4ad5-861f-5a4c556a9cc4
-# ╠═4451bffe-18c9-4da3-ba22-9df2cb2e6472
-# ╠═21c3b05d-0134-4d5f-a7a3-822538be104c
-# ╠═d0528b25-b21f-4c98-a029-5f8df0286f08
-# ╠═1dd85737-f044-4c59-bf4b-714dedd6629b
-# ╠═81c979c7-f0a3-4cd4-bfc0-e47676a4ad14
-# ╠═bfed3725-ab73-4b0e-a673-4f26be3992d8
-# ╠═cba31d94-4779-4db1-928f-5e58f83784f7
-# ╠═5e85a345-c83f-4f1c-b6bf-b93dd49500bc
-# ╠═8fe8b911-0e96-4159-8649-dddfdb896559
-# ╠═688e8cda-81cb-4729-8d90-a65a35f4cea0
-# ╠═1bef7de1-490e-4b01-8af3-ea9fd80c0075
-# ╠═7abb24bb-c752-4b13-b241-51a0b1617b8f
-# ╠═17d45498-853b-4aca-977d-cc46acf248d9
-# ╠═07d3592c-b5a6-49f5-92c9-093603ba42e1
-# ╠═e2b3d5cf-7f4f-4f22-b9f7-99d45b75166a
-# ╠═8de1931a-f582-4d6a-be6d-650d85ae27c5
-# ╠═341e193a-587d-409d-9eb9-af3e2412f76b
-# ╠═de09fb74-d4d3-49a8-badc-4a0751a5680b
-# ╠═84cd6bd3-8834-4c82-873c-9d97f5c94b43
-# ╠═daff8f4f-f5d8-4723-be86-ff065056a8f2
-# ╠═326c5fb9-70f5-4999-ad0c-da88d8689af3
+# ╠═2340d700-cf96-11ee-3ae5-639536629beb
+# ╠═ccae8777-91f5-46c7-ba09-45619c7345d2
+# ╠═06fe43c1-6919-419d-892e-e236f77c93fb
+# ╠═1d95bac5-ff8f-472e-aaec-b69db737b023
+# ╠═ee59ad8c-f669-48dd-ac29-2ae2f8667cf6
+# ╠═e1720ab7-548f-4986-bf3d-edaaa8959246
+# ╠═fbf2dfbe-27a5-45a3-bf91-bcd169d5470e
+# ╠═cd051a66-dd49-458d-a926-f50f4981b682
+# ╠═607f0494-c5bb-4195-b65d-9f8530cbd542
+# ╠═6fb5ac89-5e70-4f20-9c06-529faed15fa7
+# ╠═252528e2-4892-4000-817a-d40707e9abc5
+# ╠═f491a99e-ce25-471b-a1e3-fe4a579d9d7d
+# ╠═6a766e2b-29a2-4a90-a012-7e990a3856ac
+# ╠═1ed20c04-677e-4e3f-9bef-e704361d3665
+# ╠═37f889c7-bb6a-49ce-a7b5-b36c6bc85442
+# ╠═900cf7cc-dd66-476b-b9c7-3abdc70d22b9
+# ╠═436903b3-5a46-426c-92f7-9c7c60d28062
+# ╠═be126f9d-daf2-4869-9648-10dc5a1eb753
+# ╠═ab181515-70a4-4969-b32c-c5c1cd151785
+# ╠═8682ebe0-3eeb-45e4-9042-9340e992700a
+# ╠═1a293520-0f8c-47b9-a39d-e27ce2382b99
+# ╠═a3535b4f-6fa0-4992-b56e-e0f380186f54
+# ╠═ae857633-bc64-4879-885b-ba5957ba0aba
+# ╠═48144967-98a5-40c4-af96-1e3f2d1c8e37
+# ╠═0c52d48a-0e68-4005-a0c4-e40ee6d57fc1
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
