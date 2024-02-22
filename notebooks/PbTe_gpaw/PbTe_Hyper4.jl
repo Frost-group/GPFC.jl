@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 346974a0-8249-11ee-075d-33c092b30816
+# ╔═╡ 72234f42-d0ec-11ee-2756-2daf42310bca
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum, Statistics
@@ -15,10 +15,10 @@ begin
 	using StatsBase
 end
 
-# ╔═╡ d8b8b25d-e716-47e9-b2e4-12731df9e7c0
+# ╔═╡ 4542027e-44f8-4253-8ad8-73bdccaf3599
 begin
-	σₒ = 0.3                  # Kernel Scale
-	l = 1.0			    # Length Scale
+	σₒ = 0.05                  # Kernel Scale
+	l = 0.4			    # Length Scale
 		
 	Num = 199                 # Number of training points
 	DIM = 3                     # Dimension of Materials
@@ -28,29 +28,29 @@ begin
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
 
-# ╔═╡ 39a72f49-6efb-4ad5-a3b0-7b6a6954d6a6
+# ╔═╡ 86596b66-4e36-45b5-9b75-86dc8c132789
 begin
 	σₑ = 1e-10				      # Energy Gaussian noise
 	σₙ = 1e-6/l                   # Force Gaussian noise for Model 2 (σₑ independent)
 end
 
-# ╔═╡ e79b6a06-5285-44b2-81ea-e3a96247db8f
+# ╔═╡ ce93a32a-a1ef-432e-81ae-c1b075f682f0
 begin
-	function kernelfunction1(x₁, x₂)
+	function kernelfunction1(kernel, x₁, x₂)
 		return Zygote.gradient( a -> kernel(a, x₂), x₁)[1]
 	end
-	function kernelfunction2(x₁, x₂)
-		return ForwardDiff.jacobian(a -> kernelfunction1(a, x₂), x₁)
+	function kernelfunction2(kernel, x₁, x₂)
+		return ForwardDiff.jacobian(a -> kernelfunction1(kernel, a, x₂), x₁)
 	end
-	function kernelfunction3(x₁, x₂)
-		return ForwardDiff.jacobian(a -> kernelfunction2(a, x₂), x₁)
+	function kernelfunction3(kernel, x₁, x₂)
+		return ForwardDiff.jacobian(a -> kernelfunction2(kernel, a, x₂), x₁)
 	end
-	function kernelfunction4(x₁, x₂)
-		return ForwardDiff.jacobian(a -> kernelfunction3(a, x₂), x₁)
+	function kernelfunction4(kernel, x₁, x₂)
+		return ForwardDiff.jacobian(a -> kernelfunction3(kernel, a, x₂), x₁)
 	end
 end
 
-# ╔═╡ e1d8fc9e-00fd-4fd9-975d-6b6a4f79068a
+# ╔═╡ 2f741a42-042f-4b01-9745-261dfaa76652
 function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
 	a  = 4 - dimA
 	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
@@ -71,12 +71,12 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 	return equi, feature, energy, force, Target
 end
 
-# ╔═╡ a6a54c75-f12d-4694-a876-30f0a14ad8a1
+# ╔═╡ d96b4132-15fc-4f81-a774-de561abc17f1
 equi, feature, energy, force, Target = ASEFeatureTarget(
     "feature_new", "energy_new", "force_new", Num, DIM);
 
-# ╔═╡ cbd94f02-b08d-4208-9e2a-b24a35d2646a
-function Marginal(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
+# ╔═╡ f66286c1-6df4-45ef-b5c9-03c7f9989b56
+function Marginal(kernel, X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
 	num = size(X,2)
 	#building Marginal Likelihood containers
@@ -92,11 +92,11 @@ function Marginal(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
 		#Fillin convarian of Energy vs Energy
 			KK[i, j] = kernel(X[:,i], X[:,j])
 		#Fillin convarian of Force vs Energy
-			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction1(X[:,i], X[:,j])
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction1(kernel, X[:,i], X[:,j])
 		#Fillin convarian of Energy vs Force	
 			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]
 		#Fillin convarian of Force vs Force
-			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -kernelfunction2(X[:,i], X[:,j])
+			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -kernelfunction2(kernel, X[:,i], X[:,j])
 		end
 	end
 
@@ -110,8 +110,8 @@ function Marginal(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
 	return Kₘₘ
 end
 
-# ╔═╡ e9efaf81-6634-435c-8030-45cc949d8068
-function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64})
+# ╔═╡ f248b62d-e255-4e01-bb78-0c87b28c656b
+function Coveriance_fc2(kernel, X::Matrix{Float64}, xₒ::Vector{Float64})
 	dim = size(X,1)
 	num = size(X,2)
 	
@@ -122,83 +122,39 @@ function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64})
 	for j in 1:num
 		#Fillin convarian of Energy vs FC2
 		K₂ₙₘ[:,:,j] = reshape(
-					 kernelfunction2(X[:,j], xₒ)
+					 kernelfunction2(kernel, X[:,j], xₒ)
 					, (dim, dim)
 				)
 		#Fillin convarian of Force vs FC2
 		K₂ₙₘ[:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
-					 kernelfunction3(X[:,j], xₒ)
+					 kernelfunction3(kernel, X[:,j], xₒ)
 					, (dim, dim, dim)
 				)
 	end
 	return K₂ₙₘ
 end
 
-# ╔═╡ 79d1e9f9-56d1-4425-9362-ff86a5c452f5
-function Posterior(Marginal, Covariance, Target)
+# ╔═╡ 9ed139f6-307b-44cd-b7d3-121a8af46662
+function PosteriorFC2(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
 	dimₜ = size(Marginal, 1)
-	Kₘₘ⁻¹ = inv(Marginal)   #
+	Kₘₘ⁻¹ = inv(Marginal)  
 	Kₙₘ = Covariance
 	
 	MarginalTar = zeros(dimₜ)
 	@einsum MarginalTar[m] = Kₘₘ⁻¹[m, n] * Target[n]
-
-	if size(Kₙₘ) == (dimₜ,)
-		Meanₚ = Kₙₘ'  * MarginalTar
-		
-	elseif size(Kₙₘ) == (dimₚ, dimₜ)
-		Meanₚ = zeros(dimₚ)
-		@einsum Meanₚ[i] = Kₙₘ[i, m] * MarginalTar[m]
 	
-	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₜ)
-		Meanₚ = zeros(dimₚ, dimₚ)
-		@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * MarginalTar[m]
-
-	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₚ, dimₜ)
-		Meanₚ = zeros(dimₚ, dimₚ, dimₚ)
-		@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * MarginalTar[m]
-	end
+	size(Kₙₘ) == (dimₚ, dimₚ, dimₜ)
+	Meanₚ = zeros(dimₚ, dimₚ)
+	@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * MarginalTar[m]
 
 	return Meanₚ 
 end
 
-# ╔═╡ 25f5cb64-40e5-4a2a-9a0d-42878a3aa9ae
-@time Kₘₘ = Marginal(feature, σₑ, σₙ);
+# ╔═╡ 6d052900-074a-487a-b106-a18e6683f84f
+Phon = [2.92999594, 0.04717251, -0.31205117, -0.17018929, -0.2541165, -0.09757366, -1.39262983, 0.05100078, 2.08113829, 0.04717251, -0.31271797, -0.6251722, -0.09217561, -0.01833669, -1.34983008, 0.05144025]
 
-# ╔═╡ b2ced1ff-11f5-46df-9e4a-a961ab8f0a63
-@time K₂ₙₘ = Coveriance_fc2(feature, equi);
-
-# ╔═╡ be8cba06-01f0-4ad5-861f-5a4c556a9cc4
-@time FC2 = Posterior(Kₘₘ, K₂ₙₘ, Target);
-
-# ╔═╡ 4451bffe-18c9-4da3-ba22-9df2cb2e6472
-heatmap(1:size(FC2[:,:],1),
-	    1:size(FC2[:,:],2), FC2[:,:],
-	    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
-	    xlabel="feature coord. (n x d)",
-		ylabel="feature coord. (n x d)",
-		aspectratio=:equal,
-		size=(700, 700),
-	    title="PbTe_FC2 (Traning Data = " *string(199) *")" )
-
-# ╔═╡ 21c3b05d-0134-4d5f-a7a3-822538be104c
-begin
-	FC2[ 0.0 .< FC2 .< 1.e-2 ] .= 0.0
-	FC2[ 0.0 .> FC2 .> -1.e-2 ] .= 0.0
-end
-
-# ╔═╡ d0528b25-b21f-4c98-a029-5f8df0286f08
-heatmap(1:size(FC2[:,:],1),
-	    1:size(FC2[:,:],2), FC2[:,:],
-	    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
-	    xlabel="feature coord. (n x d)",
-		ylabel="feature coord. (n x d)",
-		aspectratio=:equal,
-		size=(700, 700),
-	    title="PbTe_FC2 (Traning Data = " *string(199) *")" )
-
-# ╔═╡ 1dd85737-f044-4c59-bf4b-714dedd6629b
+# ╔═╡ 994bb55b-cb7b-49ec-bcb6-b8286226c652
 function recon_FC2(FC2)
 	FC2_re = zeros(3,3,Int(size(FC2,1)/3),Int(size(FC2,1)/3));
 	for i in 1:Int(size(FC2,1)/3)
@@ -209,38 +165,10 @@ function recon_FC2(FC2)
 	return FC2_re
 end
 
-# ╔═╡ 81c979c7-f0a3-4cd4-bfc0-e47676a4ad14
-FC2_re = recon_FC2(FC2);
-
-# ╔═╡ bfed3725-ab73-4b0e-a673-4f26be3992d8
-FC2_re[1:3,1:3,1,1:8]
-
-# ╔═╡ cba31d94-4779-4db1-928f-5e58f83784f7
-FC2_re[1:3,1:3,1,4]
-
-# ╔═╡ 5e85a345-c83f-4f1c-b6bf-b93dd49500bc
-FC2_re[1:3,1:3,1,6]
-
-# ╔═╡ 8fe8b911-0e96-4159-8649-dddfdb896559
-FC2_re[1:3,1:3,1,8]
-
-# ╔═╡ 688e8cda-81cb-4729-8d90-a65a35f4cea0
-FC2_re[1:3,1:3,1,10]
-
-# ╔═╡ 1bef7de1-490e-4b01-8af3-ea9fd80c0075
-FC2_re[1:3,1:3,1,12]
-
-# ╔═╡ 7abb24bb-c752-4b13-b241-51a0b1617b8f
-FC2_re[1:3,1:3,1,14]
-
-# ╔═╡ 17d45498-853b-4aca-977d-cc46acf248d9
-sum(FC2*equi)
-
-# ╔═╡ 07d3592c-b5a6-49f5-92c9-093603ba42e1
-sum(FC2)
-
-# ╔═╡ e2b3d5cf-7f4f-4f22-b9f7-99d45b75166a
-begin
+# ╔═╡ c62279b1-3fcf-4519-afe2-e219b1e3b5fd
+function element(FC2)
+	FC2_re = recon_FC2(FC2)
+	begin
 	a1 = mean(
 		[FC2_re[:,:,1,1][1,1] FC2_re[:,:,1,1][2,2] FC2_re[:,:,1,1][3,3]]
 	)
@@ -283,9 +211,6 @@ begin
 		FC2_re[:,:,1,14][1,1] FC2_re[:,:,1,14][2,2]]	
 	)
 end
-
-
-# ╔═╡ 8de1931a-f582-4d6a-be6d-650d85ae27c5
 begin
 	a2 = mean(
 		[FC2_re[:,:,2,2][1,1] FC2_re[:,:,2,2][2,2] FC2_re[:,:,2,2][3,3]]
@@ -330,21 +255,100 @@ begin
 		FC2_re[:,:,2,13][1,1] FC2_re[:,:,2,13][2,2]]	
 	)
 end
+	Predict = [a1, b1, c1, d1, e1, f1, g1 ,h1, a2, b2, c2, d2, e2, f2, g2 ,h2]
+	return Predict
+end
 
-# ╔═╡ 341e193a-587d-409d-9eb9-af3e2412f76b
-Predict = [a1, b1, c1, d1, e1, f1, g1 ,h1, a2, b2, c2, d2, e2, f2, g2 ,h2]
+# ╔═╡ 8c515ed7-f6d1-4936-af46-df7ef63944df
+begin
+	Σₒ = [7.5e-3, 1e-2, 2.5e-2, 5e-2, 7.5e-2, 1e-1, 2.5e-1, 5e-1, 7.5e-2, 1.]
+	L = [1e-1, 2e-1, 3e-1, 4e-1, 5e-1, 6e-1, 7e-1, 8e-1, 9e-1, 1.]
+	numHyper = size(Σₒ,1)
+	Asum = zeros(numHyper, numHyper)
+	Osum = zeros(numHyper, numHyper)
+	RMSE = zeros(numHyper, numHyper)
+end;
 
-# ╔═╡ de09fb74-d4d3-49a8-badc-4a0751a5680b
-h2
+# ╔═╡ 5135dea2-df6f-4c7a-9d9b-f30bef128b5d
+@time for i in 1:numHyper
+	for j in 1:numHyper
+		σₒ = Σₒ[i]
+		l = L[j]
+		kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
+		Kₘₘ = Marginal(kernel, feature, σₑ, σₙ)
+		K₂ₙₘ = Coveriance_fc2(kernel, feature, equi);
+		
+		FC2 = PosteriorFC2(Kₘₘ, K₂ₙₘ, Target);
+		Predict = element(FC2)
+		
+		Asum[i,j] = sum(FC2)
+		Osum[i,j] = sum(FC2*equi)
+		RMSE[i,j] = rmsd(Phon, Predict; normalize=false)
+	end
+end
 
-# ╔═╡ 84cd6bd3-8834-4c82-873c-9d97f5c94b43
-Phon = [2.92999594, 0.04717251, -0.31205117, -0.17018929, -0.2541165, -0.09757366, -1.39262983, 0.05100078, 2.08113829, 0.04717251, -0.31271797, -0.6251722, -0.09217561, -0.01833669, -1.34983008, 0.05144025]
+# ╔═╡ d58ece38-a4a4-4680-a351-52b3cf6e687b
+begin
+	heatmap(1:numHyper, 1:numHyper, broadcast(abs, Asum),
+		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
+		    xlabel="Kernel Scale",
+			ylabel="Lenght Scale",
+			aspectratio=:equal,
+			size=(700, 700),
+		    title="Acoustic Sum-rule" )
+	savefig("Acoustic_Scale.png")
+end
 
-# ╔═╡ daff8f4f-f5d8-4723-be86-ff065056a8f2
-rmsd(Phon, Predict; normalize=false)
+# ╔═╡ c8c881e1-20f5-42b0-a5ba-ff2c7819317d
+begin
+	heatmap(1:numHyper, 1:numHyper, broadcast(abs, Osum),
+		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
+		   	xlabel="Kernel Scale",
+			ylabel="Lenght Scale",
+			aspectratio=:equal,
+			size=(700, 700),
+		    title="Net forces" )
+	savefig("NetForce_Scale.png")
+end
 
-# ╔═╡ 326c5fb9-70f5-4999-ad0c-da88d8689af3
-sum(broadcast(abs, Phon - Predict)./ broadcast(abs, Phon))/size(Phon,1)
+# ╔═╡ 67cfe45a-14f3-463a-a742-59c896e3e886
+begin
+	heatmap(1:numHyper, 1:numHyper, RMSE,
+		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
+		    xlabel="Kernel Scale",
+			ylabel="Lenght Scale",
+			aspectratio=:equal,
+			size=(700, 700),
+		    title="RMSE" )
+	savefig("RMSE_Scale.png")
+end
+
+# ╔═╡ fe3c4f16-caf4-4517-be24-0e2def05ff5f
+
+
+# ╔═╡ 0d835133-d961-4cb6-9e91-b5e717cee65a
+findmin(broadcast(abs, Asum))
+
+# ╔═╡ 8095e007-18b2-48d8-b500-fec7cb66b331
+Σₒ[1]
+
+# ╔═╡ 147fccbf-d42a-474e-8f30-476d83f3ac9d
+L[7]
+
+# ╔═╡ af8e9194-7655-4b24-836a-a2ceaec67d02
+findmin(broadcast(abs, Osum))
+
+# ╔═╡ 38a17c8a-b261-402c-87c6-3755bc9effe0
+findmin(RMSE)
+
+# ╔═╡ 5962849a-b3e0-47c9-8369-0c0b687394a7
+Σₒ[8]
+
+# ╔═╡ 33e0b604-e6c2-491e-aa9e-ae50121c1ffb
+L[10]
+
+# ╔═╡ 1787e9d9-a1e2-46b6-b9f6-f3d4b1043f45
+RMSE
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1768,38 +1772,31 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═346974a0-8249-11ee-075d-33c092b30816
-# ╠═d8b8b25d-e716-47e9-b2e4-12731df9e7c0
-# ╠═39a72f49-6efb-4ad5-a3b0-7b6a6954d6a6
-# ╠═e79b6a06-5285-44b2-81ea-e3a96247db8f
-# ╠═e1d8fc9e-00fd-4fd9-975d-6b6a4f79068a
-# ╠═a6a54c75-f12d-4694-a876-30f0a14ad8a1
-# ╠═cbd94f02-b08d-4208-9e2a-b24a35d2646a
-# ╠═e9efaf81-6634-435c-8030-45cc949d8068
-# ╠═79d1e9f9-56d1-4425-9362-ff86a5c452f5
-# ╠═25f5cb64-40e5-4a2a-9a0d-42878a3aa9ae
-# ╠═b2ced1ff-11f5-46df-9e4a-a961ab8f0a63
-# ╠═be8cba06-01f0-4ad5-861f-5a4c556a9cc4
-# ╠═4451bffe-18c9-4da3-ba22-9df2cb2e6472
-# ╠═21c3b05d-0134-4d5f-a7a3-822538be104c
-# ╠═d0528b25-b21f-4c98-a029-5f8df0286f08
-# ╠═1dd85737-f044-4c59-bf4b-714dedd6629b
-# ╠═81c979c7-f0a3-4cd4-bfc0-e47676a4ad14
-# ╠═bfed3725-ab73-4b0e-a673-4f26be3992d8
-# ╠═cba31d94-4779-4db1-928f-5e58f83784f7
-# ╠═5e85a345-c83f-4f1c-b6bf-b93dd49500bc
-# ╠═8fe8b911-0e96-4159-8649-dddfdb896559
-# ╠═688e8cda-81cb-4729-8d90-a65a35f4cea0
-# ╠═1bef7de1-490e-4b01-8af3-ea9fd80c0075
-# ╠═7abb24bb-c752-4b13-b241-51a0b1617b8f
-# ╠═17d45498-853b-4aca-977d-cc46acf248d9
-# ╠═07d3592c-b5a6-49f5-92c9-093603ba42e1
-# ╠═e2b3d5cf-7f4f-4f22-b9f7-99d45b75166a
-# ╠═8de1931a-f582-4d6a-be6d-650d85ae27c5
-# ╠═341e193a-587d-409d-9eb9-af3e2412f76b
-# ╠═de09fb74-d4d3-49a8-badc-4a0751a5680b
-# ╠═84cd6bd3-8834-4c82-873c-9d97f5c94b43
-# ╠═daff8f4f-f5d8-4723-be86-ff065056a8f2
-# ╠═326c5fb9-70f5-4999-ad0c-da88d8689af3
+# ╠═72234f42-d0ec-11ee-2756-2daf42310bca
+# ╠═4542027e-44f8-4253-8ad8-73bdccaf3599
+# ╠═86596b66-4e36-45b5-9b75-86dc8c132789
+# ╠═ce93a32a-a1ef-432e-81ae-c1b075f682f0
+# ╠═2f741a42-042f-4b01-9745-261dfaa76652
+# ╠═d96b4132-15fc-4f81-a774-de561abc17f1
+# ╟─f66286c1-6df4-45ef-b5c9-03c7f9989b56
+# ╠═f248b62d-e255-4e01-bb78-0c87b28c656b
+# ╠═9ed139f6-307b-44cd-b7d3-121a8af46662
+# ╠═6d052900-074a-487a-b106-a18e6683f84f
+# ╠═994bb55b-cb7b-49ec-bcb6-b8286226c652
+# ╠═c62279b1-3fcf-4519-afe2-e219b1e3b5fd
+# ╠═8c515ed7-f6d1-4936-af46-df7ef63944df
+# ╠═5135dea2-df6f-4c7a-9d9b-f30bef128b5d
+# ╠═d58ece38-a4a4-4680-a351-52b3cf6e687b
+# ╠═c8c881e1-20f5-42b0-a5ba-ff2c7819317d
+# ╠═67cfe45a-14f3-463a-a742-59c896e3e886
+# ╠═fe3c4f16-caf4-4517-be24-0e2def05ff5f
+# ╠═0d835133-d961-4cb6-9e91-b5e717cee65a
+# ╠═8095e007-18b2-48d8-b500-fec7cb66b331
+# ╠═147fccbf-d42a-474e-8f30-476d83f3ac9d
+# ╠═af8e9194-7655-4b24-836a-a2ceaec67d02
+# ╠═38a17c8a-b261-402c-87c6-3755bc9effe0
+# ╠═5962849a-b3e0-47c9-8369-0c0b687394a7
+# ╠═33e0b604-e6c2-491e-aa9e-ae50121c1ffb
+# ╠═1787e9d9-a1e2-46b6-b9f6-f3d4b1043f45
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

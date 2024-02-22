@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 346974a0-8249-11ee-075d-33c092b30816
+# ╔═╡ 14c916d0-d0f2-11ee-041b-25efda115d17
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum, Statistics
@@ -15,42 +15,37 @@ begin
 	using StatsBase
 end
 
-# ╔═╡ d8b8b25d-e716-47e9-b2e4-12731df9e7c0
+# ╔═╡ ac9f1385-9dca-41d6-bbee-933bef81bba3
 begin
-	σₒ = 0.3                  # Kernel Scale
-	l = 1.0			    # Length Scale
-		
-	Num = 199                 # Number of training points
-	DIM = 3                     # Dimension of Materials
-	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
-	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
-		
-	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
-end;
-
-# ╔═╡ 39a72f49-6efb-4ad5-a3b0-7b6a6954d6a6
-begin
-	σₑ = 1e-10				      # Energy Gaussian noise
-	σₙ = 1e-6/l                   # Force Gaussian noise for Model 2 (σₑ independent)
-end
-
-# ╔═╡ e79b6a06-5285-44b2-81ea-e3a96247db8f
-begin
-	function kernelfunction1(x₁, x₂)
+	function kernelfunction1(kernel, x₁, x₂)
 		return Zygote.gradient( a -> kernel(a, x₂), x₁)[1]
 	end
-	function kernelfunction2(x₁, x₂)
-		return ForwardDiff.jacobian(a -> kernelfunction1(a, x₂), x₁)
+	function kernelfunction2(kernel, x₁, x₂)
+		return ForwardDiff.jacobian(a -> kernelfunction1(kernel, a, x₂), x₁)
 	end
-	function kernelfunction3(x₁, x₂)
-		return ForwardDiff.jacobian(a -> kernelfunction2(a, x₂), x₁)
+	function kernelfunction3(kernel, x₁, x₂)
+		return ForwardDiff.jacobian(a -> kernelfunction2(kernel, a, x₂), x₁)
 	end
-	function kernelfunction4(x₁, x₂)
-		return ForwardDiff.jacobian(a -> kernelfunction3(a, x₂), x₁)
+	function kernelfunction4(kernel, x₁, x₂)
+		return ForwardDiff.jacobian(a -> kernelfunction3(kernel, a, x₂), x₁)
 	end
 end
 
-# ╔═╡ e1d8fc9e-00fd-4fd9-975d-6b6a4f79068a
+# ╔═╡ 78907e6f-276a-4a88-ba70-482591f3f69f
+function ARDlength(Mass, Supercell)
+	nAtom = size(Mass, 1)
+	nCell = Supercell[1]*Supercell[2]*Supercell[3]
+	L = zeros(3, nAtom * nCell)
+	for i in 1:nAtom
+		for j in 1:nCell
+			L[:,2*(j-1)+i] = Mass[i] * ones(3,1)
+		end
+	end
+	LL = reshape(L, (3 * nAtom * nCell,))
+	return LL
+end
+
+# ╔═╡ 8dec9a70-fc1f-4737-afb6-a6531a5e965c
 function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
 	a  = 4 - dimA
 	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
@@ -71,12 +66,8 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 	return equi, feature, energy, force, Target
 end
 
-# ╔═╡ a6a54c75-f12d-4694-a876-30f0a14ad8a1
-equi, feature, energy, force, Target = ASEFeatureTarget(
-    "feature_new", "energy_new", "force_new", Num, DIM);
-
-# ╔═╡ cbd94f02-b08d-4208-9e2a-b24a35d2646a
-function Marginal(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
+# ╔═╡ 006e5931-c003-42ce-8cb1-99684a2b17d1
+function Marginal(kernel, X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
 	num = size(X,2)
 	#building Marginal Likelihood containers
@@ -92,11 +83,11 @@ function Marginal(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
 		#Fillin convarian of Energy vs Energy
 			KK[i, j] = kernel(X[:,i], X[:,j])
 		#Fillin convarian of Force vs Energy
-			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction1(X[:,i], X[:,j])
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction1(kernel, X[:,i], X[:,j])
 		#Fillin convarian of Energy vs Force	
 			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]
 		#Fillin convarian of Force vs Force
-			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -kernelfunction2(X[:,i], X[:,j])
+			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -kernelfunction2(kernel, X[:,i], X[:,j])
 		end
 	end
 
@@ -110,8 +101,8 @@ function Marginal(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
 	return Kₘₘ
 end
 
-# ╔═╡ e9efaf81-6634-435c-8030-45cc949d8068
-function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64})
+# ╔═╡ b1570dd9-e0b1-4e0d-8535-5eb131edb846
+function Coveriance_fc2(kernel, X::Matrix{Float64}, xₒ::Vector{Float64})
 	dim = size(X,1)
 	num = size(X,2)
 	
@@ -122,83 +113,39 @@ function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64})
 	for j in 1:num
 		#Fillin convarian of Energy vs FC2
 		K₂ₙₘ[:,:,j] = reshape(
-					 kernelfunction2(X[:,j], xₒ)
+					 kernelfunction2(kernel, X[:,j], xₒ)
 					, (dim, dim)
 				)
 		#Fillin convarian of Force vs FC2
 		K₂ₙₘ[:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
-					 kernelfunction3(X[:,j], xₒ)
+					 kernelfunction3(kernel, X[:,j], xₒ)
 					, (dim, dim, dim)
 				)
 	end
 	return K₂ₙₘ
 end
 
-# ╔═╡ 79d1e9f9-56d1-4425-9362-ff86a5c452f5
-function Posterior(Marginal, Covariance, Target)
+# ╔═╡ d158a506-0fe6-4ca2-8d33-2ddae5901581
+function PosteriorFC2(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
 	dimₜ = size(Marginal, 1)
-	Kₘₘ⁻¹ = inv(Marginal)   #
+	Kₘₘ⁻¹ = inv(Marginal)  
 	Kₙₘ = Covariance
 	
 	MarginalTar = zeros(dimₜ)
 	@einsum MarginalTar[m] = Kₘₘ⁻¹[m, n] * Target[n]
-
-	if size(Kₙₘ) == (dimₜ,)
-		Meanₚ = Kₙₘ'  * MarginalTar
-		
-	elseif size(Kₙₘ) == (dimₚ, dimₜ)
-		Meanₚ = zeros(dimₚ)
-		@einsum Meanₚ[i] = Kₙₘ[i, m] * MarginalTar[m]
 	
-	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₜ)
-		Meanₚ = zeros(dimₚ, dimₚ)
-		@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * MarginalTar[m]
-
-	elseif size(Kₙₘ) == (dimₚ, dimₚ, dimₚ, dimₜ)
-		Meanₚ = zeros(dimₚ, dimₚ, dimₚ)
-		@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * MarginalTar[m]
-	end
+	size(Kₙₘ) == (dimₚ, dimₚ, dimₜ)
+	Meanₚ = zeros(dimₚ, dimₚ)
+	@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * MarginalTar[m]
 
 	return Meanₚ 
 end
 
-# ╔═╡ 25f5cb64-40e5-4a2a-9a0d-42878a3aa9ae
-@time Kₘₘ = Marginal(feature, σₑ, σₙ);
+# ╔═╡ c3cb73c5-a4b1-4cff-a504-7b265bfd72b6
+Phon = [2.92999594, 0.04717251, -0.31205117, -0.17018929, -0.2541165, -0.09757366, -1.39262983, 0.05100078, 2.08113829, 0.04717251, -0.31271797, -0.6251722, -0.09217561, -0.01833669, -1.34983008, 0.05144025]
 
-# ╔═╡ b2ced1ff-11f5-46df-9e4a-a961ab8f0a63
-@time K₂ₙₘ = Coveriance_fc2(feature, equi);
-
-# ╔═╡ be8cba06-01f0-4ad5-861f-5a4c556a9cc4
-@time FC2 = Posterior(Kₘₘ, K₂ₙₘ, Target);
-
-# ╔═╡ 4451bffe-18c9-4da3-ba22-9df2cb2e6472
-heatmap(1:size(FC2[:,:],1),
-	    1:size(FC2[:,:],2), FC2[:,:],
-	    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
-	    xlabel="feature coord. (n x d)",
-		ylabel="feature coord. (n x d)",
-		aspectratio=:equal,
-		size=(700, 700),
-	    title="PbTe_FC2 (Traning Data = " *string(199) *")" )
-
-# ╔═╡ 21c3b05d-0134-4d5f-a7a3-822538be104c
-begin
-	FC2[ 0.0 .< FC2 .< 1.e-2 ] .= 0.0
-	FC2[ 0.0 .> FC2 .> -1.e-2 ] .= 0.0
-end
-
-# ╔═╡ d0528b25-b21f-4c98-a029-5f8df0286f08
-heatmap(1:size(FC2[:,:],1),
-	    1:size(FC2[:,:],2), FC2[:,:],
-	    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
-	    xlabel="feature coord. (n x d)",
-		ylabel="feature coord. (n x d)",
-		aspectratio=:equal,
-		size=(700, 700),
-	    title="PbTe_FC2 (Traning Data = " *string(199) *")" )
-
-# ╔═╡ 1dd85737-f044-4c59-bf4b-714dedd6629b
+# ╔═╡ 9353d236-e840-401d-89a2-db7b52b213a6
 function recon_FC2(FC2)
 	FC2_re = zeros(3,3,Int(size(FC2,1)/3),Int(size(FC2,1)/3));
 	for i in 1:Int(size(FC2,1)/3)
@@ -209,38 +156,10 @@ function recon_FC2(FC2)
 	return FC2_re
 end
 
-# ╔═╡ 81c979c7-f0a3-4cd4-bfc0-e47676a4ad14
-FC2_re = recon_FC2(FC2);
-
-# ╔═╡ bfed3725-ab73-4b0e-a673-4f26be3992d8
-FC2_re[1:3,1:3,1,1:8]
-
-# ╔═╡ cba31d94-4779-4db1-928f-5e58f83784f7
-FC2_re[1:3,1:3,1,4]
-
-# ╔═╡ 5e85a345-c83f-4f1c-b6bf-b93dd49500bc
-FC2_re[1:3,1:3,1,6]
-
-# ╔═╡ 8fe8b911-0e96-4159-8649-dddfdb896559
-FC2_re[1:3,1:3,1,8]
-
-# ╔═╡ 688e8cda-81cb-4729-8d90-a65a35f4cea0
-FC2_re[1:3,1:3,1,10]
-
-# ╔═╡ 1bef7de1-490e-4b01-8af3-ea9fd80c0075
-FC2_re[1:3,1:3,1,12]
-
-# ╔═╡ 7abb24bb-c752-4b13-b241-51a0b1617b8f
-FC2_re[1:3,1:3,1,14]
-
-# ╔═╡ 17d45498-853b-4aca-977d-cc46acf248d9
-sum(FC2*equi)
-
-# ╔═╡ 07d3592c-b5a6-49f5-92c9-093603ba42e1
-sum(FC2)
-
-# ╔═╡ e2b3d5cf-7f4f-4f22-b9f7-99d45b75166a
-begin
+# ╔═╡ 7ff8fe13-b767-4bb4-ad9a-adeb4760ff49
+function element(FC2)
+	FC2_re = recon_FC2(FC2)
+	begin
 	a1 = mean(
 		[FC2_re[:,:,1,1][1,1] FC2_re[:,:,1,1][2,2] FC2_re[:,:,1,1][3,3]]
 	)
@@ -283,9 +202,6 @@ begin
 		FC2_re[:,:,1,14][1,1] FC2_re[:,:,1,14][2,2]]	
 	)
 end
-
-
-# ╔═╡ 8de1931a-f582-4d6a-be6d-650d85ae27c5
 begin
 	a2 = mean(
 		[FC2_re[:,:,2,2][1,1] FC2_re[:,:,2,2][2,2] FC2_re[:,:,2,2][3,3]]
@@ -330,21 +246,119 @@ begin
 		FC2_re[:,:,2,13][1,1] FC2_re[:,:,2,13][2,2]]	
 	)
 end
+	Predict = [a1, b1, c1, d1, e1, f1, g1 ,h1, a2, b2, c2, d2, e2, f2, g2 ,h2]
+	return Predict
+end
 
-# ╔═╡ 341e193a-587d-409d-9eb9-af3e2412f76b
-Predict = [a1, b1, c1, d1, e1, f1, g1 ,h1, a2, b2, c2, d2, e2, f2, g2 ,h2]
+# ╔═╡ 1202c1bb-941a-46f7-9f19-6a41fb554923
+sqrt(127.6)
 
-# ╔═╡ de09fb74-d4d3-49a8-badc-4a0751a5680b
-h2
+# ╔═╡ bf195b77-da29-4188-ab91-bd79130715a0
+begin
+	Supercell = [2, 2, 2]
+	Te = 127.6
+	Pb = 207.2
+	Mass = [[1., Pb/Te],
+			[1., sqrt(Pb)/sqrt(Te)],
+			[1., 1.],
+			[1., sqrt(Te)/sqrt(Pb)],
+			[1., Te]/Pb]
+	numHyper = size(Mass, 1)
+	nAtom = size(Mass, 2)
+	Asum1 = zeros(numHyper)
+	Osum1 = zeros(numHyper)
+	RMSE1 = zeros(numHyper)
+	l = 1.0
+	σₒ = 0.25
+end;
 
-# ╔═╡ 84cd6bd3-8834-4c82-873c-9d97f5c94b43
-Phon = [2.92999594, 0.04717251, -0.31205117, -0.17018929, -0.2541165, -0.09757366, -1.39262983, 0.05100078, 2.08113829, 0.04717251, -0.31271797, -0.6251722, -0.09217561, -0.01833669, -1.34983008, 0.05144025]
+# ╔═╡ a5233807-e541-4f4f-8b5a-39a1bc25c201
+begin
+	σₑ = 1e-10				      # Energy Gaussian noise
+	σₙ = 1e-6/l                   # Force Gaussian noise for Model 2 (σₑ independent)
+end
 
-# ╔═╡ daff8f4f-f5d8-4723-be86-ff065056a8f2
-rmsd(Phon, Predict; normalize=false)
+# ╔═╡ 7d2692e8-1e40-4ee5-8b61-84b06119bba0
+L = ARDlength(Mass[1], Supercell)
 
-# ╔═╡ 326c5fb9-70f5-4999-ad0c-da88d8689af3
-sum(broadcast(abs, Phon - Predict)./ broadcast(abs, Phon))/size(Phon,1)
+# ╔═╡ 9d4b5bff-b190-4cad-84fd-90dbe859971c
+begin
+	Num = 199                 # Number of training points
+	DIM = 3                     # Dimension of Materials
+	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
+	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
+		
+	kernel = σₒ^2 * SqExponentialKernel() ∘ ARDTransform(L)
+end;
+
+# ╔═╡ c7ef32f3-d398-447d-ac6f-94f110214e4f
+equi, feature, energy, force, Target = ASEFeatureTarget(
+    "feature_new", "energy_new", "force_new", Num, DIM);
+
+# ╔═╡ 4267a5d0-8f47-4731-a8fc-f56b3ff9be7f
+@time for i in 1:numHyper
+	M = Mass[i]
+	L = ARDlength(M, Supercell)
+	kernel = σₒ^2 * SqExponentialKernel() ∘ ARDTransform(L)
+	Kₘₘ = Marginal(kernel, feature, σₑ, σₙ)
+	K₂ₙₘ = Coveriance_fc2(kernel, feature, equi);
+		
+	FC2 = PosteriorFC2(Kₘₘ, K₂ₙₘ, Target);
+	Predict = element(FC2)
+	
+	Asum1[i] = sum(FC2)
+	Osum1[i] = sum(FC2*equi)
+	RMSE1[i] = rmsd(Phon, Predict; normalize=false)
+	
+end
+
+# ╔═╡ 60c4f0e9-d8dd-4708-bc1d-279e89b2ecb4
+RMSE1
+
+# ╔═╡ cbfd5c70-2fd9-4641-9a22-0879cc6cd427
+findmin(RMSE1)
+
+# ╔═╡ 281a1840-3a10-4d0a-8b7b-592389e9ff57
+begin
+	Mass2 = [[Te/Pb, 1.],
+			[sqrt(Te)/sqrt(Pb), 1.],
+			[1., 1.],
+			[sqrt(Pb)/sqrt(Te), 1.],
+			[Pb/Te, 1.]]
+	
+	Asum2 = zeros(numHyper)
+	Osum2 = zeros(numHyper)
+	RMSE2 = zeros(numHyper)
+end
+
+# ╔═╡ bf63b048-fe4a-4ac4-8010-562294b93fd8
+RMSE2
+
+# ╔═╡ d2cd7fa2-992d-4a4a-834d-bdc6800a550b
+@time for i in 1:numHyper
+	M = Mass2[i]
+	L = ARDlength(M, Supercell)
+	kernel = σₒ^2 * SqExponentialKernel() ∘ ARDTransform(L)
+	Kₘₘ = Marginal(kernel, feature, σₑ, σₙ)
+	K₂ₙₘ = Coveriance_fc2(kernel, feature, equi);
+		
+	FC2 = PosteriorFC2(Kₘₘ, K₂ₙₘ, Target);
+	Predict = element(FC2)
+	
+	Asum2[i] = sum(FC2)
+	Osum2[i] = sum(FC2*equi)
+	RMSE2[i] = rmsd(Phon, Predict; normalize=false)
+	
+end
+
+# ╔═╡ 65249871-a787-4be3-86a4-35eced963c84
+RMSE2
+
+# ╔═╡ 43f9b36e-ce01-452f-8352-5567cbb6336e
+RMSE1
+
+# ╔═╡ 9125c9c8-c5e6-49ef-b84f-b755fb8e4cd2
+findmin(RMSE2)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1768,38 +1782,30 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═346974a0-8249-11ee-075d-33c092b30816
-# ╠═d8b8b25d-e716-47e9-b2e4-12731df9e7c0
-# ╠═39a72f49-6efb-4ad5-a3b0-7b6a6954d6a6
-# ╠═e79b6a06-5285-44b2-81ea-e3a96247db8f
-# ╠═e1d8fc9e-00fd-4fd9-975d-6b6a4f79068a
-# ╠═a6a54c75-f12d-4694-a876-30f0a14ad8a1
-# ╠═cbd94f02-b08d-4208-9e2a-b24a35d2646a
-# ╠═e9efaf81-6634-435c-8030-45cc949d8068
-# ╠═79d1e9f9-56d1-4425-9362-ff86a5c452f5
-# ╠═25f5cb64-40e5-4a2a-9a0d-42878a3aa9ae
-# ╠═b2ced1ff-11f5-46df-9e4a-a961ab8f0a63
-# ╠═be8cba06-01f0-4ad5-861f-5a4c556a9cc4
-# ╠═4451bffe-18c9-4da3-ba22-9df2cb2e6472
-# ╠═21c3b05d-0134-4d5f-a7a3-822538be104c
-# ╠═d0528b25-b21f-4c98-a029-5f8df0286f08
-# ╠═1dd85737-f044-4c59-bf4b-714dedd6629b
-# ╠═81c979c7-f0a3-4cd4-bfc0-e47676a4ad14
-# ╠═bfed3725-ab73-4b0e-a673-4f26be3992d8
-# ╠═cba31d94-4779-4db1-928f-5e58f83784f7
-# ╠═5e85a345-c83f-4f1c-b6bf-b93dd49500bc
-# ╠═8fe8b911-0e96-4159-8649-dddfdb896559
-# ╠═688e8cda-81cb-4729-8d90-a65a35f4cea0
-# ╠═1bef7de1-490e-4b01-8af3-ea9fd80c0075
-# ╠═7abb24bb-c752-4b13-b241-51a0b1617b8f
-# ╠═17d45498-853b-4aca-977d-cc46acf248d9
-# ╠═07d3592c-b5a6-49f5-92c9-093603ba42e1
-# ╠═e2b3d5cf-7f4f-4f22-b9f7-99d45b75166a
-# ╠═8de1931a-f582-4d6a-be6d-650d85ae27c5
-# ╠═341e193a-587d-409d-9eb9-af3e2412f76b
-# ╠═de09fb74-d4d3-49a8-badc-4a0751a5680b
-# ╠═84cd6bd3-8834-4c82-873c-9d97f5c94b43
-# ╠═daff8f4f-f5d8-4723-be86-ff065056a8f2
-# ╠═326c5fb9-70f5-4999-ad0c-da88d8689af3
+# ╠═14c916d0-d0f2-11ee-041b-25efda115d17
+# ╠═9d4b5bff-b190-4cad-84fd-90dbe859971c
+# ╠═a5233807-e541-4f4f-8b5a-39a1bc25c201
+# ╠═ac9f1385-9dca-41d6-bbee-933bef81bba3
+# ╠═78907e6f-276a-4a88-ba70-482591f3f69f
+# ╠═7d2692e8-1e40-4ee5-8b61-84b06119bba0
+# ╟─8dec9a70-fc1f-4737-afb6-a6531a5e965c
+# ╠═c7ef32f3-d398-447d-ac6f-94f110214e4f
+# ╟─006e5931-c003-42ce-8cb1-99684a2b17d1
+# ╟─b1570dd9-e0b1-4e0d-8535-5eb131edb846
+# ╟─d158a506-0fe6-4ca2-8d33-2ddae5901581
+# ╟─c3cb73c5-a4b1-4cff-a504-7b265bfd72b6
+# ╟─9353d236-e840-401d-89a2-db7b52b213a6
+# ╟─7ff8fe13-b767-4bb4-ad9a-adeb4760ff49
+# ╠═1202c1bb-941a-46f7-9f19-6a41fb554923
+# ╠═bf195b77-da29-4188-ab91-bd79130715a0
+# ╠═4267a5d0-8f47-4731-a8fc-f56b3ff9be7f
+# ╠═60c4f0e9-d8dd-4708-bc1d-279e89b2ecb4
+# ╠═bf63b048-fe4a-4ac4-8010-562294b93fd8
+# ╠═cbfd5c70-2fd9-4641-9a22-0879cc6cd427
+# ╠═281a1840-3a10-4d0a-8b7b-592389e9ff57
+# ╠═d2cd7fa2-992d-4a4a-834d-bdc6800a550b
+# ╠═65249871-a787-4be3-86a4-35eced963c84
+# ╠═43f9b36e-ce01-452f-8352-5567cbb6336e
+# ╠═9125c9c8-c5e6-49ef-b84f-b755fb8e4cd2
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
