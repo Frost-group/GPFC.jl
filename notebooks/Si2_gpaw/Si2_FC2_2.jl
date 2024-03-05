@@ -17,8 +17,8 @@ end
 
 # ╔═╡ 51463e77-9e95-43dc-bb50-40275e7b7966
 begin
-	σₒ = 0.005                  # Kernel Scale
-	l = 0.3031		    
+	σₒ = 0.05                  # Kernel Scale
+	l = 0.4		    
 	Num = 298                # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
@@ -39,7 +39,7 @@ begin
 		return Zygote.gradient( a -> kernel(a, x₂), x₁)[1]
 	end
 	function kernelfunction2(kernel, x₁, x₂)
-		return ForwardDiff.jacobian(a -> kernelfunction1(kernel, a, x₂), x₁)
+		return Zygote.hessian(a -> kernel(a, x₂), x₁)
 	end
 	function kernelfunction3(kernel, x₁, x₂)
 		return ForwardDiff.jacobian(a -> kernelfunction2(kernel, a, x₂), x₁)
