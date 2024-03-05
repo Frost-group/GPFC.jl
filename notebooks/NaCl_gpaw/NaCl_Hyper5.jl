@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ db10bb44-da35-11ee-3041-f38fa1b10539
+# ╔═╡ 6c0cb750-dae6-11ee-0e12-b3d46e734b91
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum, Statistics
@@ -15,29 +15,7 @@ begin
 	using StatsBase
 end
 
-# ╔═╡ 10069b1f-7637-4cec-9c42-5e70ea6b3f7a
-begin
-	σₒ = 0.05                  # Kernel Scale
-	l = 0.4		    # Length Scale
-		
-	Num = 199                 # Number of training points
-	DIM = 3                     # Dimension of Materials
-	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
-	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
-		
-	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
-end;
-
-# ╔═╡ 340bcbb5-5dc3-4c6b-9737-2c236a478565
-begin
-	σₑ = 1e-9				      # Energy Gaussian noise
-	σₙ = 1e-9/l                   # Force Gaussian noise for Model 2 (σₑ independent)
-end
-
-# ╔═╡ 5036018e-a35b-4a10-9b5e-0ac295ca4f44
-
-
-# ╔═╡ 565809cb-577b-4a78-b80b-1d51a35ccabb
+# ╔═╡ dfbc7b6d-0487-4cd1-b218-a5253e703a5f
 begin
 	function kernelfunction1(kernel, x₁, x₂)
 		return Zygote.gradient( a -> kernel(a, x₂), x₁)[1]
@@ -53,7 +31,7 @@ begin
 	end
 end
 
-# ╔═╡ fca6aff8-7e3e-4bcb-90a2-dee16e5fd91b
+# ╔═╡ 7362488d-588a-471b-9777-0e874e6dbd17
 function ARDlength(Mass, Supercell)
 	nAtom = size(Mass, 1)
 	nCell = Supercell[1]*Supercell[2]*Supercell[3]
@@ -67,7 +45,7 @@ function ARDlength(Mass, Supercell)
 	return LL
 end
 
-# ╔═╡ 88a80be7-bb03-46a5-b3f4-c784db30df73
+# ╔═╡ 43cf2f49-a280-4b47-a3cf-90fe32358609
 function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
 	a  = 4 - dimA
 	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
@@ -88,14 +66,7 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 	return equi, feature, energy, force, Target
 end
 
-# ╔═╡ b162eda6-708a-4692-bb8e-bf99f00fb3b9
-equi, feature, energy, force, Target = ASEFeatureTarget(
-    "feature_new", "energy_new", "force_new", Num, DIM);
-
-# ╔═╡ 637e194b-ed36-47a0-aafc-e07488231974
-force
-
-# ╔═╡ fd23d3df-31f6-4155-8367-a9c9fabb26ad
+# ╔═╡ 3bf9717b-c823-4cdf-80fe-0ccd6ed1b611
 function Marginal(kernel, X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
 	num = size(X,2)
@@ -130,7 +101,7 @@ function Marginal(kernel, X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
 	return Kₘₘ
 end
 
-# ╔═╡ e0f362d1-6605-40ef-80b7-4a8ecd6f3ee2
+# ╔═╡ 19a00ace-e67b-4590-8fcf-07da24b1b2f8
 function Coveriance_fc2(kernel, X::Matrix{Float64}, xₒ::Vector{Float64})
 	dim = size(X,1)
 	num = size(X,2)
@@ -154,7 +125,7 @@ function Coveriance_fc2(kernel, X::Matrix{Float64}, xₒ::Vector{Float64})
 	return K₂ₙₘ
 end
 
-# ╔═╡ 63482863-fe43-40f2-ad39-52cb534b2b0a
+# ╔═╡ 7b8ebef9-dc73-4e5e-acd3-5700d77c371b
 function PosteriorFC2(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
 	dimₜ = size(Marginal, 1)
@@ -171,7 +142,10 @@ function PosteriorFC2(Marginal, Covariance, Target)
 	return Meanₚ 
 end
 
-# ╔═╡ da392c41-0c08-4f11-a3a8-675862b6ad5b
+# ╔═╡ 3aad23a2-2144-41d8-bff4-79ed99345016
+Phon = [2.1160722, 0.02765919, -0.70121375, -0.27665411, -0.10657938, 0.03523089, -0.17260477, -0.060126, 2.71334408, 0.02762525, -0.7011685, -0.39501141, -0.30137421, 0.05601417, -0.03196405, -0.06020661]
+
+# ╔═╡ f1cf34f3-f94f-46fe-a857-b025fb5f3d13
 function recon_FC2(FC2)
 	FC2_re = zeros(3,3,Int(size(FC2,1)/3),Int(size(FC2,1)/3));
 	for i in 1:Int(size(FC2,1)/3)
@@ -182,29 +156,10 @@ function recon_FC2(FC2)
 	return FC2_re
 end
 
-# ╔═╡ 3dd99858-e5b6-4e83-8743-6b3fca226060
-@time Kₘₘ = Marginal(kernel, feature, σₑ, σₙ);
-
-# ╔═╡ 624ef697-5a6e-419d-987c-c1af2df54c24
-@time K₂ₙₘ = Coveriance_fc2(kernel, feature, equi);
-
-# ╔═╡ 8006ab39-261d-46f4-969b-b12fdb172af8
-@time FC2 = PosteriorFC2(Kₘₘ, K₂ₙₘ, Target);
-
-# ╔═╡ 31d0254b-545b-4032-a537-e6e8c3a17759
-FC2
-
-# ╔═╡ f0b14bef-5c6e-4722-a374-cf014e377146
-FC2_re = recon_FC2(FC2);
-
-# ╔═╡ e818df88-1b5e-4537-a8af-128dcb247b8d
-FC2_re
-
-# ╔═╡ 51bcc4b7-0fe5-4d8b-8172-acfb75c08d3b
-equi
-
-# ╔═╡ b85dde91-8cac-44b0-a909-9e7bc6a37786
-begin
+# ╔═╡ 034e69d8-57ab-403d-ad19-7e8f9f3f9a56
+function element(FC2)
+	FC2_re = recon_FC2(FC2)
+	begin
 	a1 = mean(
 		[FC2_re[:,:,1,1][1,1] FC2_re[:,:,1,1][2,2] FC2_re[:,:,1,1][3,3]]
 	)
@@ -247,9 +202,6 @@ begin
 		FC2_re[:,:,1,14][1,1] FC2_re[:,:,1,14][2,2]]	
 	)
 end
-
-
-# ╔═╡ 85824903-b2fa-4af9-9229-09b9eb834a79
 begin
 	a2 = mean(
 		[FC2_re[:,:,2,2][1,1] FC2_re[:,:,2,2][2,2] FC2_re[:,:,2,2][3,3]]
@@ -294,21 +246,110 @@ begin
 		FC2_re[:,:,2,13][1,1] FC2_re[:,:,2,13][2,2]]	
 	)
 end
+	Predict = [a1, b1, c1, d1, e1, f1, g1 ,h1, a2, b2, c2, d2, e2, f2, g2 ,h2]
+	return Predict
+end
 
-# ╔═╡ 8cfb0f16-7ba0-47cf-b523-f064f71c86e2
-equi
+# ╔═╡ f9be59f0-1be9-4939-8a24-3540e3b6ec99
+begin
+	Supercell = [2, 2, 2]
+	Te = 22.989769
+	Pb = 35.453
+	Mass = [[1., Pb/Te],
+			[1., sqrt(Pb)/sqrt(Te)],
+			[1., 1.],
+			[1., sqrt(Te)/sqrt(Pb)],
+			[1., Te]/Pb]
+	numHyper = size(Mass, 1)
+	nAtom = size(Mass, 2)
+	Asum1 = zeros(numHyper)
+	Osum1 = zeros(numHyper)
+	RMSE1 = zeros(numHyper)
+	l = 0.4	
+	σₒ = 0.05 
+end;
 
-# ╔═╡ c3108f35-9389-4b28-86dd-2171ff2d02de
-Predict = [a1, b1, c1, d1, e1, f1, g1 ,h1, a2, b2, c2, d2, e2, f2, g2 ,h2]
+# ╔═╡ 6a5420ca-e3f6-4a61-8879-98280c05db48
+begin
+	σₑ = 1e-9				      # Energy Gaussian noise
+	σₙ = 1e-9/l                   # Force Gaussian noise for Model 2 (σₑ independent)
+end
 
-# ╔═╡ 727c5a35-a251-4fc1-b2d6-2d9eea5919f9
-h2
+# ╔═╡ fd55761a-c137-43f3-a177-7e0b24b47112
+L = ARDlength(Mass[1], Supercell)
 
-# ╔═╡ 3aa87ea6-5780-4249-9511-0ca6a14c8c78
-Phon = [2.1160722, 0.02765919, -0.70121375, -0.27665411, -0.10657938, 0.03523089, -0.17260477, -0.060126, 2.71334408, 0.02762525, -0.7011685, -0.39501141, -0.30137421, 0.05601417, -0.03196405, -0.06020661]
+# ╔═╡ f2678ed0-b6ad-4ea7-ac42-3e1bc1962ead
+begin
+	Num = 199                 # Number of training points
+	DIM = 3                     # Dimension of Materials
+	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
+	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
+		
+	kernel = σₒ^2 * SqExponentialKernel() ∘ ARDTransform(L)
+end;
 
-# ╔═╡ 070d1e70-4de0-48ba-aa5c-50d2897ad9bc
-rmsd(Phon, Predict; normalize=false)
+# ╔═╡ 5488c2c2-a228-4d5d-88dd-8226b51c9429
+equi, feature, energy, force, Target = ASEFeatureTarget(
+    "feature_new", "energy_new", "force_new", Num, DIM);
+
+# ╔═╡ 183145d8-04d7-4700-ae7a-784ab7cf761d
+
+
+# ╔═╡ 8015c015-4d42-42cf-bb67-b886e7569bed
+@time for i in 1:numHyper
+	M = Mass[i]
+	L = ARDlength(M, Supercell)
+	kernel = σₒ^2 * SqExponentialKernel() ∘ ARDTransform(L)
+	Kₘₘ = Marginal(kernel, feature, σₑ, σₙ)
+	K₂ₙₘ = Coveriance_fc2(kernel, feature, equi);
+		
+	FC2 = PosteriorFC2(Kₘₘ, K₂ₙₘ, Target);
+	Predict = element(FC2)
+	
+	Asum1[i] = sum(FC2)
+	Osum1[i] = sum(FC2*equi)
+	RMSE1[i] = rmsd(Phon, Predict; normalize=false)
+	
+end
+
+# ╔═╡ 4829a5ef-c7b4-4dd2-9f64-90464862157e
+findmin(RMSE1)
+
+# ╔═╡ 25467202-7926-49ea-9cad-288385154080
+begin
+	Mass2 = [[Te/Pb, 1.],
+			[sqrt(Te)/sqrt(Pb), 1.],
+			[1., 1.],
+			[sqrt(Pb)/sqrt(Te), 1.],
+			[Pb/Te, 1.]]
+	
+	Asum2 = zeros(numHyper)
+	Osum2 = zeros(numHyper)
+	RMSE2 = zeros(numHyper)
+end
+
+# ╔═╡ 1efe6ea2-cfc2-48f6-9a32-a15121a1a92e
+@time for i in 1:numHyper
+	M = Mass2[i]
+	L = ARDlength(M, Supercell)
+	kernel = σₒ^2 * SqExponentialKernel() ∘ ARDTransform(L)
+	Kₘₘ = Marginal(kernel, feature, σₑ, σₙ)
+	K₂ₙₘ = Coveriance_fc2(kernel, feature, equi);
+		
+	FC2 = PosteriorFC2(Kₘₘ, K₂ₙₘ, Target);
+	Predict = element(FC2)
+	
+	Asum2[i] = sum(FC2)
+	Osum2[i] = sum(FC2*equi)
+	RMSE2[i] = rmsd(Phon, Predict; normalize=false)
+	
+end
+
+# ╔═╡ cccdbce1-e0b7-413e-9a2b-d41d121d4aa0
+RMSE2
+
+# ╔═╡ 10401496-b0c1-4c56-8b5c-36817d54b301
+RMSE1
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -326,7 +367,7 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
-CSV = "~0.10.12"
+CSV = "~0.10.13"
 DataFrames = "~1.6.1"
 DelimitedFiles = "~1.9.1"
 Einsum = "~0.4.1"
@@ -343,7 +384,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.3"
 manifest_format = "2.0"
-project_hash = "04c8032159f803fb71e7ad93fb2f2cbb449d01fb"
+project_hash = "42c5c1e0452b0ecb3359b61633ff6e3bac3340e3"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -396,9 +437,9 @@ version = "0.5.0"
 
 [[deps.CSV]]
 deps = ["CodecZlib", "Dates", "FilePathsBase", "InlineStrings", "Mmap", "Parsers", "PooledArrays", "PrecompileTools", "SentinelArrays", "Tables", "Unicode", "WeakRefStrings", "WorkerUtilities"]
-git-tree-sha1 = "679e69c611fff422038e9e21e270c4197d49d918"
+git-tree-sha1 = "a44910ceb69b0d44fe262dd451ab11ead3ed0be8"
 uuid = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
-version = "0.10.12"
+version = "0.10.13"
 
 [[deps.Cairo_jll]]
 deps = ["Artifacts", "Bzip2_jll", "CompilerSupportLibraries_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "JLLWrappers", "LZO_jll", "Libdl", "Pixman_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Zlib_jll", "libpng_jll"]
@@ -414,9 +455,9 @@ version = "1.63.0"
 
 [[deps.ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra"]
-git-tree-sha1 = "aef70bb349b20aa81a82a19704c3ef339d4ee494"
+git-tree-sha1 = "575cd02e080939a33b6df6c5853d14924c08e35b"
 uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-version = "1.22.1"
+version = "1.23.0"
 weakdeps = ["SparseArrays"]
 
     [deps.ChainRulesCore.extensions]
@@ -531,9 +572,9 @@ version = "1.6.1"
 
 [[deps.DataStructures]]
 deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
-git-tree-sha1 = "1fb174f0d48fe7d142e1109a10636bc1d14f5ac2"
+git-tree-sha1 = "0f4b5d62a88d8f59003e43c25a8a90de9eb76317"
 uuid = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
-version = "0.18.17"
+version = "0.18.18"
 
 [[deps.DataValueInterfaces]]
 git-tree-sha1 = "bfc1187b79289637fa0ef6d4436ebdfe6905cbd6"
@@ -661,11 +702,10 @@ git-tree-sha1 = "21efd19106a55620a188615da6d3d06cd7f6ee03"
 uuid = "a3f928ae-7b40-5064-980b-68af3947d34b"
 version = "2.13.93+0"
 
-[[deps.Formatting]]
-deps = ["Logging", "Printf"]
-git-tree-sha1 = "fb409abab2caf118986fc597ba84b50cbaf00b87"
-uuid = "59287772-0a20-5a39-b81b-1366585eb4c0"
-version = "0.4.3"
+[[deps.Format]]
+git-tree-sha1 = "f3cf88025f6d03c194d73f5d13fee9004a108329"
+uuid = "1fa38f19-a742-5d3f-a2b9-30dd87b9d5f8"
+version = "1.3.6"
 
 [[deps.ForwardDiff]]
 deps = ["CommonSubexpressions", "DiffResults", "DiffRules", "LinearAlgebra", "LogExpFunctions", "NaNMath", "Preferences", "Printf", "Random", "SpecialFunctions"]
@@ -756,9 +796,9 @@ version = "1.0.2"
 
 [[deps.HTTP]]
 deps = ["Base64", "CodecZlib", "ConcurrentUtilities", "Dates", "ExceptionUnwrapping", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
-git-tree-sha1 = "ac7b73d562b8f4287c3b67b4c66a5395a19c1ae8"
+git-tree-sha1 = "db864f2d91f68a5912937af80327d288ea1f3aee"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "1.10.2"
+version = "1.10.3"
 
 [[deps.HarfBuzz_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "Graphite2_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg"]
@@ -875,10 +915,10 @@ uuid = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 version = "1.3.1"
 
 [[deps.Latexify]]
-deps = ["Formatting", "InteractiveUtils", "LaTeXStrings", "MacroTools", "Markdown", "OrderedCollections", "Printf", "Requires"]
-git-tree-sha1 = "f428ae552340899a935973270b8d98e5a31c49fe"
+deps = ["Format", "InteractiveUtils", "LaTeXStrings", "MacroTools", "Markdown", "OrderedCollections", "Requires"]
+git-tree-sha1 = "cad560042a7cc108f5a4c24ea1431a9221f22c1b"
 uuid = "23fbe1c1-3f47-55db-b15f-69d7ec21a316"
-version = "0.16.1"
+version = "0.16.2"
 
     [deps.Latexify.extensions]
     DataFramesExt = "DataFrames"
@@ -957,10 +997,10 @@ uuid = "89763e89-9b03-5906-acba-b20f662cd828"
 version = "4.5.1+1"
 
 [[deps.Libuuid_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "7f3efec06033682db852f8b3bc3c1d2b0a0ab066"
+deps = ["Artifacts", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "e5edc369a598dfde567269dc6add5812cfa10cd5"
 uuid = "38a345b3-de98-5d2b-a5d3-14cd9215e700"
-version = "2.36.0+0"
+version = "2.39.3+0"
 
 [[deps.LinearAlgebra]]
 deps = ["Libdl", "OpenBLAS_jll", "libblastrampoline_jll"]
@@ -1058,9 +1098,9 @@ version = "0.8.1+0"
 
 [[deps.OpenSSL]]
 deps = ["BitFlags", "Dates", "MozillaCACerts_jll", "OpenSSL_jll", "Sockets"]
-git-tree-sha1 = "51901a49222b09e3743c65b8847687ae5fc78eb2"
+git-tree-sha1 = "af81a32750ebc831ee28bdaaba6e1067decef51e"
 uuid = "4d8831e6-92b7-49fb-bdf8-b643e874388c"
-version = "1.4.1"
+version = "1.4.2"
 
 [[deps.OpenSSL_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1120,9 +1160,9 @@ version = "3.1.0"
 
 [[deps.PlotUtils]]
 deps = ["ColorSchemes", "Colors", "Dates", "PrecompileTools", "Printf", "Random", "Reexport", "Statistics"]
-git-tree-sha1 = "862942baf5663da528f66d24996eb6da85218e76"
+git-tree-sha1 = "7b1a9df27f072ac4c9c7cbe5efb198489258d1f5"
 uuid = "995b91a9-d308-5afd-9ec6-746e21dbc043"
-version = "1.4.0"
+version = "1.4.1"
 
 [[deps.Plots]]
 deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers", "GR", "JLFzf", "JSON", "LaTeXStrings", "Latexify", "LinearAlgebra", "Measures", "NaNMath", "Pkg", "PlotThemes", "PlotUtils", "PrecompileTools", "Preferences", "Printf", "REPL", "Random", "RecipesBase", "RecipesPipeline", "Reexport", "RelocatableFolders", "Requires", "Scratch", "Showoff", "SparseArrays", "Statistics", "StatsBase", "UUIDs", "UnicodeFun", "UnitfulLatexify", "Unzip"]
@@ -1158,9 +1198,9 @@ version = "1.2.0"
 
 [[deps.Preferences]]
 deps = ["TOML"]
-git-tree-sha1 = "00805cd429dcb4870060ff49ef443486c262e38e"
+git-tree-sha1 = "9306f6085165d270f7e3db02af26a400d580f5c6"
 uuid = "21216c6a-2e73-6563-6e65-726566657250"
-version = "1.4.1"
+version = "1.4.3"
 
 [[deps.PrettyTables]]
 deps = ["Crayons", "LaTeXStrings", "Markdown", "PrecompileTools", "Printf", "Reexport", "StringManipulation", "Tables"]
@@ -1368,9 +1408,9 @@ deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [[deps.TranscodingStreams]]
-git-tree-sha1 = "54194d92959d8ebaa8e26227dbe3cdefcdcd594f"
+git-tree-sha1 = "3caa21522e7efac1ba21834a03734c57b4611c7e"
 uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
-version = "0.10.3"
+version = "0.10.4"
 weakdeps = ["Random", "Test"]
 
     [deps.TranscodingStreams.extensions]
@@ -1698,9 +1738,9 @@ version = "1.18.0+0"
 
 [[deps.libpng_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Zlib_jll"]
-git-tree-sha1 = "873b4f805771d3e4bafe63af759a26ea8ca84d14"
+git-tree-sha1 = "1ea2ebe8ffa31f9c324e8c1d6e86b4165b84a024"
 uuid = "b53b4c65-9356-5827-b1ea-8c7a1a84506f"
-version = "1.6.42+0"
+version = "1.6.43+0"
 
 [[deps.libvorbis_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Ogg_jll", "Pkg"]
@@ -1744,32 +1784,27 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═db10bb44-da35-11ee-3041-f38fa1b10539
-# ╠═10069b1f-7637-4cec-9c42-5e70ea6b3f7a
-# ╠═340bcbb5-5dc3-4c6b-9737-2c236a478565
-# ╠═5036018e-a35b-4a10-9b5e-0ac295ca4f44
-# ╠═565809cb-577b-4a78-b80b-1d51a35ccabb
-# ╠═fca6aff8-7e3e-4bcb-90a2-dee16e5fd91b
-# ╠═88a80be7-bb03-46a5-b3f4-c784db30df73
-# ╠═b162eda6-708a-4692-bb8e-bf99f00fb3b9
-# ╠═637e194b-ed36-47a0-aafc-e07488231974
-# ╠═fd23d3df-31f6-4155-8367-a9c9fabb26ad
-# ╠═e0f362d1-6605-40ef-80b7-4a8ecd6f3ee2
-# ╠═63482863-fe43-40f2-ad39-52cb534b2b0a
-# ╠═da392c41-0c08-4f11-a3a8-675862b6ad5b
-# ╠═3dd99858-e5b6-4e83-8743-6b3fca226060
-# ╠═624ef697-5a6e-419d-987c-c1af2df54c24
-# ╠═8006ab39-261d-46f4-969b-b12fdb172af8
-# ╠═31d0254b-545b-4032-a537-e6e8c3a17759
-# ╠═f0b14bef-5c6e-4722-a374-cf014e377146
-# ╠═e818df88-1b5e-4537-a8af-128dcb247b8d
-# ╠═51bcc4b7-0fe5-4d8b-8172-acfb75c08d3b
-# ╠═b85dde91-8cac-44b0-a909-9e7bc6a37786
-# ╠═85824903-b2fa-4af9-9229-09b9eb834a79
-# ╠═8cfb0f16-7ba0-47cf-b523-f064f71c86e2
-# ╠═c3108f35-9389-4b28-86dd-2171ff2d02de
-# ╠═727c5a35-a251-4fc1-b2d6-2d9eea5919f9
-# ╠═3aa87ea6-5780-4249-9511-0ca6a14c8c78
-# ╠═070d1e70-4de0-48ba-aa5c-50d2897ad9bc
+# ╠═6c0cb750-dae6-11ee-0e12-b3d46e734b91
+# ╠═f2678ed0-b6ad-4ea7-ac42-3e1bc1962ead
+# ╠═6a5420ca-e3f6-4a61-8879-98280c05db48
+# ╠═dfbc7b6d-0487-4cd1-b218-a5253e703a5f
+# ╠═7362488d-588a-471b-9777-0e874e6dbd17
+# ╠═fd55761a-c137-43f3-a177-7e0b24b47112
+# ╠═43cf2f49-a280-4b47-a3cf-90fe32358609
+# ╠═5488c2c2-a228-4d5d-88dd-8226b51c9429
+# ╠═3bf9717b-c823-4cdf-80fe-0ccd6ed1b611
+# ╠═19a00ace-e67b-4590-8fcf-07da24b1b2f8
+# ╠═7b8ebef9-dc73-4e5e-acd3-5700d77c371b
+# ╠═3aad23a2-2144-41d8-bff4-79ed99345016
+# ╠═f1cf34f3-f94f-46fe-a857-b025fb5f3d13
+# ╠═034e69d8-57ab-403d-ad19-7e8f9f3f9a56
+# ╠═f9be59f0-1be9-4939-8a24-3540e3b6ec99
+# ╠═183145d8-04d7-4700-ae7a-784ab7cf761d
+# ╠═8015c015-4d42-42cf-bb67-b886e7569bed
+# ╠═4829a5ef-c7b4-4dd2-9f64-90464862157e
+# ╠═25467202-7926-49ea-9cad-288385154080
+# ╠═1efe6ea2-cfc2-48f6-9a32-a15121a1a92e
+# ╠═cccdbce1-e0b7-413e-9a2b-d41d121d4aa0
+# ╠═10401496-b0c1-4c56-8b5c-36817d54b301
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
