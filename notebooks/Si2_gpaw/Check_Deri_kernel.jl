@@ -73,9 +73,11 @@ equi, feature, energy, force, Target = ASEFeatureTarget(
 begin
 	x1 = equi
 	x2 = feature[:,2]
+	d = (x1-x2)
 	dim = size(x1,1)
 	Λ = (l^(-2))*Matrix(I,dim,dim)
-end
+	Iden = 1.0*Matrix(I,dim,dim)
+end;
 
 # ╔═╡ aadb3bc6-8b4f-4c8b-b071-85f0cf85d618
 kernel(x1,x2)
@@ -87,16 +89,49 @@ kernelfunction1(kernel, x1, x2)
 kernelfunction2(kernel, x1, x2)
 
 # ╔═╡ 95efa7c1-8e0b-40b1-89b6-1f5efb9150e4
-begin
-	d = (x1-x2)
-	k = (σₒ^2) * exp(-0.5 * (d'* Λ * d))
-end
+k = (σₒ^2) * exp(-0.5 * (d'* Λ * d))
 
 # ╔═╡ dc4009b1-dd2a-46ae-9b65-46e5885d8c64
 kernel == k
 
 # ╔═╡ 469f5a6c-939c-4ef3-bdc4-10f44ec98ebf
 k1 = - Λ * d * k
+
+# ╔═╡ 83a7543b-56d4-4142-b486-922971504679
+k2 = (- Λ + (Λ * d) * (Λ * d)')*k
+
+# ╔═╡ 2f981994-60cf-45da-a709-650be0d509f5
+r = reshape((Λ * d), (dim,1))
+
+# ╔═╡ a081d732-393e-46ac-aaab-8e1609d3a09f
+begin
+	A = zeros(dim, dim, dim)
+	@einsum A[i, j, k] = r[i, m] * r[j, m] * r[k, m]
+end
+
+# ╔═╡ 73b8877f-d287-4963-ac8f-123f06fbfbfe
+begin
+	Λ₁ = reshape(Λ, (dim, dim, 1))
+	B₁ = zeros(dim, dim, dim)
+	@einsum B₁[i, j, k] = Λ₁[i, j, m] * r[k, m]
+end;
+
+# ╔═╡ 6ec96e36-87c1-49b8-9b77-8e866af08d5b
+begin
+	Λ₂ = reshape(Λ, (dim, 1, dim))
+	B₂ = zeros(dim, dim, dim)
+	@einsum B₂[i, j, k] = Λ₂[j, m, i] * r[k, m]
+end;
+
+# ╔═╡ 3c492123-242b-4361-807f-0ca4a99fd38f
+begin
+	Λ₃ = reshape(Λ, (1, dim, dim))
+	B₃ = zeros(dim, dim, dim)
+	@einsum B₃[i, j, k] = Λ₃[m, i, j] * r[k, m]
+end;
+
+# ╔═╡ d1f8b0d4-caea-4013-bc78-cfe58d102ffc
+(3 * B₁ - A)*k
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1544,5 +1579,12 @@ version = "1.4.1+1"
 # ╠═95efa7c1-8e0b-40b1-89b6-1f5efb9150e4
 # ╠═dc4009b1-dd2a-46ae-9b65-46e5885d8c64
 # ╠═469f5a6c-939c-4ef3-bdc4-10f44ec98ebf
+# ╠═83a7543b-56d4-4142-b486-922971504679
+# ╠═2f981994-60cf-45da-a709-650be0d509f5
+# ╠═a081d732-393e-46ac-aaab-8e1609d3a09f
+# ╠═73b8877f-d287-4963-ac8f-123f06fbfbfe
+# ╠═6ec96e36-87c1-49b8-9b77-8e866af08d5b
+# ╠═3c492123-242b-4361-807f-0ca4a99fd38f
+# ╠═d1f8b0d4-caea-4013-bc78-cfe58d102ffc
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

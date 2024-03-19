@@ -20,7 +20,7 @@ begin
 	σₒ = 0.05                 # Kernel Scale
 	l = 0.4			    # Length Scale
 		
-	Num = 199                 # Number of training points
+	Num = 151                 # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
 	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
@@ -30,8 +30,8 @@ end;
 
 # ╔═╡ 39a72f49-6efb-4ad5-a3b0-7b6a6954d6a6
 begin
-	σₑ = 1e-9				      # Energy Gaussian noise
-	σₙ = 1e-9/l                   # Force Gaussian noise for Model 2 (σₑ independent)
+	σₑ = 1e-7				      # Energy Gaussian noise
+	σₙ = 1e-7                   # Force Gaussian noise for Model 2 (σₑ independent)
 end
 
 # ╔═╡ e79b6a06-5285-44b2-81ea-e3a96247db8f
@@ -73,7 +73,7 @@ end
 
 # ╔═╡ a6a54c75-f12d-4694-a876-30f0a14ad8a1
 equi, feature, energy, force, Target = ASEFeatureTarget(
-    "feature_new", "energy_new", "force_new", Num, DIM);
+    "feature_vasp", "energy_vasp", "force_vasp", Num, DIM);
 
 # ╔═╡ cbd94f02-b08d-4208-9e2a-b24a35d2646a
 function Marginal(kernel, X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
@@ -333,9 +333,6 @@ end
 
 # ╔═╡ 341e193a-587d-409d-9eb9-af3e2412f76b
 Predict = [a1, b1, c1, d1, e1, f1, g1 ,h1, a2, b2, c2, d2, e2, f2, g2 ,h2]
-
-# ╔═╡ de09fb74-d4d3-49a8-badc-4a0751a5680b
-h2
 
 # ╔═╡ 84cd6bd3-8834-4c82-873c-9d97f5c94b43
 Phon = [2.92999594, 0.04717251, -0.31205117, -0.17018929, -0.2541165, -0.09757366, -1.39262983, 0.05100078, 2.08113829, 0.04717251, -0.31271797, -0.6251722, -0.09217561, -0.01833669, -1.34983008, 0.05144025]
@@ -1797,7 +1794,6 @@ version = "1.4.1+1"
 # ╠═e2b3d5cf-7f4f-4f22-b9f7-99d45b75166a
 # ╠═8de1931a-f582-4d6a-be6d-650d85ae27c5
 # ╠═341e193a-587d-409d-9eb9-af3e2412f76b
-# ╠═de09fb74-d4d3-49a8-badc-4a0751a5680b
 # ╠═84cd6bd3-8834-4c82-873c-9d97f5c94b43
 # ╠═daff8f4f-f5d8-4723-be86-ff065056a8f2
 # ╠═326c5fb9-70f5-4999-ad0c-da88d8689af3

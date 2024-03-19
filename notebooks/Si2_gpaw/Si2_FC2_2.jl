@@ -19,7 +19,7 @@ end
 begin
 	σₒ = 0.05                  # Kernel Scale
 	l = 0.4		    
-	Num = 298                # Number of training points
+	Num = 199                # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
 	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
@@ -29,8 +29,8 @@ end;
 
 # ╔═╡ 7150c40a-ba7b-4a0a-80e8-090f606e52f2
 begin
-	σₑ = 1e-8				      # Energy Gaussian noise
-	σₙ = 1e-6/l                   # Force Gaussian noise for Model 2 (σₑ independent)
+	σₑ = 1e-5				      # Energy Gaussian noise
+	σₙ = 1e-5                   # Force Gaussian noise for Model 2 (σₑ independent)
 end
 
 # ╔═╡ e62f0b5c-f521-4ff8-b153-cc868aec1e5f
@@ -260,7 +260,7 @@ rmsd(Phon, Predict; normalize=false)
 FC2_re[:,:,1,12]
 
 # ╔═╡ 8c52ee1d-b215-4bbf-88a5-a6877a30b510
-h
+i1
 
 # ╔═╡ 101938bd-cf7e-4a72-a20a-7816915fa607
 rmsd(Phon, Predict; normalize=false)
