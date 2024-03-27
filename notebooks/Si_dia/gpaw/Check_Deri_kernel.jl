@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.38
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -89,19 +89,50 @@ kernelfunction1(kernel, x1, x2)
 kernelfunction2(kernel, x1, x2)
 
 # ╔═╡ 95efa7c1-8e0b-40b1-89b6-1f5efb9150e4
-k = (σₒ^2) * exp(-0.5 * (d'* Λ * d))
-
-# ╔═╡ dc4009b1-dd2a-46ae-9b65-46e5885d8c64
-kernel == k
+k00 = (σₒ^2) * exp(-0.5 * (d'* Λ * d))
 
 # ╔═╡ 469f5a6c-939c-4ef3-bdc4-10f44ec98ebf
-k1 = - Λ * d * k
+k11 = - Λ * d * k00
 
 # ╔═╡ 83a7543b-56d4-4142-b486-922971504679
-k2 = (- Λ + (Λ * d) * (Λ * d)')*k
+k22 = (- Λ + (Λ * d) * (Λ * d)')*k00
 
 # ╔═╡ 2f981994-60cf-45da-a709-650be0d509f5
 r = reshape((Λ * d), (dim,1))
+
+# ╔═╡ fd2dc280-830b-42f2-8e23-dbac388bfdb9
+begin
+	function k(x₁, x₂)
+		d = (x1-x2)
+		kernel = (σₒ^2) * exp(-0.5 * (d'* Λ * d))	
+		return kernel
+	end
+	function k1(x₁, x₂)
+		d = (x1-x2)
+		k1st = - Λ * d * k(x₁, x₂)
+		return k1st
+	end
+	function k2(x₁, x₂)
+		d = (x1-x2)
+		k2nd = (- Λ + (Λ * d) * (Λ * d)') * k(x₁, x₂)
+		return k2nd
+	end
+	function k3(x₁, x₂)
+		d = (x1-x2)
+		A = zeros(dim, dim, dim)
+		@einsum A[i, j, k] = r[i, m] * r[j, m] * r[k, m]
+		
+		Λ₁ = reshape(Λ, (dim, dim, 1))
+		B₁ = zeros(dim, dim, dim)
+		@einsum B₁[i, j, k] = Λ₁[i, j, m] * r[k, m]
+		
+		k3rd = (3 * B₁ - A) * k(x₁, x₂)
+		return k3rd
+	end
+end
+
+# ╔═╡ dc4009b1-dd2a-46ae-9b65-46e5885d8c64
+kernel == k
 
 # ╔═╡ a081d732-393e-46ac-aaab-8e1609d3a09f
 begin
@@ -131,7 +162,7 @@ begin
 end;
 
 # ╔═╡ d1f8b0d4-caea-4013-bc78-cfe58d102ffc
-(3 * B₁ - A)*k
+(3 * B₁ - A)*k00
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -164,7 +195,7 @@ Zygote = "~0.6.69"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.4"
+julia_version = "1.9.3"
 manifest_format = "2.0"
 project_hash = "04c8032159f803fb71e7ad93fb2f2cbb449d01fb"
 
@@ -718,12 +749,12 @@ uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.4"
+version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "8.4.0+0"
+version = "7.84.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -732,7 +763,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.11.0+1"
+version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1540,7 +1571,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.52.0+1"
+version = "1.48.0+0"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1577,6 +1608,7 @@ version = "1.4.1+1"
 # ╠═fa099e28-44e8-4312-8e38-fb8d8328661f
 # ╠═fbf68002-a753-4170-89d0-a86c8ad3ae1b
 # ╠═95efa7c1-8e0b-40b1-89b6-1f5efb9150e4
+# ╠═fd2dc280-830b-42f2-8e23-dbac388bfdb9
 # ╠═dc4009b1-dd2a-46ae-9b65-46e5885d8c64
 # ╠═469f5a6c-939c-4ef3-bdc4-10f44ec98ebf
 # ╠═83a7543b-56d4-4142-b486-922971504679

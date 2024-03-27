@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 08f2031c-87c8-11ee-140d-23db21459e52
+# ╔═╡ cb2b9e60-be3d-11ee-2ad2-817e9a01d865
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum
@@ -12,343 +12,308 @@ begin
 	using DataFrames
 	using DelimitedFiles
 	using Plots
-	using LaTeXStrings
 end
 
-# ╔═╡ 48f10f1e-5fb1-4fe3-ae65-c2d874b84a3d
+# ╔═╡ f6bce61e-bbcb-48a3-86bd-3028debf624e
 begin
-	PbTe_FC2 = [478.834, 429.364, 378.193, 335.919, 289.961, 166.73, 86.1142, 12.275, 1.94481, 1.36049, 0.405952, 0.321987, 0.111758, 0.0241396]
-	
-	Si2_FC2 = [663.231, 548.68, 459.382, 380.314, 286.179, 79.5129, 20.2168, 5.5683, 2.60258, 0.472595, 0.695432, 0.250762, 0.329402, 0.738597]
-	
-	NaCl_FC2 = [413.024, 368.635, 322.939, 250.758, 221.4, 101.458, 41.279, 5.11173, 1.58728, 1.001, 0.347564, 0.218002, 0.137059, 0.0211458]
-	
-	GaAs_FC2 = [509.143, 425.662, 357.593, 258.17, 170.893, 146.963, 65.7339, 4.54043, 0.0475614, 0.209899, 0.447558, 0.379726, 0.671995, 0.940818]
-	
-	CdTe_FC2 = [294.926, 248.585, 209.583, 151.083, 101.268, 88.1728, 40.0044, 4.02201, 3.12722, 0.60556, 0.928747, 0.565053, 0.431276, 0.473945]
-end
-
-# ╔═╡ b42f2b09-f5dc-4283-8bbf-715ac33f0f12
-nd = [1,5,10,15,20,30,40,50,60,80,100,130,160,199]
-
-# ╔═╡ e268a975-42a3-4b42-87ee-339c03276e04
-size(GaAs_FC2)
-
-# ╔═╡ 707c4dad-482f-43bd-b2d6-2886ef7e1343
-begin
-	NaCl_FC3 = [ 0.702368, 0.13584, 0.00110414, 0.0451975, 0.694288, 6.4927, 5.23002, 10.0276, 5.94526, 4.05301, 2.23883, 3.14209, 7.76684]
-	#1.1995e-9,
-	PbTe_FC3 = [ 0.751072, 0.164429, 0.0115236, 0.262735, 2.98395, 1.90425, 10.123, 2.50932, 1.06999, 7.64003, 5.57, 2.62108, 8.78377] 
-	# 1.65728e-12,
-	Si2_FC3 = [2.96734, 3.05551, 0.922552, 4.47072, 16.2466, 13.3136, 44.7593, 21.5664, 30.5772, 24.0235, 16.5839, 3.06282, 17.0364]
-	#1.79239e-9, 
-	Si2_dyn3 = [ 0.00296508, 0.0270175, 0.0135078, 0.0622455, 0.00187626, 0.0245458, 0.0429987, 0.0119454, 0.0277295, 0.00158267, 0.0134621, 0.0678443, 0.0549262]
-	#1.50533e-12,
-end
-
-# ╔═╡ e6877cc5-a967-4da8-a07d-e9aacebccf02
-begin
-	plot(nd[2:14], [PbTe_FC3 Si2_FC3 NaCl_FC3 Si2_dyn3],
-			xlabel="Training points",
-			ylabel= "Sum of" * L"\;\Phi_{3}\;" * "elements" ,
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = [L"\textbf{PbTe}" L"\textbf{Si}\;\textbf{bulk}" L"\textbf{NaCl}" L"\textbf{Si}\;\textbf{bulk}"],
-			linestyle = [:solid :solid :solid :dash],
+	σₒ = 0.05                  # Kernel Scale
+	l = 0.4				    # Length Scale
 		
-			linewidth=[1.5 1.5 1.5 2.5],
-			title="Sum Rule of " * L"\Phi_{3}"
-		)
-
-	scatter!(nd[2:14], [PbTe_FC3 Si2_FC3 NaCl_FC3 Si2_dyn3],
-			#xlim = (-1, 205), 
-			#ylim = (-2.0, 50.0),
-			xscale=:log10,
-			yscale=:log10,
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["" "" ""],
-			legend=:bottomright,
-			#legend = false,
-			linewidth=3,
-		)
-	#savefig("FC3_sumrule.png")
-end
-
-# ╔═╡ 8487126f-258b-40c0-83ad-5600ced08a06
-begin
-	PbTe_Dyn = [0.378974, 0.0378481, 0.000783911, 0.00086716, 0.00109887, 0.0008761, 0.00105937, 0.00109018, 0.000815923, 0.000643651, 0.000695601, 0.000692554, 0.00066461, 0.00066096]
-	Si2_Dyn = [2.95189, 0.0446756, 0.0529071, 0.0378372, 0.0173971, 0.00308791, 0.0019035, 9.71615e-5, 0.00527029, 0.005006, 0.00334861, 0.00247735, 0.000974923, 0.00304619]
-	NaCl_Dyn = [1.85097, 0.16521, 0.0100299, 0.0104264, 0.00960313, 0.0116711, 0.0119133, 0.011971, 0.0123184, 0.0108635, 0.0101532, 0.0102546, 0.0104466, 0.0101875]
-	GaAs_Dyn = [0.881128, 0.00560648, 0.00477425, 0.0131028, 0.0196839, 0.00145519, 0.00178288, 0.00264655, 0.00176152, 7.00014e-5, 0.00095691, 0.00173119, 0.00160573, 0.000283117]
-	CdTe_Dyn = [0.308435, 0.00390309, 0.00275901, 0.00512003, 0.00640051, 0.000257708, 0.000833073, 0.00118694, 0.000915799, 0.000252645, 0.000621576, 0.000286149, 0.000393916, 0.000765755]
-end
-
-# ╔═╡ dd0377ce-1d90-43ba-93e6-3a1b3eddce7b
-begin
-	plot(layout=(1,1))
-	plot!(size=(800,600))
-	plot!(nd, [Si2_FC2 NaCl_FC2 PbTe_FC2 GaAs_FC2 CdTe_FC2],
-		    color = ["#F0BB62" "#6E9A50" "#C64756" "#184D47" "#FF90BB"],
-			labels = ["d-"*L"\textbf{Si}:"*L"\;\Phi_{2}" L"\textbf{NaCl}:"*L"\;\Phi_{2}" L"\textbf{PbTe}:"*L"\;\Phi_{2}" L"\textbf{GaAs}:"*L"\;\Phi_{2}" L"\textbf{CdTe}:"*L"\;\Phi_{2}" ],
-			linestyle = :solid,
-			linewidth=1.5
-		)
-
-	scatter!(nd, [Si2_FC2 NaCl_FC2 PbTe_FC2 GaAs_FC2 CdTe_FC2],
-		    color = ["#F0BB62" "#6E9A50" "#C64756" "#184D47" "#FF90BB"],
-			labels = ["" "" "" "" ""],
-		)
-
-	plot!(nd, [Si2_Dyn NaCl_Dyn PbTe_Dyn GaAs_Dyn CdTe_Dyn],
-		    color = ["#F0BB62" "#6E9A50" "#C64756" "#184D47" "#FF90BB"],
-			labels = ["d-"*L"\textbf{Si}:"*L"\;\mathbf{D}_{\Gamma}" L"\textbf{NaCl}:"*L"\;\mathbf{D}_{\Gamma}" L"\textbf{PbTe}:"*L"\;\mathbf{D}_{\Gamma}" L"\textbf{GaAs}:"*L"\;\mathbf{D}_{\Gamma}" L"\textbf{CdTe}:"*L"\;\mathbf{D}_{\Gamma}"],
-			linestyle = :dash ,
-			linewidth= 2.5
-		)
-
-	scatter!(nd, [Si2_Dyn NaCl_Dyn PbTe_Dyn GaAs_Dyn CdTe_Dyn],
-			#xlim = (-1, 200), 
-			#ylim = (-0.1, 3.5),
-			xscale=:log10,
-			yscale=:log10,
-		    color = ["#F0BB62" "#6E9A50" "#C64756"  "#184D47" "#FF90BB"],
-			labels = ["" "" "" "" ""],
-			#legend = false,
-			linewidth=3,
-			xlabel="Training points",
-			ylabel= "Summing All of FC2-Correlations" ,
-			title="Acoustic Sum Rule",
-			titlefontsize=18, guidefontsize=14, tickfontsize=10, legendfontsize=10
-		)
-	plot!(legend=:outertop, legendcolumns=5)
-	savefig("FC2_sumrule_log.png")
-end
-
-# ╔═╡ cea8c5c2-837f-48cf-9fb7-0af50eaae576
-begin
-	plot(nd, [PbTe_Dyn Si2_Dyn NaCl_Dyn],
-			xlabel="Training points",
-			ylabel= "Sum of" * L"\;\mathbf{D}(\mathbf{d}_{\mathbf{q}=\Gamma})\;" * "elements" ,
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = [L"\textbf{PbTe}" L"\textbf{Si}\;\textbf{bulk}" L"\textbf{NaCl}"],
-			linestyle = [:solid :dash :dot],
+	Num = 199                 # Number of training points
+	DIM = 3                     # Dimension of Materials
+	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
+	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
 		
-			linewidth=[1.5 2 2.5],
-			title="Sum Rule of " * L"\mathbf{D}(\mathbf{d}_{\mathbf{q}=\Gamma})"
-		)
+	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
+end;
 
-	scatter!(nd, [PbTe_Dyn Si2_Dyn NaCl_Dyn],
-			#xlim = (-1, 105), 
-			#ylim = (-0.1, 3.5),
-			xscale=:log10,
-			yscale=:log10,
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["" "" ""],
-			#legend = false,
-		legend=:bottomleft,
-			linewidth=3,
-		)
-	#savefig("Dyn_sumrule_log.png")
-end
-
-# ╔═╡ 2ec8477f-58c4-4f3a-8a29-edcb70dbdf3c
-anim = @animate for i in 1:size(nd,1)
-	plot(nd[1:i], [Si2_FC2[1:i] NaCl_FC2[1:i] PbTe_FC2[1:i]],
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["d-"*L"\textbf{Si}:"*L"\;\Phi_{2}" L"\textbf{NaCl}:"*L"\;\Phi_{2}" L"\textbf{PbTe}:"*L"\;\Phi_{2}" ],
-			linestyle = :solid,
-			linewidth=1.5
-		)
-
-	scatter!(nd[1:i], [Si2_FC2[1:i] NaCl_FC2[1:i] PbTe_FC2[1:i]],
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["" "" ""],
-		)
-
-	plot!(nd[1:i], [Si2_Dyn[1:i] NaCl_Dyn[1:i] PbTe_Dyn[1:i] ],
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["d-"*L"\textbf{Si}:"*L"\;\mathbf{D}_{\Gamma}" L"\textbf{NaCl}:"*L"\;\mathbf{D}_{\Gamma}" L"\textbf{PbTe}:"*L"\;\mathbf{D}_{\Gamma}"],
-			linestyle = :dash ,
-			linewidth= 2.5
-		)
-
-	scatter!(nd[1:i], [Si2_Dyn[1:i] NaCl_Dyn[1:i] PbTe_Dyn[1:i] ],
-			#xlim = (-1, 105), 
-			#ylim = (-0.1, 3.5),
-			xscale=:log10,
-			yscale=:log10,
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["" "" ""],
-			#legend = false,
-			linewidth=3,
-			xlabel="Training points",
-			ylabel= "Sum of correlation elements" ,
-			title="Sum Rule Relation (Traning Data = " *string(nd[i]) *")",
-			legend=:bottomleft
-		)
-end
-
-# ╔═╡ 8f733a5a-5e08-44f0-8fb3-6dd27e66cb4e
-gif(anim, "FC2_all.gif", fps=2)
-
-# ╔═╡ ff35334a-6643-41b2-aef7-b82f733bd973
+# ╔═╡ 8aaab8e3-59e3-457f-9cf7-70819c80feee
 begin
-	ndt = [ 5, 7, 9, 11, 13, 15, 20, 25, 30, 35, 40, 45, 50, 60, 80, 100, 130, 160, 199]
-	Si2_FC3_k = [25.3055, 46.019, 524.358, 43.2673, 45.3316, 2.41614, 15.5758, 0.66428, 0.396849, 1.31505, 0.0293254, 1.19151, 0.0479263, 0.172714, 0.291073, 0.212593, 0.253801, 0.0246688, 0.112543]
-	
-	NaCl_FC3_k = [51.6915, 141.599, 4899.52, 4846.32, 835.73, 233.667, 5.66646, 24.5348, 25.0001, 8.09625, 1.93998, 2.52396, 6.12298, 3.88055, 0.549805, 1.51097, 0.928284, 0.476788, 0.423315]
-	
-	PbTe_FC3_k = [88.892, 97.5775, 2691.41, 228.16, 57.9297, 33.8429, 9.39819, 3.80888, 2.69125, 2.7702, 7.29222, 0.0953727, 0.746546, 0.162459, 1.14234, 0.402207, 0.319287, 0.180194, 0.107803]
-	
-	GaAs_FC3_k = [250.162, 264.002, 425.53, 356.135, 1.08386, 25.4255, 40.988, 26.0307, 13.6883, 5.55263, 11.6367, 12.4641, 1.36526, 4.37497, 3.34297, 3.02032, 1.1364, 0.596916, 1.12371]
-
-	CdTe_FC3_k = [148.543, 106.678, 169.139, 129.959, 14.8066, 12.5837, 19.2576, 12.4969, 6.71028, 2.6148, 5.31754, 5.49879, 0.499732, 2.2228, 1.66993, 1.20953, 1.34655, 0.587683, 0.614975]
-	
+	σₑ = 1e-6					# Energy Gaussian noise
+	σₙ = 1e-6                   # Force Gaussian noise for Model 2 (σₑ independent)
+	σ₂₂ = 1e-2
 end
 
-# ╔═╡ ce169d57-79af-47b6-a49a-47a34e6b5565
-animFC3 = @animate for i in 1:size(ndt,1)
-	plot(ndt[1:i], [Si2_FC3_k[1:i] NaCl_FC3_k[1:i] PbTe_FC3_k[1:i] ],
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["d-"*L"\textbf{Si}:"*L"\;\Phi_{3}(\textbf{q})" L"\textbf{NaCl}:"*L"\;\Phi_{3}(\textbf{q})" L"\textbf{PbTe}:"*L"\;\Phi_{3}(\textbf{q})"],
-			linestyle = :solid ,
-			linewidth=2.5
-		)
-
-	scatter!(ndt[1:i], [Si2_FC3_k[1:i] NaCl_FC3_k[1:i] PbTe_FC3_k[1:i] ],
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["" "" ""],
-			xlim = (-1, 105), 
-			ylim = (-20.0, 1500.0),
-			xlabel="Training points",
-			ylabel= "Sum of correlation elements",
-			title="Sum Rule Relation (Traning Data = " *string(ndt[i]) *")"
-		)
-end
-
-# ╔═╡ d94b5133-04a3-460c-b5dd-de424d09f012
-gif(animFC3, "FC3_all.gif", fps=2)
-
-# ╔═╡ 20f4bc03-c661-4689-9822-2d4429210caa
+# ╔═╡ 12fe8e04-3b5d-4c25-9ceb-40624d201f62
 begin
-	plot(layout=(1,1))
-	plot!(size=(800,600))
-	plot!(ndt, [Si2_FC3_k NaCl_FC3_k PbTe_FC3_k GaAs_FC3_k CdTe_FC3_k],
-			    color = ["#F0BB62" "#6E9A50" "#C64756" "#184D47" "#FF90BB"],
-				labels = ["d-"*L"\textbf{Si}:"*L"\;\Phi_{3}(\textbf{q}=\Gamma)" L"\textbf{NaCl}:"*L"\;\Phi_{3}(\textbf{q}=\Gamma)" L"\textbf{PbTe}:"*L"\;\Phi_{3}(\textbf{q}=\Gamma)" L"\textbf{GaAs}:"*L"\;\Phi_{3}(\textbf{q}=\Gamma)" L"\textbf{CdTe}:"*L"\;\Phi_{3}(\textbf{q}=\Gamma)"],
-				linestyle = :solid ,
-				linewidth=2.5
-			)
-	scatter!(ndt, [Si2_FC3_k NaCl_FC3_k PbTe_FC3_k GaAs_FC3_k CdTe_FC3_k],
-			    color = ["#F0BB62" "#6E9A50" "#C64756" "#184D47" "#FF90BB"],
-				labels = ["" "" "" "" ""],
-				xscale=:log10,
-				yscale=:log10,
-				xlabel="Training points",
-				ylabel= "Summing All of FC3-Correlations" ,
-				title="Acoustic Sum Rule",
-				titlefontsize=18, guidefontsize=14, tickfontsize=10, legendfontsize=10
-			)
-	plot!(legend=:outertop, legendcolumns=3)
-	savefig("FC3_sumrule_log.png")
+	kernelfunction1(x₁,x₂) = Zygote.gradient(a -> kernel(a,x₂), x₁)[1]
+	kernelfunction2(x₁,x₂) = Zygote.hessian( a -> kernel(a,x₂), x₁)
+	kernelfunction3(x₁,x₂) = ForwardDiff.jacobian(a -> kernelfunction2(a,x₂), x₁)
+	kernelfunction4(x₁,x₂) = ForwardDiff.jacobian(a -> kernelfunction3(a,x₂), x₁)
+	kernelfunction5(x₁,x₂) = ForwardDiff.jacobian(a -> kernelfunction4(a,x₂), x₁)
 end
 
-# ╔═╡ 37081e28-ee3b-4fa7-9e8e-6878d855702f
-begin
-	plot(nd, [Si2_FC2 NaCl_FC2 PbTe_FC2],
-		    color = ["#F0BB62" "#C64756" "#6E9A50"],
-			labels = [L"\textbf{Si}\;\textbf{bulk}"*L"\;(\Phi_{2})" L"\textbf{NaCl}"*L"\;(\Phi_{2})" L"\textbf{PbTe}"*L"\;(\Phi_{2})" ],
-			linestyle = :solid,
-			linewidth=2.5,
-			dpi=1000
-		)
-	vline!([10, 48],
-		color = "black",
-		labels = ""
+# ╔═╡ 39b8cdaa-3f7c-441a-bc16-75cdd4a86e14
+function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
+	a  = 4 - dimA
+	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
+	
+	equi = feature[:,1]
+	
+	dim = size(feature,1)
+	num = size(feature,2)
+	
+	energy = (CSV.File(FileEnergy)|> Tables.matrix)[begin:numt,2]
+
+	force = -reshape((CSV.File(FileForce)|> Tables.matrix)[begin:a:end,2:numt+1], (dim*num,1))
+
+	force[1:dim] = zeros(dim)
+	
+	Target = vcat(energy, reshape(force, (dim*num,1)))
+	
+	
+	return equi, feature, energy, force, Target
+end
+
+# ╔═╡ 852dce96-b570-48b4-9777-19f60408054c
+function Marginal(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64, σ₂₂::Float64)
+	dim = size(X,1)
+	num = size(X,2)
+	#building Marginal Likelihood containers
+	#For Energy + Force
+	KK = zeros(((1 + dim) * num + dim^2, (1 + dim) * num + dim^2))
+	
+	for i in 1:num 
+		for j in 1:num 
+		#Fillin convarian of Energy vs Energy
+			KK[i, j] = kernel(X[:,i], X[:,j])
+			
+		#Fillin convarian of Force vs Energy
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j] = kernelfunction1(X[:,i], X[:,j])
+			
+			KK[i,(num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1,j]'
+			
+		#Fillin convarian of Force vs Force
+			KK[(num+1)+((i-1)*dim):(num+1)+((i)*dim)-1,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = -kernelfunction2(X[:,i], X[:,j])		
+
+		#Fillin convarian of FC2 vs energy
+			KK[(1 + dim) * num + 1: (1 + dim) * num + dim^2, j] = reshape(kernelfunction2(X[:,1], X[:,j]), (dim^2,1))
+		
+			KK[i, (1 + dim) * num + 1: (1 + dim) * num + dim^2] = KK[(1 + dim) * num + 1: (1 + dim) * num + dim^2, j]'
+			
+		#Fillin convarian of FC2 vs Force
+			KK[(1 + dim) * num + 1: (1 + dim) * num + dim^2, (num+1)+((j-1)*dim): (num+1)+((j)*dim)-1] = -reshape(kernelfunction3(X[:,1], X[:,j]), (dim^2,dim))
+			
+			KK[(num+1)+((i-1)*dim): (num+1)+((i)*dim)-1, (1 + dim) * num + 1: (1 + dim) * num + dim^2] = -KK[(1 + dim) * num + 1: (1 + dim) * num + dim^2, (num+1)+((j-1)*dim): (num+1)+((j)*dim)-1]'
+		end
+	end
+
+	
+	#Fillin convarian of FC2 vs FC2
+		KK[(1 + dim) * num + 1: (1 + dim) * num + dim^2, (1 + dim) * num + 1: (1 + dim) * num + dim^2] = reshape(kernelfunction4(X[:,1], X[:,1]), (dim^2,dim^2))
+
+		
+
+	Iee = σₑ^2 * Matrix(I, num, num)
+	Iff = σₙ^2 * Matrix(I, dim * num, dim * num)
+	Ief = zeros(num, dim * num)
+
+	Ie₂ = zeros(num, dim^2)
+	If₂ = zeros(dim * num, dim^2)
+	
+	I₂₂ = σ₂₂^2 * Matrix(I, dim^2, dim^2)
+	
+	II = vcat(
+		hcat(
+			vcat(
+				hcat(Iee, Ief),
+				hcat(Ief', Iff)
+			), 
+			vcat(Ie₂, If₂)),
+		hcat(
+			hcat(Ie₂', If₂'),
+			I₂₂)
 	)
 
-	scatter!(nd, [Si2_FC2 NaCl_FC2 PbTe_FC2],
-		    color = ["#F0BB62" "#C64756" "#6E9A50"],
-			labels = ["" "" ""],
-	scatter!(nd, [PbTe_FC2 Si2_FC2  NaCl_FC2],
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["" "" ""]
-		)
-
-	plot!(nd, [Si2_Dyn NaCl_Dyn PbTe_Dyn],
-		    color = ["#F0BB62" "#C64756" "#6E9A50"],
-			labels = [L"\textbf{Si}\;\textbf{bulk}"*L"\;(\mathbf{D}_{\Gamma})" L"\textbf{NaCl}"*L"\;(\mathbf{D}_{\Gamma})" L"\textbf{PbTe}"*L"\;(\mathbf{D}_{\Gamma})"],
-			linestyle = :dash ,
-			linewidth= 1,
-			linewidth= 2.5
-		)
-
-	scatter!(nd, [Si2_Dyn NaCl_Dyn PbTe_Dyn],
-			#xlim = (-1, 105), 
-			#ylim = (-0.1, 3.5),
-			xscale=:log10,
-			yscale=:log10,
-		    color = ["#F0BB62" "#C64756" "#6E9A50"],
-			labels = ["" "" ""],
-			#legend = false,
-			linewidth=3,
-		
-			xlabel="Training points",
-			ylabel= "Sum of correlati
-			on elements" ,
-			title="Acoustic Sum Rule Relation",
-			legend=:bottomleft,
-			dpi=1000
-		)
-	#savefig("SumruleAll_log.png")
+	Kₘₘ = KK + II
+	
+	return Kₘₘ
 end
 
-# ╔═╡ d4d8f121-7e92-4bca-a2aa-e9ecda546c96
-[ 1.79239e-9
-2.96734
-3.05551
-0.922553
-4.47072
-16.2466
-13.3136
-44.7593
-21.5664
-30.5772
-24.0235
-16.5839
-3.06283
-17.0364
-19.4262
-10.4668]
-
-# ╔═╡ e795ec2a-3598-4840-be6f-fd68f1922c57
-anim2 = @animate for i in 1:size(nd,1)
-	plot(nd[1:i], [Si2_FC2[1:i] NaCl_FC2[1:i] PbTe_FC2[1:i]],
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["d-"*L"\textbf{Si}:"*L"\;\Phi_{2}" L"\textbf{NaCl}:"*L"\;\Phi_{2}" L"\textbf{PbTe}:"*L"\;\Phi_{2}"],
-			linestyle = :solid,
-			linewidth=1.5,
-		)
-
-	scatter!(nd[1:i], [Si2_FC2[1:i] NaCl_FC2[1:i] PbTe_FC2[1:i]],
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["" "" ""],
-			xlim = (-1, 205), 
-			ylim = (-20.0, 700.0),
-			#legend = false,
-			linewidth=3,
-			xlabel="Training points",
-			ylabel= "Sum of correlation elements" ,
-			title="Sum Rule Relation (Traning Data = " *string(nd[i]) *")",
-			legend=:topright
-		)
-
+# ╔═╡ ef095d87-cd8e-4f3b-b75d-6b1ab0640c85
+function Coveriance_fc3(X::Matrix{Float64}, xₒ::Vector{Float64})
+	dim = size(X,1)
+	num = size(X,2)
+	
+	#building Covariance matrix containers
+	K₃ₙₘ= zeros((dim, dim, dim, (1+dim)*num + dim^2))
+	for j in 1:num
+		#Fillin convarian of Energy vs FC3
+		K₃ₙₘ[:,:,:,j] = reshape(
+					-  kernelfunction3(X[:,j], xₒ)
+					, (dim, dim, dim)
+				)
+		#Fillin convarian of Force vs FC3
+		K₃ₙₘ[:,:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
+					-  kernelfunction4(X[:,j], xₒ)
+					, (dim, dim, dim, dim)
+				)
+	end
+		K₃ₙₘ[:,:,:,(1 + dim) * num + 1: (1 + dim) * num + dim^2] = reshape(
+					-  kernelfunction5(xₒ, xₒ)
+					, (dim, dim, dim, dim^2)
+				)
+	
+	return K₃ₙₘ
 end
 
-# ╔═╡ 9fe84d8c-c81d-43ee-9406-4f25f38352ea
-gif(anim2, "FC2_Cart.gif", fps=2)
+# ╔═╡ a9fb1ce4-748c-4dec-b8e0-20f47babc1f0
+begin
+	a = (8.64087 + 8.64039 + 8.68901 + 8.64851 + 8.63629 + 8.6339 + 8.64039 + 8.63993 + 8.64851 + 8.61156 + 8.6339 + 8.63229)/12
+	A1 = a*Matrix(I, 3, 3)
+	A2 = -a*Matrix(I, 3, 3)
+	DynΓ = hcat(vcat(A1, A2), vcat(A2, A1))
+	d = size(DynΓ,1)
+	Lin_DynΓ = reshape(DynΓ, (d^2,1))
+end;
 
-# ╔═╡ 84c6c5ea-ad13-4367-b573-b332cbb4064f
+# ╔═╡ ecf5de8f-b7b6-4d95-a79a-78f901dfe11b
+function Posterior(Marginal, Covariance, Target)
+	dimₚ = size(Covariance, 1)
+	dimₜ = size(Marginal, 1)
+	Kₘₘ⁻¹ = inv(Marginal)
+	Kₙₘ = Covariance
 
+	MarginalTar = zeros(dimₜ)
+	@einsum MarginalTar[m] = Kₘₘ⁻¹[m, n] * Target[n]
+
+	Meanₚ = zeros(dimₚ, dimₚ, dimₚ)
+	@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * MarginalTar[m]
+
+	return Meanₚ 
+end
+
+# ╔═╡ afd01f47-291d-4a9a-99c8-bc211c601817
+function phonon_Γ(natom::Int64, feature, force, Target)
+	dim = 3 * natom
+	SupercellSize = Int(size(feature, 1)/dim)
+	ndata = size(feature, 2)
+
+	feature_ph = zeros((dim, ndata))
+	for jj in 1:ndata
+		for kk in 1:SupercellSize
+			if kk == 1
+				feature_ph[1:dim, jj] = feature[1:dim, jj]
+			else
+				feature_ph[1:dim, jj] = feature_ph[1:dim, jj] + feature[dim*(kk-1)+1:dim*kk, jj]
+			end 
+		end
+	end	
+	equi_ph = feature_ph[1:dim,1]
+
+	force_r = reshape(force, (dim*SupercellSize, ndata))
+	
+	force_ph = zeros((dim, ndata))
+	for jj in 1:ndata
+		for kk in 1:SupercellSize
+			if kk == 1
+				force_ph[1:dim,jj] = force_r[1:dim,jj]
+			else
+				force_ph[1:dim,jj] =force_ph[1:dim,jj] + force_r[dim*(kk-1)+1:dim*kk,jj]
+			end 
+		end
+	end
+	Target_ph = zeros(((1+dim)*ndata))
+	Target_ph[1:ndata] = Target[1:ndata]
+	Target_ph[1+ndata:(1+dim)*ndata] = reshape(force_ph,(dim*ndata,1))
+	
+	
+	return equi_ph, feature_ph, Target_ph
+end
+
+# ╔═╡ b60c827f-9acb-4a77-86b8-a6aaa7b560b4
+begin
+	nd = [1, 5, 7, 9, 11, 13, 15, 20, 25, 30, 35, 40, 45, 50, 60, 80, 100, 130, 160, 199]
+	Eph = zeros((size(nd,1)))
+	FC3ph = zeros(( 6, 6, 6, size(nd,1)))
+end;
+
+# ╔═╡ b7e44d3d-0b71-4a1c-8adb-176692a2bf46
+@time for k in 1:size(nd,1)
+	numt1 = nd[k]
+	equi, feature, energy, force, Target = ASEFeatureTarget("feature_vasp", "energy_vasp", "force_vasp", numt1, DIM);
+
+	equi_ph, feature_ph, Target_ph = phonon_Γ(2, feature, force, Target);
+
+	Target_ph2 = vcat(Target_ph,Lin_DynΓ)
+	
+	Kₘₘph = Marginal(feature_ph, σₑ, σₙ, σ₂₂);
+	
+	K₃ₙₘph = Coveriance_fc3(feature_ph, equi_ph);
+
+	FC3ph[:,:,:,k] = Posterior(Kₘₘph, K₃ₙₘph, Target_ph2);
+	
+	Eph[k] = abs(sum(FC3ph[:,:,:,k]))
+end;
+
+# ╔═╡ 0c238e37-4b33-46fb-b390-73b5d2082765
+begin
+	As = 1/sqrt(74.9216)
+	Ga = 1/sqrt(69.723)
+	invMass = 1.0 * Matrix(I, 6, 6)
+	invMass[1, 1] = Ga
+	invMass[2, 2] = Ga
+	invMass[3, 3] = Ga
+	invMass[4, 4] = As
+	invMass[5, 5] = As
+	invMass[6, 6] = As
+end
+
+# ╔═╡ 39cc899b-7ead-43a8-9305-6c111d8777c5
+begin
+	dim = size(FC3ph,1)
+	FC3ph_Norm = zeros((dim,dim,dim,size(nd,1)))
+	Eph_Norm = zeros(size(nd,1))
+	for i in 1:size(nd,1)
+		AA = FC3ph[:,:,:,i]
+		A = zeros(dim, dim, dim)
+		@einsum A[l, m, n] = AA[l, m, k] * invMass[k, n]
+		@einsum A[l, m, n] = AA[l, k, n] * invMass[k, m]
+		@einsum A[l, m, n] = AA[k, m, n] * invMass[k, l]
+		FC3ph_Norm[:,:,:,i] = A
+		Eph_Norm[i] = abs(sum(A))
+	end
+end;
+
+# ╔═╡ cbb80556-bc7a-4825-b1da-1d4c68ffbd7e
+bb = 1
+
+# ╔═╡ 55212af4-94c5-4f0c-a6a5-2868336a5ab8
+animph = @animate for aa in 1:size(nd,1)
+	heatmap(1:size(FC3ph_Norm[:,:,bb,aa],1),
+		    1:size(FC3ph_Norm[:,:,bb,aa],2), FC3ph_Norm[:,:,bb,aa],
+		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
+			aspectratio=:equal,
+			size=(700, 700),
+		    xlabel="feature coord. (n x d)",
+			ylabel="feature coord. (n x d)",
+		    title="Si2_FC3 (Traning Data = " *string(nd[aa]) *")")
+end
+
+# ╔═╡ 716fda28-b134-4ef0-8351-cc9e298eeed3
+gif(animph, "PbTe_Dyn3_Phono.gif", fps=2)
+
+# ╔═╡ cbd66f79-ef79-4323-a9ea-635cf3e2201a
+animPh = @animate for i in 1:size(nd,1)
+	scatter(nd[1:i], Eph_Norm[1:i],
+		xlabel="Training points",
+		ylabel="Sum of FC2 element",
+		xlim = (-1,200), 
+		ylim = (-5., 250.0),
+		labels = ["Cartesian" "Phonon"],
+		linewidth=3,
+		title="Sum Rule relation (Traning Data = " *string(nd[i]) *")"
+	)
+end
+
+# ╔═╡ 5dec1b53-09fe-4ab0-8910-ea859ab7c01b
+gif(animPh, "PbTe_sum_Dyn3_Phono.gif", fps=2)
+
+# ╔═╡ d0d0eda8-7db9-4b43-ab64-68305e9b1464
+Eph_Norm
+
+# ╔═╡ a29fd690-6b36-4753-af3a-6e8403913826
+nd
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -359,21 +324,9 @@ DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Einsum = "b7d42ee7-0b51-5a75-98ca-779d3107e4c0"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 KernelFunctions = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
-LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
-
-[compat]
-CSV = "~0.10.11"
-DataFrames = "~1.6.1"
-DelimitedFiles = "~1.9.1"
-Einsum = "~0.4.1"
-ForwardDiff = "~0.10.36"
-KernelFunctions = "~0.10.58"
-LaTeXStrings = "~1.3.1"
-Plots = "~1.39.0"
-Zygote = "~0.6.67"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -382,7 +335,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.3"
 manifest_format = "2.0"
-project_hash = "152d8088b552022bf638348884c0cdeee4d5c31b"
+project_hash = "c5bdba02590b96b8bb589e309379559caf1a066e"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -429,9 +382,9 @@ uuid = "6e34b625-4abd-537c-b88f-471c36dfa7a0"
 version = "1.0.8+0"
 
 [[deps.CEnum]]
-git-tree-sha1 = "eb4cb44a499229b3b8426dcfb5dd85333951ff90"
+git-tree-sha1 = "389ad5c84de1ae7cf0e28e381131c98ea87d54fc"
 uuid = "fa961155-64e5-5f13-b03f-caf6b980ea82"
-version = "0.4.2"
+version = "0.5.0"
 
 [[deps.CSV]]
 deps = ["CodecZlib", "Dates", "FilePathsBase", "InlineStrings", "Mmap", "Parsers", "PooledArrays", "PrecompileTools", "SentinelArrays", "Tables", "Unicode", "WeakRefStrings", "WorkerUtilities"]
@@ -503,9 +456,9 @@ version = "0.3.0"
 
 [[deps.Compat]]
 deps = ["UUIDs"]
-git-tree-sha1 = "8a62af3e248a8c4bad6b32cbbe663ae02275e32c"
+git-tree-sha1 = "886826d76ea9e72b35fcd000e535588f7b60f21d"
 uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
-version = "4.10.0"
+version = "4.10.1"
 weakdeps = ["Dates", "LinearAlgebra"]
 
     [deps.Compat.extensions]
@@ -603,9 +556,9 @@ version = "1.15.1"
 
 [[deps.Distances]]
 deps = ["LinearAlgebra", "Statistics", "StatsAPI"]
-git-tree-sha1 = "5225c965635d8c21168e32a12954675e7bea1151"
+git-tree-sha1 = "66c4c81f259586e8f002eacebc177e1fb06363b0"
 uuid = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
-version = "0.10.10"
+version = "0.10.11"
 weakdeps = ["ChainRulesCore", "SparseArrays"]
 
     [deps.Distances.extensions]
@@ -674,14 +627,19 @@ uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
 
 [[deps.FillArrays]]
 deps = ["LinearAlgebra", "Random"]
-git-tree-sha1 = "35f0c0f345bff2c6d636f95fdb136323b5a796ef"
+git-tree-sha1 = "fdd015769934644858b4bcc69a03bb06f4e31357"
 uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
-version = "1.7.0"
-weakdeps = ["SparseArrays", "Statistics"]
+version = "1.9.0"
 
     [deps.FillArrays.extensions]
+    FillArraysPDMatsExt = "PDMats"
     FillArraysSparseArraysExt = "SparseArrays"
     FillArraysStatisticsExt = "Statistics"
+
+    [deps.FillArrays.weakdeps]
+    PDMats = "90014a1f-27ba-587c-ab20-58faa44d9150"
+    SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+    Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [[deps.FixedPointNumbers]]
 deps = ["Statistics"]
@@ -790,9 +748,9 @@ version = "1.0.2"
 
 [[deps.HTTP]]
 deps = ["Base64", "CodecZlib", "ConcurrentUtilities", "Dates", "ExceptionUnwrapping", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
-git-tree-sha1 = "5eab648309e2e060198b45820af1a37182de3cce"
+git-tree-sha1 = "abbbb9ec3afd783a7cbd82ef01dcd088ea051398"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "1.10.0"
+version = "1.10.1"
 
 [[deps.HarfBuzz_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "Graphite2_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg"]
@@ -833,9 +791,9 @@ version = "1.0.0"
 
 [[deps.JLFzf]]
 deps = ["Pipe", "REPL", "Random", "fzf_jll"]
-git-tree-sha1 = "9fb0b890adab1c0a4a475d4210d51f228bfc250d"
+git-tree-sha1 = "a53ebe394b71470c7f97c2e7e170d51df21b17af"
 uuid = "1019f520-868f-41f5-a6de-eb00f4b6a39c"
-version = "0.1.6"
+version = "0.1.7"
 
 [[deps.JLLWrappers]]
 deps = ["Artifacts", "Preferences"]
@@ -857,9 +815,9 @@ version = "2.1.91+0"
 
 [[deps.KernelFunctions]]
 deps = ["ChainRulesCore", "Compat", "CompositionsBase", "Distances", "FillArrays", "Functors", "IrrationalConstants", "LinearAlgebra", "LogExpFunctions", "Random", "Requires", "SpecialFunctions", "Statistics", "StatsBase", "TensorCore", "Test", "ZygoteRules"]
-git-tree-sha1 = "c7f8315aa2e47be568be868bf6892e853bc7f1e1"
+git-tree-sha1 = "d9bcb5ec5205db043f01a35dee0da82eb3fd2afb"
 uuid = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
-version = "0.10.58"
+version = "0.10.60"
 
 [[deps.LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -875,9 +833,9 @@ version = "3.0.0+1"
 
 [[deps.LLVM]]
 deps = ["CEnum", "LLVMExtra_jll", "Libdl", "Preferences", "Printf", "Requires", "Unicode"]
-git-tree-sha1 = "c879e47398a7ab671c782e02b51a4456794a7fa3"
+git-tree-sha1 = "0678579657515e88b6632a3a482d39adcbb80445"
 uuid = "929cbde3-209d-540e-8aea-75f648917ca0"
-version = "6.4.0"
+version = "6.4.1"
 
     [deps.LLVM.extensions]
     BFloat16sExt = "BFloat16s"
@@ -1037,9 +995,9 @@ uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
 [[deps.MbedTLS]]
 deps = ["Dates", "MbedTLS_jll", "MozillaCACerts_jll", "NetworkOptions", "Random", "Sockets"]
-git-tree-sha1 = "f512dc13e64e96f703fd92ce617755ee6b5adf0f"
+git-tree-sha1 = "c067a280ddc25f196b5e7df3877c6b226d390aaf"
 uuid = "739be429-bea8-5141-9913-cc70e7f3736d"
-version = "1.1.8"
+version = "1.1.9"
 
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1115,9 +1073,9 @@ uuid = "91d4177d-7536-5919-b921-800302f37372"
 version = "1.3.2+0"
 
 [[deps.OrderedCollections]]
-git-tree-sha1 = "2e73fe17cac3c62ad1aebe70d44c963c3cfdc3e3"
+git-tree-sha1 = "dfdf5519f235516220579f949664f1bf44e741c5"
 uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
-version = "1.6.2"
+version = "1.6.3"
 
 [[deps.PCRE2_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1198,9 +1156,9 @@ version = "1.4.1"
 
 [[deps.PrettyTables]]
 deps = ["Crayons", "LaTeXStrings", "Markdown", "PrecompileTools", "Printf", "Reexport", "StringManipulation", "Tables"]
-git-tree-sha1 = "3f43c2aae6aa4a2503b05587ab74f4f6aeff9fd0"
+git-tree-sha1 = "88b895d13d53b5577fd53379d913b9ab9ac82660"
 uuid = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
-version = "2.3.0"
+version = "2.3.1"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -1418,9 +1376,9 @@ version = "0.4.1"
 
 [[deps.Unitful]]
 deps = ["Dates", "LinearAlgebra", "Random"]
-git-tree-sha1 = "242982d62ff0d1671e9029b52743062739255c7e"
+git-tree-sha1 = "3c793be6df9dd77a0cf49d80984ef9ff996948fa"
 uuid = "1986cc42-f94f-5a68-af5c-568840ba703d"
-version = "1.18.0"
+version = "1.19.0"
 
     [deps.Unitful.extensions]
     ConstructionBaseUnitfulExt = "ConstructionBase"
@@ -1472,9 +1430,9 @@ version = "1.6.1"
 
 [[deps.XML2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Zlib_jll"]
-git-tree-sha1 = "24b81b59bd35b3c42ab84fa589086e19be919916"
+git-tree-sha1 = "da69178aacc095066bad1f69d2f59a60a1dd8ad1"
 uuid = "02c8fc9c-b97f-50b9-bbe4-9be30ff0a78a"
-version = "2.11.5+0"
+version = "2.12.0+0"
 
 [[deps.XSLT_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgcrypt_jll", "Libgpg_error_jll", "Libiconv_jll", "Pkg", "XML2_jll", "Zlib_jll"]
@@ -1672,10 +1630,10 @@ uuid = "35ca27e7-8b34-5b7f-bca9-bdc33f59eb06"
 version = "3.2.9+0"
 
 [[deps.fzf_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "47cf33e62e138b920039e8ff9f9841aafe1b733e"
+deps = ["Artifacts", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "a68c9655fbe6dfcab3d972808f1aafec151ce3f8"
 uuid = "214eeab7-80f7-51ab-84ad-2988db7cef09"
-version = "0.35.1+0"
+version = "0.43.0+0"
 
 [[deps.gperf_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1766,25 +1724,26 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═08f2031c-87c8-11ee-140d-23db21459e52
-# ╠═48f10f1e-5fb1-4fe3-ae65-c2d874b84a3d
-# ╠═b42f2b09-f5dc-4283-8bbf-715ac33f0f12
-# ╠═e268a975-42a3-4b42-87ee-339c03276e04
-# ╠═dd0377ce-1d90-43ba-93e6-3a1b3eddce7b
-# ╠═707c4dad-482f-43bd-b2d6-2886ef7e1343
-# ╠═e6877cc5-a967-4da8-a07d-e9aacebccf02
-# ╠═8487126f-258b-40c0-83ad-5600ced08a06
-# ╠═cea8c5c2-837f-48cf-9fb7-0af50eaae576
-# ╠═2ec8477f-58c4-4f3a-8a29-edcb70dbdf3c
-# ╠═8f733a5a-5e08-44f0-8fb3-6dd27e66cb4e
-# ╠═ff35334a-6643-41b2-aef7-b82f733bd973
-# ╠═ce169d57-79af-47b6-a49a-47a34e6b5565
-# ╠═d94b5133-04a3-460c-b5dd-de424d09f012
-# ╠═20f4bc03-c661-4689-9822-2d4429210caa
-# ╠═37081e28-ee3b-4fa7-9e8e-6878d855702f
-# ╠═d4d8f121-7e92-4bca-a2aa-e9ecda546c96
-# ╠═e795ec2a-3598-4840-be6f-fd68f1922c57
-# ╠═9fe84d8c-c81d-43ee-9406-4f25f38352ea
-# ╠═84c6c5ea-ad13-4367-b573-b332cbb4064f
+# ╠═cb2b9e60-be3d-11ee-2ad2-817e9a01d865
+# ╠═f6bce61e-bbcb-48a3-86bd-3028debf624e
+# ╠═8aaab8e3-59e3-457f-9cf7-70819c80feee
+# ╠═12fe8e04-3b5d-4c25-9ceb-40624d201f62
+# ╠═39b8cdaa-3f7c-441a-bc16-75cdd4a86e14
+# ╠═852dce96-b570-48b4-9777-19f60408054c
+# ╠═ef095d87-cd8e-4f3b-b75d-6b1ab0640c85
+# ╠═a9fb1ce4-748c-4dec-b8e0-20f47babc1f0
+# ╠═ecf5de8f-b7b6-4d95-a79a-78f901dfe11b
+# ╠═afd01f47-291d-4a9a-99c8-bc211c601817
+# ╠═b60c827f-9acb-4a77-86b8-a6aaa7b560b4
+# ╠═b7e44d3d-0b71-4a1c-8adb-176692a2bf46
+# ╠═0c238e37-4b33-46fb-b390-73b5d2082765
+# ╠═39cc899b-7ead-43a8-9305-6c111d8777c5
+# ╠═cbb80556-bc7a-4825-b1da-1d4c68ffbd7e
+# ╠═55212af4-94c5-4f0c-a6a5-2868336a5ab8
+# ╠═716fda28-b134-4ef0-8351-cc9e298eeed3
+# ╠═cbd66f79-ef79-4323-a9ea-635cf3e2201a
+# ╠═5dec1b53-09fe-4ab0-8910-ea859ab7c01b
+# ╠═d0d0eda8-7db9-4b43-ab64-68305e9b1464
+# ╠═a29fd690-6b36-4753-af3a-6e8403913826
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

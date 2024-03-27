@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.38
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -19,7 +19,7 @@ end
 begin
 	σₒ = 0.05                  # Kernel Scale
 	l = 0.4		    
-	Num = 199                # Number of training points
+	Num = 151                # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
 	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
@@ -86,7 +86,7 @@ end
 
 # ╔═╡ a92c24e9-9882-4f0e-ad51-3145ae8ec6b3
 equi, feature, energy, force, Target = ASEFeatureTarget(
-    "feature_new2", "energy_new2", "force_new2", Num, DIM);
+    "feature_vasp", "energy_vasp", "force_vasp", Num, DIM);
 
 # ╔═╡ 50c1e142-b0f2-46f8-a17d-fcd17c416e11
 force

@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.38
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -18,7 +18,7 @@ end
 # ╔═╡ d8b8b25d-e716-47e9-b2e4-12731df9e7c0
 begin
 	σₒ = 0.05                 # Kernel Scale
-	l = 0.4			    # Length Scale
+	l = 0.4			    		# Length Scale
 		
 	Num = 151                 # Number of training points
 	DIM = 3                     # Dimension of Materials
@@ -334,6 +334,9 @@ end
 # ╔═╡ 341e193a-587d-409d-9eb9-af3e2412f76b
 Predict = [a1, b1, c1, d1, e1, f1, g1 ,h1, a2, b2, c2, d2, e2, f2, g2 ,h2]
 
+# ╔═╡ d9561f93-aebf-444d-b38e-c63cbb312e9f
+a1
+
 # ╔═╡ 84cd6bd3-8834-4c82-873c-9d97f5c94b43
 Phon = [2.92999594, 0.04717251, -0.31205117, -0.17018929, -0.2541165, -0.09757366, -1.39262983, 0.05100078, 2.08113829, 0.04717251, -0.31271797, -0.6251722, -0.09217561, -0.01833669, -1.34983008, 0.05144025]
 
@@ -374,7 +377,7 @@ Zygote = "~0.6.69"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.4"
+julia_version = "1.9.3"
 manifest_format = "2.0"
 project_hash = "04c8032159f803fb71e7ad93fb2f2cbb449d01fb"
 
@@ -928,12 +931,12 @@ uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.4"
+version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "8.4.0+0"
+version = "7.84.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -942,7 +945,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.11.0+1"
+version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1738,7 +1741,7 @@ version = "1.1.6+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.52.0+1"
+version = "1.48.0+0"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1794,6 +1797,7 @@ version = "1.4.1+1"
 # ╠═e2b3d5cf-7f4f-4f22-b9f7-99d45b75166a
 # ╠═8de1931a-f582-4d6a-be6d-650d85ae27c5
 # ╠═341e193a-587d-409d-9eb9-af3e2412f76b
+# ╠═d9561f93-aebf-444d-b38e-c63cbb312e9f
 # ╠═84cd6bd3-8834-4c82-873c-9d97f5c94b43
 # ╠═daff8f4f-f5d8-4723-be86-ff065056a8f2
 # ╠═326c5fb9-70f5-4999-ad0c-da88d8689af3

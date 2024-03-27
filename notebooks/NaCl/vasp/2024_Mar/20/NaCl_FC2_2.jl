@@ -17,10 +17,10 @@ end
 
 # ╔═╡ 10069b1f-7637-4cec-9c42-5e70ea6b3f7a
 begin
-	σₒ = 0.05                  # Kernel Scale
-	l = 0.4		    # Length Scale
+	σₒ = 0.15                  	# Kernel Scale
+	l = 0.4	    				# Length Scale
 		
-	Num = 199                 # Number of training points
+	Num = 200              	 # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
 	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
@@ -30,8 +30,8 @@ end;
 
 # ╔═╡ 340bcbb5-5dc3-4c6b-9737-2c236a478565
 begin
-	σₑ = 1e-9				      # Energy Gaussian noise
-	σₙ = 1e-9/l                   # Force Gaussian noise for Model 2 (σₑ independent)
+	σₑ = 1e-7				      # Energy Gaussian noise
+	σₙ = σₑ/l                  # Force Gaussian noise for Model 2 (σₑ independent)
 end
 
 # ╔═╡ 5036018e-a35b-4a10-9b5e-0ac295ca4f44
@@ -194,6 +194,16 @@ end
 # ╔═╡ 31d0254b-545b-4032-a537-e6e8c3a17759
 FC2
 
+# ╔═╡ 2df78944-fca0-44a2-90f1-a66f8ed3a531
+heatmap(1:size(FC2[:,:],1),
+	    1:size(FC2[:,:],2), FC2[:,:],
+	    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
+	    xlabel="feature coord. (n x d)",
+		ylabel="feature coord. (n x d)",
+		aspectratio=:equal,
+		size=(700, 700),
+	    title="PbTe_FC2 (Traning Data = " *string(199) *")" )
+
 # ╔═╡ f0b14bef-5c6e-4722-a374-cf014e377146
 FC2_re = recon_FC2(FC2);
 
@@ -302,10 +312,13 @@ equi
 Predict = [a1, b1, c1, d1, e1, f1, g1 ,h1, a2, b2, c2, d2, e2, f2, g2 ,h2]
 
 # ╔═╡ 727c5a35-a251-4fc1-b2d6-2d9eea5919f9
-h2
+f2
 
 # ╔═╡ 3aa87ea6-5780-4249-9511-0ca6a14c8c78
 Phon = [2.1160722, 0.02765919, -0.70121375, -0.27665411, -0.10657938, 0.03523089, -0.17260477, -0.060126, 2.71334408, 0.02762525, -0.7011685, -0.39501141, -0.30137421, 0.05601417, -0.03196405, -0.06020661]
+
+# ╔═╡ f94b9764-7a42-4eae-8b25-622ad36339fd
+rmsd(Phon, Predict; normalize=false)
 
 # ╔═╡ 070d1e70-4de0-48ba-aa5c-50d2897ad9bc
 rmsd(Phon, Predict; normalize=false)
@@ -1746,6 +1759,7 @@ version = "1.4.1+1"
 # ╔═╡ Cell order:
 # ╠═db10bb44-da35-11ee-3041-f38fa1b10539
 # ╠═10069b1f-7637-4cec-9c42-5e70ea6b3f7a
+# ╠═f94b9764-7a42-4eae-8b25-622ad36339fd
 # ╠═340bcbb5-5dc3-4c6b-9737-2c236a478565
 # ╠═5036018e-a35b-4a10-9b5e-0ac295ca4f44
 # ╠═565809cb-577b-4a78-b80b-1d51a35ccabb
@@ -1761,6 +1775,7 @@ version = "1.4.1+1"
 # ╠═624ef697-5a6e-419d-987c-c1af2df54c24
 # ╠═8006ab39-261d-46f4-969b-b12fdb172af8
 # ╠═31d0254b-545b-4032-a537-e6e8c3a17759
+# ╠═2df78944-fca0-44a2-90f1-a66f8ed3a531
 # ╠═f0b14bef-5c6e-4722-a374-cf014e377146
 # ╠═e818df88-1b5e-4537-a8af-128dcb247b8d
 # ╠═51bcc4b7-0fe5-4d8b-8172-acfb75c08d3b

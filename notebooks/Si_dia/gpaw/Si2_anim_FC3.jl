@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.32
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -202,21 +202,6 @@ SumRule3
 
 # ╔═╡ 231240be-1616-469a-a7f8-66784ea20642
 P3[1,1,1,298]
-
-# ╔═╡ f6f98a96-4259-43dc-9106-e1de09949cf9
-let
-    x = 1:48
-    y = 1:48
-    z = 1:48
-	
-    vol = [FC3[ix,iy,iz] for ix in x, iy in y, iz in z]
-    fig, ax, _ = volume(x, y, z, vol, colormap = :plasma,colorrange = (minimum(vol), maximum(vol)),
-        figure = (; resolution = (800,800)),  
-        axis=(; type=Axis3, perspectiveness = 0.5,  azimuth = 7.19, elevation = 0.57,  
-            aspect = (1,1,1)))
-
-    fig
-end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1653,6 +1638,5 @@ version = "1.4.1+1"
 # ╠═23905961-223a-41d5-aa0f-838d4bb7f7d3
 # ╠═87236719-9144-4654-b0bf-8c07b67ff206
 # ╠═231240be-1616-469a-a7f8-66784ea20642
-# ╠═f6f98a96-4259-43dc-9106-e1de09949cf9
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
