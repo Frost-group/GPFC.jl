@@ -13,19 +13,21 @@ begin
 	using DelimitedFiles
 	using Plots
 	using StatsBase
+	using Stheno
+	using AbstractGPs, Random 
 end
 
 # ╔═╡ ae119730-7645-4ffb-8eb7-8374dbb391dd
 begin
 	σₒ = 0.075                  # Kernel Scale
-	l = 0.4			    # Length Scale
+	l2 = 0.4			    # Length Scale
 		
 	Num = 199                 # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
 	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
 		
-	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
+	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l2)
 end;
 
 # ╔═╡ 40bb0107-cb19-4c1c-9735-3d630d874e2e
@@ -75,7 +77,7 @@ begin
 	x2 = feature[:,2]
 	d = (x1-x2)
 	dim = size(x1,1)
-	Λ = (l^(-2))*Matrix(I,dim,dim)
+	Λ = (l2^(-2))*Matrix(I,dim,dim)
 	Iden = 1.0*Matrix(I,dim,dim)
 end;
 
@@ -162,11 +164,119 @@ begin
 end;
 
 # ╔═╡ d1f8b0d4-caea-4013-bc78-cfe58d102ffc
-(3 * B₁ - A)*k00
+begin
+	#
+	# We'll get going by setting up our model, generating some toy observations,
+	# and constructing the posterior processes produced by conditioning on these
+	# observations.
+	#
+
+	# Create a pseudo random number generator for reproducibility.
+	rng = MersenneTwister(123456);
+	
+	# Define a distribution over f₁, f₂, and f₃, where f₃(x) = f₁(x) + f₂(x).
+	# This `GPPP` object is just an `AbstractGPs.AbstractGP` object.
+	f = @gppp let
+	    f₁ = GP(randn(rng), SEKernel())
+	    f₂ = GP(SEKernel())
+	    f₃ = f₁ + f₂
+	end;
+	
+	# Sample `N₁` / `N₂` locations at which to measure `f₁` / `f₃`.
+	N₁, N₃ = 10, 11;
+	X₁ = GPPPInput(:f₁, rand(rng, N₁) * 10);
+	X₃ = GPPPInput(:f₃, rand(rng, N₃) * 10);
+	X = BlockData(X₁, X₃);
+	
+	# Pick out the bits of `f` that we're interested in, and the variance
+	# of the noise under which we plan to measure them.
+	σ² = 1e-2
+	fx = f(X, 1e-2);
+	
+	# Sample toy observations of `f₁` / `f₃` at `X₁` / `X₃`.
+	y = rand(rng, fx);
+	
+	# You could work backwards to figure out which elements of `y` correspond to
+	# which of the elements of `X`, but `Stheno.jl` provides methods of `split` to
+	# do this for you.
+	ŷ₁, ŷ₃ = split(X, y);
+	
+	# Compute the logpdf of the observations. Notice that this looks exactly like
+	# what you would write in AbstractGPs.jl.
+	l = logpdf(fx, y)
+	
+	# Compute the ELBO of the observations, with pseudo-points at the same
+	# locations as the observations. Could have placed them in any of the processes
+	# in f, even in f₂.
+	l ≈ elbo(fx, y, f(X))
+	
+	# Compute the posterior. This is just an `AbstractGPs.PosteriorGP`.
+	f′ = posterior(fx, y);
+	
+	
+	
+	#
+	# The are various things that we can do with a Stheno model.
+	#
+	
+	# Sample jointly from the posterior over all of the processes.
+	Np, S = 500, 11;
+	X_ = range(-2.5, stop=12.5, length=Np);
+	Xp1 = GPPPInput(:f₁, X_);
+	Xp2 = GPPPInput(:f₂, X_);
+	Xp3 = GPPPInput(:f₃, X_);
+	Xp = BlockData(Xp1, Xp2, Xp3);
+	f′_Xp = rand(rng, f′(Xp, 1e-9), S);
+	
+	# Chop up posterior samples using `split`.
+	f₁′Xp, f₂′Xp, f₃′Xp = split(Xp, f′_Xp);
+	
+	
+	
+	#
+	# We make use of the plotting recipes in AbstractGPs to plot the marginals,
+	# and manually plot the joint posterior samples.
+	#
+	
+	# Instantiate plot and chose backend.
+	plotly();
+	posterior_plot = plot();
+	
+	# Plot posterior over f1.
+	plot!(posterior_plot, X_, f′(Xp1); color=:red, label="f1");
+	plot!(posterior_plot, X_, f₁′Xp; color=:red, label="", alpha=0.2, linewidth=1);
+	scatter!(posterior_plot, X₁.x, ŷ₁;
+	    markercolor=:red,
+	    markershape=:circle,
+	    markerstrokewidth=0.0,
+	    markersize=4,
+	    markeralpha=0.7,
+	    label="",
+	);
+	
+	# Plot posterior over f2.
+	plot!(posterior_plot, X_, f′(Xp2); color=:green, label="f2");
+	plot!(posterior_plot, X_, f₂′Xp; color=:green, label="", alpha=0.2, linewidth=1);
+	
+	# Plot posterior over f3
+	plot!(posterior_plot, X_, f′(Xp3); color=:blue, label="f3");
+	plot!(posterior_plot, X_, f₃′Xp; color=:blue, label="", alpha=0.2, linewidth=1);
+	scatter!(posterior_plot, X₃.x, ŷ₃;
+	    markercolor=:blue,
+	    markershape=:circle,
+	    markerstrokewidth=0.0,
+	    markersize=4,
+	    markeralpha=0.7,
+	    label="",
+	);
+	
+	display(posterior_plot);
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+AbstractGPs = "99985d1d-32ba-4be9-9821-2ec096f28918"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
@@ -175,11 +285,14 @@ ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 KernelFunctions = "ec8451be-7e33-11e9-00cf-bbf324bd1392"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
+Stheno = "8188c328-b5d6-583d-959b-9690869a5511"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
+AbstractGPs = "~0.5.19"
 CSV = "~0.10.12"
 DataFrames = "~1.6.1"
 DelimitedFiles = "~1.9.1"
@@ -188,6 +301,7 @@ ForwardDiff = "~0.10.36"
 KernelFunctions = "~0.10.63"
 Plots = "~1.39.0"
 StatsBase = "~0.34.2"
+Stheno = "~0.8.2"
 Zygote = "~0.6.69"
 """
 
@@ -197,7 +311,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.3"
 manifest_format = "2.0"
-project_hash = "04c8032159f803fb71e7ad93fb2f2cbb449d01fb"
+project_hash = "0bcf6748fd69b1f38f6f19b8fb29e87afa5d3493"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -209,6 +323,12 @@ weakdeps = ["ChainRulesCore", "Test"]
     [deps.AbstractFFTs.extensions]
     AbstractFFTsChainRulesCoreExt = "ChainRulesCore"
     AbstractFFTsTestExt = "Test"
+
+[[deps.AbstractGPs]]
+deps = ["ChainRulesCore", "Distributions", "FillArrays", "IrrationalConstants", "KernelFunctions", "LinearAlgebra", "PDMats", "Random", "RecipesBase", "Reexport", "Statistics", "StatsBase", "Test"]
+git-tree-sha1 = "6e5e13c57dbfdedddbc3ef727586d8ee0703d50a"
+uuid = "99985d1d-32ba-4be9-9821-2ec096f28918"
+version = "0.5.19"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra", "Requires"]
@@ -226,6 +346,16 @@ version = "4.0.1"
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
 version = "1.1.1"
 
+[[deps.ArrayLayouts]]
+deps = ["FillArrays", "LinearAlgebra"]
+git-tree-sha1 = "e46675dbc095ddfdf2b5fba247d5a25f34e1f8a2"
+uuid = "4c555306-a7a7-4459-81d9-ec55ddd5c99a"
+version = "1.6.1"
+weakdeps = ["SparseArrays"]
+
+    [deps.ArrayLayouts.extensions]
+    ArrayLayoutsSparseArraysExt = "SparseArrays"
+
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 
@@ -236,6 +366,12 @@ uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 git-tree-sha1 = "2dc09997850d68179b69dafb58ae806167a32b1b"
 uuid = "d1d4a3ce-64b1-5f1a-9ba4-7e7e69966f35"
 version = "0.1.8"
+
+[[deps.BlockArrays]]
+deps = ["ArrayLayouts", "FillArrays", "LinearAlgebra"]
+git-tree-sha1 = "fc69cbdb4277042f72c6e59cbc7024fbe3034b89"
+uuid = "8e7c35d0-a365-5155-bbbb-fb81a777f24e"
+version = "0.16.39"
 
 [[deps.Bzip2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -259,6 +395,12 @@ deps = ["Artifacts", "Bzip2_jll", "CompilerSupportLibraries_jll", "Fontconfig_jl
 git-tree-sha1 = "4b859a208b2397a7a623a03449e4636bdb17bcf2"
 uuid = "83423d85-b0ee-5818-9007-b63ccbeb887a"
 version = "1.16.1+1"
+
+[[deps.Calculus]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "f641eb0a4f00c343bbc32346e1217b86f3ce9dad"
+uuid = "49dc2e85-a5d0-5ad3-a950-438e2897f1b9"
+version = "0.5.1"
 
 [[deps.ChainRules]]
 deps = ["Adapt", "ChainRulesCore", "Compat", "Distributed", "GPUArraysCore", "IrrationalConstants", "LinearAlgebra", "Random", "RealDot", "SparseArrays", "SparseInverseSubset", "Statistics", "StructArrays", "SuiteSparse"]
@@ -431,6 +573,22 @@ weakdeps = ["ChainRulesCore", "SparseArrays"]
 deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
+[[deps.Distributions]]
+deps = ["FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SpecialFunctions", "Statistics", "StatsAPI", "StatsBase", "StatsFuns"]
+git-tree-sha1 = "7c302d7a5fec5214eb8a5a4c466dcf7a51fcf169"
+uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
+version = "0.25.107"
+
+    [deps.Distributions.extensions]
+    DistributionsChainRulesCoreExt = "ChainRulesCore"
+    DistributionsDensityInterfaceExt = "DensityInterface"
+    DistributionsTestExt = "Test"
+
+    [deps.Distributions.weakdeps]
+    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+    DensityInterface = "b429d917-457f-4dbc-8f4c-0cc954292b1d"
+    Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
 [[deps.DocStringExtensions]]
 deps = ["LibGit2"]
 git-tree-sha1 = "2fb1e02f2b635d0845df5d7c167fec4dd739b00d"
@@ -441,6 +599,12 @@ version = "0.9.3"
 deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 version = "1.6.0"
+
+[[deps.DualNumbers]]
+deps = ["Calculus", "NaNMath", "SpecialFunctions"]
+git-tree-sha1 = "5837a837389fccf076445fce071c8ddaea35a566"
+uuid = "fa6b7ba4-c1ee-5f82-b5fc-ecf0adba8f74"
+version = "0.6.8"
 
 [[deps.Einsum]]
 deps = ["Compat"]
@@ -492,16 +656,12 @@ deps = ["LinearAlgebra", "Random"]
 git-tree-sha1 = "5b93957f6dcd33fc343044af3d48c215be2562f1"
 uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
 version = "1.9.3"
+weakdeps = ["PDMats", "SparseArrays", "Statistics"]
 
     [deps.FillArrays.extensions]
     FillArraysPDMatsExt = "PDMats"
     FillArraysSparseArraysExt = "SparseArrays"
     FillArraysStatisticsExt = "Statistics"
-
-    [deps.FillArrays.weakdeps]
-    PDMats = "90014a1f-27ba-587c-ab20-58faa44d9150"
-    SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
-    Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [[deps.FixedPointNumbers]]
 deps = ["Statistics"]
@@ -619,6 +779,12 @@ deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll",
 git-tree-sha1 = "129acf094d168394e80ee1dc4bc06ec835e510a3"
 uuid = "2e76f6c2-a576-52d4-95c1-20adfe4de566"
 version = "2.8.1+1"
+
+[[deps.HypergeometricFunctions]]
+deps = ["DualNumbers", "LinearAlgebra", "OpenLibm_jll", "SpecialFunctions"]
+git-tree-sha1 = "f218fe3736ddf977e0e772bc9a586b2383da2685"
+uuid = "34004b35-14d8-5ef3-9330-4cdb6864b03a"
+version = "0.3.23"
 
 [[deps.IRTools]]
 deps = ["InteractiveUtils", "MacroTools", "Test"]
@@ -944,6 +1110,12 @@ deps = ["Artifacts", "Libdl"]
 uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
 version = "10.42.0+0"
 
+[[deps.PDMats]]
+deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse"]
+git-tree-sha1 = "949347156c25054de2db3b166c52ac4728cbad65"
+uuid = "90014a1f-27ba-587c-ab20-58faa44d9150"
+version = "0.11.31"
+
 [[deps.Parsers]]
 deps = ["Dates", "PrecompileTools", "UUIDs"]
 git-tree-sha1 = "8489905bcdbcfac64d1daa51ca07c0d8f0283821"
@@ -1032,6 +1204,12 @@ git-tree-sha1 = "37b7bb7aabf9a085e0044307e1717436117f2b3b"
 uuid = "c0090381-4147-56d7-9ebc-da0b1113ec56"
 version = "6.5.3+1"
 
+[[deps.QuadGK]]
+deps = ["DataStructures", "LinearAlgebra"]
+git-tree-sha1 = "9b23c31e76e333e6fb4c1595ae6afa74966a729e"
+uuid = "1fd47b50-473d-5c70-9696-f719f8f3bcdc"
+version = "2.9.4"
+
 [[deps.REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
 uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
@@ -1074,6 +1252,18 @@ deps = ["UUIDs"]
 git-tree-sha1 = "838a3a4188e2ded87a4f9f184b4b0d78a1e91cb7"
 uuid = "ae029012-a4dd-5104-9daa-d747884805df"
 version = "1.3.0"
+
+[[deps.Rmath]]
+deps = ["Random", "Rmath_jll"]
+git-tree-sha1 = "f65dcb5fa46aee0cf9ed6274ccbd597adc49aa7b"
+uuid = "79098fc4-a85e-5d69-aa6a-4863f24498fa"
+version = "0.7.1"
+
+[[deps.Rmath_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "6ed52fdd3382cf21947b15e8870ac0ddbff736da"
+uuid = "f50d1b31-88e8-58de-be2c-1cc44531875f"
+version = "0.4.0+0"
 
 [[deps.SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
@@ -1155,6 +1345,26 @@ deps = ["DataAPI", "DataStructures", "LinearAlgebra", "LogExpFunctions", "Missin
 git-tree-sha1 = "1d77abd07f617c4868c33d4f5b9e1dbb2643c9cf"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 version = "0.34.2"
+
+[[deps.StatsFuns]]
+deps = ["HypergeometricFunctions", "IrrationalConstants", "LogExpFunctions", "Reexport", "Rmath", "SpecialFunctions"]
+git-tree-sha1 = "cef0472124fab0695b58ca35a77c6fb942fdab8a"
+uuid = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
+version = "1.3.1"
+
+    [deps.StatsFuns.extensions]
+    StatsFunsChainRulesCoreExt = "ChainRulesCore"
+    StatsFunsInverseFunctionsExt = "InverseFunctions"
+
+    [deps.StatsFuns.weakdeps]
+    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+    InverseFunctions = "3587e190-3f89-42d0-90ee-14403ec27112"
+
+[[deps.Stheno]]
+deps = ["AbstractGPs", "BlockArrays", "ChainRulesCore", "KernelFunctions", "LinearAlgebra", "MacroTools", "Random", "Reexport"]
+git-tree-sha1 = "b97c157912d8993bec68bcd652f0e5ce24f2d5d3"
+uuid = "8188c328-b5d6-583d-959b-9690869a5511"
+version = "0.8.2"
 
 [[deps.StringManipulation]]
 deps = ["PrecompileTools"]

@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ db10bb44-da35-11ee-3041-f38fa1b10539
+# ╔═╡ 346974a0-8249-11ee-075d-33c092b30816
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum, Statistics
@@ -15,12 +15,12 @@ begin
 	using StatsBase
 end
 
-# ╔═╡ 10069b1f-7637-4cec-9c42-5e70ea6b3f7a
+# ╔═╡ d8b8b25d-e716-47e9-b2e4-12731df9e7c0
 begin
-	σₒ = 0.15                  	# Kernel Scale
-	l = 0.4	    				# Length Scale
+	σₒ = 0.05                 # Kernel Scale
+	l = 0.4			    		# Length Scale
 		
-	Num = 200              	 # Number of training points
+	Num = 151                 # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
 	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
@@ -28,22 +28,19 @@ begin
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
 
-# ╔═╡ 340bcbb5-5dc3-4c6b-9737-2c236a478565
+# ╔═╡ 39a72f49-6efb-4ad5-a3b0-7b6a6954d6a6
 begin
 	σₑ = 1e-7				      # Energy Gaussian noise
-	σₙ = σₑ/l                  # Force Gaussian noise for Model 2 (σₑ independent)
+	σₙ = 1e-7                   # Force Gaussian noise for Model 2 (σₑ independent)
 end
 
-# ╔═╡ 5036018e-a35b-4a10-9b5e-0ac295ca4f44
-
-
-# ╔═╡ 565809cb-577b-4a78-b80b-1d51a35ccabb
+# ╔═╡ e79b6a06-5285-44b2-81ea-e3a96247db8f
 begin
 	function kernelfunction1(kernel, x₁, x₂)
 		return Zygote.gradient( a -> kernel(a, x₂), x₁)[1]
 	end
 	function kernelfunction2(kernel, x₁, x₂)
-		return ForwardDiff.jacobian(a -> kernelfunction1(kernel, a, x₂), x₁)
+		return Zygote.hessian(a -> kernel(a, x₂), x₁)
 	end
 	function kernelfunction3(kernel, x₁, x₂)
 		return ForwardDiff.jacobian(a -> kernelfunction2(kernel, a, x₂), x₁)
@@ -53,21 +50,7 @@ begin
 	end
 end
 
-# ╔═╡ fca6aff8-7e3e-4bcb-90a2-dee16e5fd91b
-function ARDlength(Mass, Supercell)
-	nAtom = size(Mass, 1)
-	nCell = Supercell[1]*Supercell[2]*Supercell[3]
-	L = zeros(3, nAtom * nCell)
-	for i in 1:nAtom
-		for j in 1:nCell
-			L[:,2*(j-1)+i] = Mass[i] * ones(3,1)
-		end
-	end
-	LL = reshape(L, (3 * nAtom * nCell,))
-	return LL
-end
-
-# ╔═╡ 88a80be7-bb03-46a5-b3f4-c784db30df73
+# ╔═╡ e1d8fc9e-00fd-4fd9-975d-6b6a4f79068a
 function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
 	a  = 4 - dimA
 	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
@@ -88,14 +71,32 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 	return equi, feature, energy, force, Target
 end
 
-# ╔═╡ b162eda6-708a-4692-bb8e-bf99f00fb3b9
+# ╔═╡ a6a54c75-f12d-4694-a876-30f0a14ad8a1
 equi, feature, energy, force, Target = ASEFeatureTarget(
     "feature_vasp", "energy_vasp", "force_vasp", Num, DIM);
 
-# ╔═╡ 637e194b-ed36-47a0-aafc-e07488231974
+# ╔═╡ 5652d5f0-400c-4e32-b5d6-f13470aee9e2
+feature
+
+# ╔═╡ bea1df38-da8d-4900-b320-d0d17426ed12
 force
 
-# ╔═╡ fd23d3df-31f6-4155-8367-a9c9fabb26ad
+# ╔═╡ c7ee598e-69b6-4991-a620-d3f3117a1864
+energy[1]
+
+# ╔═╡ ac06cc16-a8b4-475d-b08e-397d4d5d453b
+energy[2]
+
+# ╔═╡ 5e43d543-20d6-4235-ab57-b476318a9edd
+energy[3]
+
+# ╔═╡ 02f60f3d-d731-43bc-82e0-0980d4a31c2e
+energy[101]
+
+# ╔═╡ 019952e1-b112-41d8-ad82-1e0b9322c74d
+force
+
+# ╔═╡ cbd94f02-b08d-4208-9e2a-b24a35d2646a
 function Marginal(kernel, X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
 	num = size(X,2)
@@ -130,8 +131,8 @@ function Marginal(kernel, X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
 	return Kₘₘ
 end
 
-# ╔═╡ e0f362d1-6605-40ef-80b7-4a8ecd6f3ee2
-function Coveriance_fc2(kernel, X::Matrix{Float64}, xₒ::Vector{Float64})
+# ╔═╡ e9efaf81-6634-435c-8030-45cc949d8068
+ function Coveriance_fc2(kernel, X::Matrix{Float64}, xₒ::Vector{Float64})
 	dim = size(X,1)
 	num = size(X,2)
 	
@@ -154,16 +155,16 @@ function Coveriance_fc2(kernel, X::Matrix{Float64}, xₒ::Vector{Float64})
 	return K₂ₙₘ
 end
 
-# ╔═╡ 63482863-fe43-40f2-ad39-52cb534b2b0a
-function PosteriorFC2(Marginal, Covariance, Target)
+# ╔═╡ 79d1e9f9-56d1-4425-9362-ff86a5c452f5
+function Posterior(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
 	dimₜ = size(Marginal, 1)
-	Kₘₘ⁻¹ = inv(Marginal)  
+	Kₘₘ⁻¹ = inv(Marginal)   #
 	Kₙₘ = Covariance
 	
 	MarginalTar = zeros(dimₜ)
 	@einsum MarginalTar[m] = Kₘₘ⁻¹[m, n] * Target[n]
-	
+
 	size(Kₙₘ) == (dimₚ, dimₚ, dimₜ)
 	Meanₚ = zeros(dimₚ, dimₚ)
 	@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * MarginalTar[m]
@@ -171,7 +172,42 @@ function PosteriorFC2(Marginal, Covariance, Target)
 	return Meanₚ 
 end
 
-# ╔═╡ da392c41-0c08-4f11-a3a8-675862b6ad5b
+# ╔═╡ 25f5cb64-40e5-4a2a-9a0d-42878a3aa9ae
+@time Kₘₘ = Marginal(kernel, feature, σₑ, σₙ);
+
+# ╔═╡ b2ced1ff-11f5-46df-9e4a-a961ab8f0a63
+@time K₂ₙₘ = Coveriance_fc2(kernel, feature, equi);
+
+# ╔═╡ be8cba06-01f0-4ad5-861f-5a4c556a9cc4
+@time FC2 = Posterior(Kₘₘ, K₂ₙₘ, Target);
+
+# ╔═╡ 4451bffe-18c9-4da3-ba22-9df2cb2e6472
+heatmap(1:size(FC2[:,:],1),
+	    1:size(FC2[:,:],2), FC2[:,:],
+	    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
+	    xlabel="feature coord. (n x d)",
+		ylabel="feature coord. (n x d)",
+		aspectratio=:equal,
+		size=(700, 700),
+	    title="PbTe_FC2 (Traning Data = " *string(199) *")" )
+
+# ╔═╡ 21c3b05d-0134-4d5f-a7a3-822538be104c
+begin
+	FC2[ 0.0 .< FC2 .< 1.e-2 ] .= 0.0
+	FC2[ 0.0 .> FC2 .> -1.e-2 ] .= 0.0
+end
+
+# ╔═╡ d0528b25-b21f-4c98-a029-5f8df0286f08
+heatmap(1:size(FC2[:,:],1),
+	    1:size(FC2[:,:],2), FC2[:,:],
+	    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
+	    xlabel="feature coord. (n x d)",
+		ylabel="feature coord. (n x d)",
+		aspectratio=:equal,
+		size=(700, 700),
+	    title="PbTe_FC2 (Traning Data = " *string(199) *")" )
+
+# ╔═╡ 1dd85737-f044-4c59-bf4b-714dedd6629b
 function recon_FC2(FC2)
 	FC2_re = zeros(3,3,Int(size(FC2,1)/3),Int(size(FC2,1)/3));
 	for i in 1:Int(size(FC2,1)/3)
@@ -182,38 +218,37 @@ function recon_FC2(FC2)
 	return FC2_re
 end
 
-# ╔═╡ 3dd99858-e5b6-4e83-8743-6b3fca226060
-@time Kₘₘ = Marginal(kernel, feature, σₑ, σₙ);
-
-# ╔═╡ 624ef697-5a6e-419d-987c-c1af2df54c24
-@time K₂ₙₘ = Coveriance_fc2(kernel, feature, equi);
-
-# ╔═╡ 8006ab39-261d-46f4-969b-b12fdb172af8
-@time FC2 = PosteriorFC2(Kₘₘ, K₂ₙₘ, Target);
-
-# ╔═╡ 31d0254b-545b-4032-a537-e6e8c3a17759
-FC2
-
-# ╔═╡ 2df78944-fca0-44a2-90f1-a66f8ed3a531
-heatmap(1:size(FC2[:,:],1),
-	    1:size(FC2[:,:],2), FC2[:,:],
-	    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
-	    xlabel="feature coord. (n x d)",
-		ylabel="feature coord. (n x d)",
-		aspectratio=:equal,
-		size=(700, 700),
-	    title="PbTe_FC2 (Traning Data = " *string(199) *")" )
-
-# ╔═╡ f0b14bef-5c6e-4722-a374-cf014e377146
+# ╔═╡ 81c979c7-f0a3-4cd4-bfc0-e47676a4ad14
 FC2_re = recon_FC2(FC2);
 
-# ╔═╡ e818df88-1b5e-4537-a8af-128dcb247b8d
-FC2_re
+# ╔═╡ bfed3725-ab73-4b0e-a673-4f26be3992d8
+FC2_re[1:3,1:3,1,1:8]
 
-# ╔═╡ 51bcc4b7-0fe5-4d8b-8172-acfb75c08d3b
-equi
+# ╔═╡ cba31d94-4779-4db1-928f-5e58f83784f7
+FC2_re[1:3,1:3,1,4]
 
-# ╔═╡ b85dde91-8cac-44b0-a909-9e7bc6a37786
+# ╔═╡ 5e85a345-c83f-4f1c-b6bf-b93dd49500bc
+FC2_re[1:3,1:3,1,6]
+
+# ╔═╡ 8fe8b911-0e96-4159-8649-dddfdb896559
+FC2_re[1:3,1:3,1,8]
+
+# ╔═╡ 688e8cda-81cb-4729-8d90-a65a35f4cea0
+FC2_re[1:3,1:3,1,10]
+
+# ╔═╡ 1bef7de1-490e-4b01-8af3-ea9fd80c0075
+FC2_re[1:3,1:3,1,12]
+
+# ╔═╡ 7abb24bb-c752-4b13-b241-51a0b1617b8f
+FC2_re[1:3,1:3,1,14]
+
+# ╔═╡ 17d45498-853b-4aca-977d-cc46acf248d9
+sum(FC2*equi)
+
+# ╔═╡ 07d3592c-b5a6-49f5-92c9-093603ba42e1
+sum(FC2)
+
+# ╔═╡ e2b3d5cf-7f4f-4f22-b9f7-99d45b75166a
 begin
 	a1 = mean(
 		[FC2_re[:,:,1,1][1,1] FC2_re[:,:,1,1][2,2] FC2_re[:,:,1,1][3,3]]
@@ -259,7 +294,7 @@ begin
 end
 
 
-# ╔═╡ 85824903-b2fa-4af9-9229-09b9eb834a79
+# ╔═╡ 8de1931a-f582-4d6a-be6d-650d85ae27c5
 begin
 	a2 = mean(
 		[FC2_re[:,:,2,2][1,1] FC2_re[:,:,2,2][2,2] FC2_re[:,:,2,2][3,3]]
@@ -305,23 +340,20 @@ begin
 	)
 end
 
-# ╔═╡ 8cfb0f16-7ba0-47cf-b523-f064f71c86e2
-equi
-
-# ╔═╡ c3108f35-9389-4b28-86dd-2171ff2d02de
+# ╔═╡ 341e193a-587d-409d-9eb9-af3e2412f76b
 Predict = [a1, b1, c1, d1, e1, f1, g1 ,h1, a2, b2, c2, d2, e2, f2, g2 ,h2]
 
-# ╔═╡ 727c5a35-a251-4fc1-b2d6-2d9eea5919f9
-f2
+# ╔═╡ d9561f93-aebf-444d-b38e-c63cbb312e9f
+a1
 
-# ╔═╡ 3aa87ea6-5780-4249-9511-0ca6a14c8c78
-Phon = [2.1160722, 0.02765919, -0.70121375, -0.27665411, -0.10657938, 0.03523089, -0.17260477, -0.060126, 2.71334408, 0.02762525, -0.7011685, -0.39501141, -0.30137421, 0.05601417, -0.03196405, -0.06020661]
+# ╔═╡ 84cd6bd3-8834-4c82-873c-9d97f5c94b43
+Phon = [2.92999594, 0.04717251, -0.31205117, -0.17018929, -0.2541165, -0.09757366, -1.39262983, 0.05100078, 2.08113829, 0.04717251, -0.31271797, -0.6251722, -0.09217561, -0.01833669, -1.34983008, 0.05144025]
 
-# ╔═╡ f94b9764-7a42-4eae-8b25-622ad36339fd
+# ╔═╡ daff8f4f-f5d8-4723-be86-ff065056a8f2
 rmsd(Phon, Predict; normalize=false)
 
-# ╔═╡ 070d1e70-4de0-48ba-aa5c-50d2897ad9bc
-rmsd(Phon, Predict; normalize=false)
+# ╔═╡ 326c5fb9-70f5-4999-ad0c-da88d8689af3
+sum(broadcast(abs, Phon - Predict)./ broadcast(abs, Phon))/size(Phon,1)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -427,9 +459,9 @@ version = "1.63.0"
 
 [[deps.ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra"]
-git-tree-sha1 = "aef70bb349b20aa81a82a19704c3ef339d4ee494"
+git-tree-sha1 = "ad25e7d21ce10e01de973cdc68ad0f850a953c52"
 uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-version = "1.22.1"
+version = "1.21.1"
 weakdeps = ["SparseArrays"]
 
     [deps.ChainRulesCore.extensions]
@@ -477,9 +509,9 @@ version = "0.3.0"
 
 [[deps.Compat]]
 deps = ["TOML", "UUIDs"]
-git-tree-sha1 = "c955881e3c981181362ae4088b35995446298b80"
+git-tree-sha1 = "75bd5b6fc5089df449b5d35fa501c846c9b6549b"
 uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
-version = "4.14.0"
+version = "4.12.0"
 weakdeps = ["Dates", "LinearAlgebra"]
 
     [deps.Compat.extensions]
@@ -544,9 +576,9 @@ version = "1.6.1"
 
 [[deps.DataStructures]]
 deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
-git-tree-sha1 = "1fb174f0d48fe7d142e1109a10636bc1d14f5ac2"
+git-tree-sha1 = "ac67408d9ddf207de5cfa9a97e114352430f01ed"
 uuid = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
-version = "0.18.17"
+version = "0.18.16"
 
 [[deps.DataValueInterfaces]]
 git-tree-sha1 = "bfc1187b79289637fa0ef6d4436ebdfe6905cbd6"
@@ -675,10 +707,10 @@ uuid = "a3f928ae-7b40-5064-980b-68af3947d34b"
 version = "2.13.93+0"
 
 [[deps.Formatting]]
-deps = ["Logging", "Printf"]
-git-tree-sha1 = "fb409abab2caf118986fc597ba84b50cbaf00b87"
+deps = ["Printf"]
+git-tree-sha1 = "8339d61043228fdd3eb658d86c926cb282ae72a8"
 uuid = "59287772-0a20-5a39-b81b-1366585eb4c0"
-version = "0.4.3"
+version = "0.4.2"
 
 [[deps.ForwardDiff]]
 deps = ["CommonSubexpressions", "DiffResults", "DiffRules", "LinearAlgebra", "LogExpFunctions", "NaNMath", "Preferences", "Printf", "Random", "SpecialFunctions"]
@@ -769,9 +801,9 @@ version = "1.0.2"
 
 [[deps.HTTP]]
 deps = ["Base64", "CodecZlib", "ConcurrentUtilities", "Dates", "ExceptionUnwrapping", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
-git-tree-sha1 = "ac7b73d562b8f4287c3b67b4c66a5395a19c1ae8"
+git-tree-sha1 = "abbbb9ec3afd783a7cbd82ef01dcd088ea051398"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "1.10.2"
+version = "1.10.1"
 
 [[deps.HarfBuzz_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "Graphite2_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg"]
@@ -830,9 +862,9 @@ version = "0.21.4"
 
 [[deps.JpegTurbo_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "3336abae9a713d2210bb57ab484b1e065edd7d23"
+git-tree-sha1 = "60b1194df0a3298f460063de985eae7b01bc011a"
 uuid = "aacddb02-875f-59d6-b918-886e6ef4fbf8"
-version = "3.0.2+0"
+version = "3.0.1+0"
 
 [[deps.KernelFunctions]]
 deps = ["ChainRulesCore", "Compat", "CompositionsBase", "Distances", "FillArrays", "Functors", "IrrationalConstants", "LinearAlgebra", "LogExpFunctions", "Random", "Requires", "SpecialFunctions", "Statistics", "StatsBase", "TensorCore", "Test", "ZygoteRules"]
@@ -854,9 +886,9 @@ version = "3.0.0+1"
 
 [[deps.LLVM]]
 deps = ["CEnum", "LLVMExtra_jll", "Libdl", "Preferences", "Printf", "Requires", "Unicode"]
-git-tree-sha1 = "ddab4d40513bce53c8e3157825e245224f74fae7"
+git-tree-sha1 = "9e70165cca7459d25406367f0c55e517a9a7bfe7"
 uuid = "929cbde3-209d-540e-8aea-75f648917ca0"
-version = "6.6.0"
+version = "6.5.0"
 
     [deps.LLVM.extensions]
     BFloat16sExt = "BFloat16s"
@@ -866,9 +898,9 @@ version = "6.6.0"
 
 [[deps.LLVMExtra_jll]]
 deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
-git-tree-sha1 = "88b916503aac4fb7f701bb625cd84ca5dd1677bc"
+git-tree-sha1 = "114e3a48f13d4c18ddd7fd6a00107b4b96f60f9c"
 uuid = "dad2f222-ce93-54a1-a47d-0025e8a3acab"
-version = "0.0.29+0"
+version = "0.0.28+0"
 
 [[deps.LLVMOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -981,9 +1013,9 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[deps.LogExpFunctions]]
 deps = ["DocStringExtensions", "IrrationalConstants", "LinearAlgebra"]
-git-tree-sha1 = "18144f3e9cbe9b15b070288eef858f71b291ce37"
+git-tree-sha1 = "7d6dd4e9212aebaeed356de34ccf262a3cd415aa"
 uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
-version = "0.3.27"
+version = "0.3.26"
 
     [deps.LogExpFunctions.extensions]
     LogExpFunctionsChainRulesCoreExt = "ChainRulesCore"
@@ -1322,22 +1354,10 @@ uuid = "892a3eda-7b42-436c-8928-eab12a02cf0e"
 version = "0.3.4"
 
 [[deps.StructArrays]]
-deps = ["ConstructionBase", "DataAPI", "Tables"]
-git-tree-sha1 = "f4dc295e983502292c4c3f951dbb4e985e35b3be"
+deps = ["Adapt", "ConstructionBase", "DataAPI", "GPUArraysCore", "StaticArraysCore", "Tables"]
+git-tree-sha1 = "1b0b1205a56dc288b71b1961d48e351520702e24"
 uuid = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
-version = "0.6.18"
-
-    [deps.StructArrays.extensions]
-    StructArraysAdaptExt = "Adapt"
-    StructArraysGPUArraysCoreExt = "GPUArraysCore"
-    StructArraysSparseArraysExt = "SparseArrays"
-    StructArraysStaticArraysExt = "StaticArrays"
-
-    [deps.StructArrays.weakdeps]
-    Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
-    GPUArraysCore = "46192b85-c4d5-4398-a991-12ede77f4527"
-    SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
-    StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+version = "0.6.17"
 
 [[deps.SuiteSparse]]
 deps = ["Libdl", "LinearAlgebra", "Serialization", "SparseArrays"]
@@ -1463,9 +1483,9 @@ version = "1.6.1"
 
 [[deps.XML2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Zlib_jll"]
-git-tree-sha1 = "07e470dabc5a6a4254ffebc29a1b3fc01464e105"
+git-tree-sha1 = "801cbe47eae69adc50f36c3caec4758d2650741b"
 uuid = "02c8fc9c-b97f-50b9-bbe4-9be30ff0a78a"
-version = "2.12.5+0"
+version = "2.12.2+0"
 
 [[deps.XSLT_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgcrypt_jll", "Libgpg_error_jll", "Libiconv_jll", "Pkg", "XML2_jll", "Zlib_jll"]
@@ -1475,9 +1495,9 @@ version = "1.1.34+0"
 
 [[deps.XZ_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "37195dcb94a5970397ad425b95a9a26d0befce3a"
+git-tree-sha1 = "522b8414d40c4cbbab8dee346ac3a09f9768f25d"
 uuid = "ffd25f8a-64ca-5728-b0f7-c24cf3aae800"
-version = "5.6.0+0"
+version = "5.4.5+0"
 
 [[deps.Xorg_libICE_jll]]
 deps = ["Libdl", "Pkg"]
@@ -1711,9 +1731,9 @@ version = "1.18.0+0"
 
 [[deps.libpng_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Zlib_jll"]
-git-tree-sha1 = "873b4f805771d3e4bafe63af759a26ea8ca84d14"
+git-tree-sha1 = "93284c28274d9e75218a416c65ec49d0e0fcdf3d"
 uuid = "b53b4c65-9356-5827-b1ea-8c7a1a84506f"
-version = "1.6.42+0"
+version = "1.6.40+0"
 
 [[deps.libvorbis_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Ogg_jll", "Pkg"]
@@ -1757,34 +1777,45 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═db10bb44-da35-11ee-3041-f38fa1b10539
-# ╠═10069b1f-7637-4cec-9c42-5e70ea6b3f7a
-# ╠═f94b9764-7a42-4eae-8b25-622ad36339fd
-# ╠═340bcbb5-5dc3-4c6b-9737-2c236a478565
-# ╠═5036018e-a35b-4a10-9b5e-0ac295ca4f44
-# ╠═565809cb-577b-4a78-b80b-1d51a35ccabb
-# ╠═fca6aff8-7e3e-4bcb-90a2-dee16e5fd91b
-# ╠═88a80be7-bb03-46a5-b3f4-c784db30df73
-# ╠═b162eda6-708a-4692-bb8e-bf99f00fb3b9
-# ╠═637e194b-ed36-47a0-aafc-e07488231974
-# ╠═fd23d3df-31f6-4155-8367-a9c9fabb26ad
-# ╠═e0f362d1-6605-40ef-80b7-4a8ecd6f3ee2
-# ╠═63482863-fe43-40f2-ad39-52cb534b2b0a
-# ╠═da392c41-0c08-4f11-a3a8-675862b6ad5b
-# ╠═3dd99858-e5b6-4e83-8743-6b3fca226060
-# ╠═624ef697-5a6e-419d-987c-c1af2df54c24
-# ╠═8006ab39-261d-46f4-969b-b12fdb172af8
-# ╠═31d0254b-545b-4032-a537-e6e8c3a17759
-# ╠═2df78944-fca0-44a2-90f1-a66f8ed3a531
-# ╠═f0b14bef-5c6e-4722-a374-cf014e377146
-# ╠═e818df88-1b5e-4537-a8af-128dcb247b8d
-# ╠═51bcc4b7-0fe5-4d8b-8172-acfb75c08d3b
-# ╠═b85dde91-8cac-44b0-a909-9e7bc6a37786
-# ╠═85824903-b2fa-4af9-9229-09b9eb834a79
-# ╠═8cfb0f16-7ba0-47cf-b523-f064f71c86e2
-# ╠═c3108f35-9389-4b28-86dd-2171ff2d02de
-# ╠═727c5a35-a251-4fc1-b2d6-2d9eea5919f9
-# ╠═3aa87ea6-5780-4249-9511-0ca6a14c8c78
-# ╠═070d1e70-4de0-48ba-aa5c-50d2897ad9bc
+# ╠═346974a0-8249-11ee-075d-33c092b30816
+# ╠═d8b8b25d-e716-47e9-b2e4-12731df9e7c0
+# ╠═39a72f49-6efb-4ad5-a3b0-7b6a6954d6a6
+# ╠═e79b6a06-5285-44b2-81ea-e3a96247db8f
+# ╠═e1d8fc9e-00fd-4fd9-975d-6b6a4f79068a
+# ╠═a6a54c75-f12d-4694-a876-30f0a14ad8a1
+# ╠═5652d5f0-400c-4e32-b5d6-f13470aee9e2
+# ╠═bea1df38-da8d-4900-b320-d0d17426ed12
+# ╠═c7ee598e-69b6-4991-a620-d3f3117a1864
+# ╠═ac06cc16-a8b4-475d-b08e-397d4d5d453b
+# ╠═5e43d543-20d6-4235-ab57-b476318a9edd
+# ╠═02f60f3d-d731-43bc-82e0-0980d4a31c2e
+# ╠═019952e1-b112-41d8-ad82-1e0b9322c74d
+# ╠═cbd94f02-b08d-4208-9e2a-b24a35d2646a
+# ╠═e9efaf81-6634-435c-8030-45cc949d8068
+# ╠═79d1e9f9-56d1-4425-9362-ff86a5c452f5
+# ╠═25f5cb64-40e5-4a2a-9a0d-42878a3aa9ae
+# ╠═b2ced1ff-11f5-46df-9e4a-a961ab8f0a63
+# ╠═be8cba06-01f0-4ad5-861f-5a4c556a9cc4
+# ╠═4451bffe-18c9-4da3-ba22-9df2cb2e6472
+# ╠═21c3b05d-0134-4d5f-a7a3-822538be104c
+# ╠═d0528b25-b21f-4c98-a029-5f8df0286f08
+# ╠═1dd85737-f044-4c59-bf4b-714dedd6629b
+# ╠═81c979c7-f0a3-4cd4-bfc0-e47676a4ad14
+# ╠═bfed3725-ab73-4b0e-a673-4f26be3992d8
+# ╠═cba31d94-4779-4db1-928f-5e58f83784f7
+# ╠═5e85a345-c83f-4f1c-b6bf-b93dd49500bc
+# ╠═8fe8b911-0e96-4159-8649-dddfdb896559
+# ╠═688e8cda-81cb-4729-8d90-a65a35f4cea0
+# ╠═1bef7de1-490e-4b01-8af3-ea9fd80c0075
+# ╠═7abb24bb-c752-4b13-b241-51a0b1617b8f
+# ╠═17d45498-853b-4aca-977d-cc46acf248d9
+# ╠═07d3592c-b5a6-49f5-92c9-093603ba42e1
+# ╠═e2b3d5cf-7f4f-4f22-b9f7-99d45b75166a
+# ╠═8de1931a-f582-4d6a-be6d-650d85ae27c5
+# ╠═341e193a-587d-409d-9eb9-af3e2412f76b
+# ╠═d9561f93-aebf-444d-b38e-c63cbb312e9f
+# ╠═84cd6bd3-8834-4c82-873c-9d97f5c94b43
+# ╠═daff8f4f-f5d8-4723-be86-ff065056a8f2
+# ╠═326c5fb9-70f5-4999-ad0c-da88d8689af3
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
