@@ -205,11 +205,8 @@ FC2_re = recon_FC2(FC2);
 # ╔═╡ efcb0223-e6b2-4563-90e0-4589a9bf1459
 FC2_re
 
-# ╔═╡ 876a107e-481c-4037-a890-3c2335135922
-natoms = size(FC2_re, 3)
-
 # ╔═╡ f7157840-a2a1-452f-af27-aefd6f8b0c2d
-function permutation(FC)
+function permutation2(FC)
 	natoms = size(FC, 3)
 	FC2_perm = zeros(3,3,natoms,natoms);
 	for m in 1:natoms
@@ -226,14 +223,80 @@ function permutation(FC)
 	return FC2_perm
 end
 
+# ╔═╡ 8b355b7d-ee53-4318-b0b9-732861b156d7
+supercell = (2,2,2)
+
+# ╔═╡ eee3b3d8-9373-4e52-8f45-b39105f4a678
+ones(3, 3)
+
+# ╔═╡ 90bf6cb7-f22b-4177-898f-69aab16554bb
+
+
+# ╔═╡ 1953404a-b50b-4977-ace4-40c2d9eb4cd1
+function permutation(FC, supercell)
+	Natoms = size(FC, 3)
+	natoms = Int(Natoms/prod(supercell))
+	FC2 = zeros(3, 3, natoms, Natoms);
+
+	for m in 1:natoms
+		for n in 1:natoms
+		end
+	end
+	return FC2	
+end
+
+# ╔═╡ 83e668b6-2e12-4b9d-b11d-bce26477e220
+
+
 # ╔═╡ 71f4a8b6-0414-4a5d-8fbd-31d94df20403
-FC2_p = permutation(FC2_re)
+FC2_p = permutation2(FC2_re);
+
+# ╔═╡ a619419c-49c0-4e91-9780-250094de1e7a
+Natoms = size(FC2_p, 3)
+
+# ╔═╡ 8e1179d0-189f-4c22-9ac7-2ea40bffbe7f
+FC22 = zeros(3, 3, natoms, Natoms);
+
+# ╔═╡ f658d29d-4651-43ad-99cb-c288ffdaef5d
+FC22
+
+# ╔═╡ 8e7a3e31-09dd-4950-9344-ebcc8204db61
+for m in 1:natoms
+	for n in 1:Natoms
+	end
+end
+
+# ╔═╡ fa71741a-c1c8-4b8d-81b1-c4d9e63ba5ed
+begin
+	m1 = 0.3
+	check = m1*ones(3, 3)
+	
+	for k in 1:natoms
+		C1 = zeros(3,3)
+		for n in 1:Natoms
+			for m in 1:Natoms
+				diff_fc2 = FC2_p[:, :, k, n] - FC2_p[:, :, m, n]
+				if all(broadcast(abs, diff_fc2) .< check)
+					C1 .+= FC2_p[:, :, m, n]
+					println(all(broadcast(abs, diff_fc2) .< check))
+				end
+			end
+			FC22[:, :, k, n] = C1
+		end
+	end
+end
+
+# ╔═╡ a3cab574-f6ee-4644-9aa9-bcbd9a16bf59
+begin
+	diff_fc2 = FC2_p[:, :, 3, 3] - FC2_p[:, :, 1, 2]
+	all(broadcast(abs, diff_fc2) .< check)
+end
 
 # ╔═╡ 35c7ab43-dff6-46a8-a7c3-c7b5ce8b4e10
 begin
-	C = zeros(3,3,natoms,natoms)
+	C = zeros(3,3,Natoms,Natoms)
 	for n in 2:natoms
-		C[:,:,1,1] .-= FC2_p[:,:,1,n]
+		C[:,:,16,1] .-= FC2_p[:,:,16,n]
 	end
 end
 
@@ -241,76 +304,62 @@ end
 C
 
 # ╔═╡ 344e4fd5-79d3-4705-8e19-7e9f973b328b
-FC2_p[:,:,1,2]
-
-# ╔═╡ 1ee865aa-6da8-419f-92ab-517fa90f1b89
-FC2_re
-
-# ╔═╡ 60bf249c-5772-47bf-b00c-8906188b0c39
-FC2_re[:,:,1,2]
-
-# ╔═╡ d3d4899f-feda-4dd6-8ea6-fc1648af18b0
-FC2_re[:,:,2,1]
+FC2_p
 
 # ╔═╡ cd890923-e0fe-4280-bd20-b35b4e272746
 FC2_re[:,:,1,12] == FC2_re[:,:,12,1]
 
-# ╔═╡ 0e2a8679-ab65-47d3-a0f2-40cceccf79b7
-FC2_re[:,:,1,12]
-
 # ╔═╡ 7dce16bd-8718-4311-8a00-8820032504f3
-begin
+function get_element(FC)
 	a = mean(
-			[FC2_re[:,:,1,1][1,1] FC2_re[:,:,1,1][2,2] FC2_re[:,:,1,1][3,3]]
+			[FC[:,:,1,1][1,1] FC[:,:,1,1][2,2] FC[:,:,1,1][3,3]]
 		)
 	
 	b = mean(
-			[FC2_re[:,:,1,2][1,1] FC2_re[:,:,1,2][2,2] FC2_re[:,:,1,2][3,3]] 
+			[FC[:,:,1,2][1,1] FC[:,:,1,2][2,2] FC[:,:,1,2][3,3]] 
 		)
 
 	c = mean(
-		[FC2_re[:,:,1,2][1,2] FC2_re[:,:,1,2][1,3] FC2_re[:,:,1,2][2,3]
-		 FC2_re[:,:,1,2][2,1] FC2_re[:,:,1,2][3,1] FC2_re[:,:,1,2][3,2]]	
+		[FC[:,:,1,2][1,2] FC[:,:,1,2][1,3] FC[:,:,1,2][2,3]
+		 FC[:,:,1,2][2,1] FC[:,:,1,2][3,1] FC[:,:,1,2][3,2]]	
 	)
 	d = mean(
-			[FC2_re[:,:,1,3][1,2] FC2_re[:,:,1,3][2,1] 
-			FC2_re[:,:,1,5][1,3] FC2_re[:,:,1,5][3,1] 
-			-FC2_re[:,:,1,7][2,3] -FC2_re[:,:,1,7][3,2]
-			FC2_re[:,:,1,9][2,3] FC2_re[:,:,1,9][3,2] 
-			-FC2_re[:,:,1,11][1,3] -FC2_re[:,:,1,11][3,1] 
-			-FC2_re[:,:,1,13][1,2] -FC2_re[:,:,1,13][2,1]]	
+			[FC[:,:,1,3][1,2] FC[:,:,1,3][2,1] 
+			FC[:,:,1,5][1,3] FC[:,:,1,5][3,1] 
+			-FC[:,:,1,7][2,3] -FC[:,:,1,7][3,2]
+			FC[:,:,1,9][2,3] FC[:,:,1,9][3,2] 
+			-FC[:,:,1,11][1,3] -FC[:,:,1,11][3,1] 
+			-FC[:,:,1,13][1,2] -FC[:,:,1,13][2,1]]	
 		)
 	e = mean(
-			[FC2_re[:,:,1,3][1,1] FC2_re[:,:,1,3][2,2] 
-			FC2_re[:,:,1,5][1,1] FC2_re[:,:,1,5][3,3] 
-			FC2_re[:,:,1,7][2,2] FC2_re[:,:,1,7][3,3]
-			FC2_re[:,:,1,9][2,2] FC2_re[:,:,1,9][3,3] 
-			FC2_re[:,:,1,11][1,1] FC2_re[:,:,1,11][3,3] 
-			FC2_re[:,:,1,13][1,1] FC2_re[:,:,1,13][2,2]]	
+			[FC[:,:,1,3][1,1] FC[:,:,1,3][2,2] 
+			FC[:,:,1,5][1,1] FC[:,:,1,5][3,3] 
+			FC[:,:,1,7][2,2] FC[:,:,1,7][3,3]
+			FC[:,:,1,9][2,2] FC[:,:,1,9][3,3] 
+			FC[:,:,1,11][1,1] FC[:,:,1,11][3,3] 
+			FC[:,:,1,13][1,1] FC[:,:,1,13][2,2]]	
 		)
 	f = mean(
-			[FC2_re[:,:,1,3][3,3] FC2_re[:,:,1,5][2,2] FC2_re[:,:,1,7][1,1]
-			 FC2_re[:,:,1,9][1,1] FC2_re[:,:,1,11][2,2] FC2_re[:,:,1,13][3,3]]	
+			[FC[:,:,1,3][3,3] FC[:,:,1,5][2,2] FC[:,:,1,7][1,1]
+			 FC[:,:,1,9][1,1] FC[:,:,1,11][2,2] FC[:,:,1,13][3,3]]	
 		)
 	g = mean(
-		[FC2_re[:,:,1,15][1,1] FC2_re[:,:,1,15][2,2] FC2_re[:,:,1,15][3,3]]	
+		[FC[:,:,1,15][1,1] FC[:,:,1,15][2,2] FC[:,:,1,15][3,3]]	
 	)
 
 	h = mean(
-			[FC2_re[:,:,1,12][1,1] FC2_re[:,:,1,12][2,2] FC2_re[:,:,1,12][3,3]]	
+			[FC[:,:,1,12][1,1] FC[:,:,1,12][2,2] FC[:,:,1,12][3,3]]	
 		)
 	
-	i1 = mean(
-			[FC2_re[:,:,1,12][1,2] -FC2_re[:,:,1,12][1,3] FC2_re[:,:,1,12][2,3]
-			FC2_re[:,:,1,12][2,1] -FC2_re[:,:,1,12][3,1] FC2_re[:,:,1,12][3,2]]	
+	i = mean(
+			[FC[:,:,1,12][1,2] -FC[:,:,1,12][1,3] FC[:,:,1,12][2,3]
+			FC[:,:,1,12][2,1] -FC[:,:,1,12][3,1] FC[:,:,1,12][3,2]]	
 		)
+	return a, b, c, d, e, f, g, h, i
 end
 
 # ╔═╡ 5cdace51-80fc-4e8e-a44f-f4c3a2904a6e
 Phon = [13.57907074, -3.42914722, -2.28620722, -0.50516663, -0.5005471, 0.82159303, -0.16753905, 0.16601453, 0.12720109]
-
-# ╔═╡ d51a9d54-2174-45dd-8f1e-0a8c7d8cf7f6
-Predict = [a, b, c, d, e, f, g, h, i1]
 
 # ╔═╡ 7f3fa67b-c5d8-4b70-b660-c9d5d2192fd0
 rmsd(Phon, Predict; normalize=false)
@@ -318,14 +367,23 @@ rmsd(Phon, Predict; normalize=false)
 # ╔═╡ 82e0f6f6-aa85-48ec-8875-3163624dcd83
 rmsd(Phon, Predict; normalize=false)
 
-# ╔═╡ 59e9a2dc-15a9-471c-b2ae-bc90390693f6
-FC2_re[:,:,1,12]
-
-# ╔═╡ 8c52ee1d-b215-4bbf-88a5-a6877a30b510
-i1
+# ╔═╡ d51a9d54-2174-45dd-8f1e-0a8c7d8cf7f6
+begin
+	Predict_r = collect(get_element(FC2_re))
+	Predict_p = collect(get_element(FC2_p))
+end
 
 # ╔═╡ 101938bd-cf7e-4a72-a20a-7816915fa607
-rmsd(Phon, Predict; normalize=false)
+rmsd(Phon, Predict_r; normalize=false)
+
+# ╔═╡ f6bb2a6f-5973-40cb-9c4f-d2fca41d49b8
+natoms = Int(Natoms/prod(supercell))
+
+# ╔═╡ 876a107e-481c-4037-a890-3c2335135922
+# ╠═╡ disabled = true
+#=╠═╡
+natoms = size(FC2_re, 3)
+  ╠═╡ =#
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1774,20 +1832,26 @@ version = "1.4.1+1"
 # ╠═efcb0223-e6b2-4563-90e0-4589a9bf1459
 # ╠═876a107e-481c-4037-a890-3c2335135922
 # ╠═f7157840-a2a1-452f-af27-aefd6f8b0c2d
+# ╠═8b355b7d-ee53-4318-b0b9-732861b156d7
+# ╠═a619419c-49c0-4e91-9780-250094de1e7a
+# ╠═f6bb2a6f-5973-40cb-9c4f-d2fca41d49b8
+# ╠═8e1179d0-189f-4c22-9ac7-2ea40bffbe7f
+# ╠═eee3b3d8-9373-4e52-8f45-b39105f4a678
+# ╠═90bf6cb7-f22b-4177-898f-69aab16554bb
+# ╠═fa71741a-c1c8-4b8d-81b1-c4d9e63ba5ed
+# ╠═f658d29d-4651-43ad-99cb-c288ffdaef5d
+# ╠═a3cab574-f6ee-4644-9aa9-bcbd9a16bf59
+# ╠═8e7a3e31-09dd-4950-9344-ebcc8204db61
+# ╠═1953404a-b50b-4977-ace4-40c2d9eb4cd1
 # ╠═35c7ab43-dff6-46a8-a7c3-c7b5ce8b4e10
 # ╠═58efdf5e-1865-4cf7-b728-837482d346f3
+# ╠═83e668b6-2e12-4b9d-b11d-bce26477e220
 # ╠═344e4fd5-79d3-4705-8e19-7e9f973b328b
 # ╠═71f4a8b6-0414-4a5d-8fbd-31d94df20403
-# ╠═1ee865aa-6da8-419f-92ab-517fa90f1b89
-# ╠═60bf249c-5772-47bf-b00c-8906188b0c39
-# ╠═d3d4899f-feda-4dd6-8ea6-fc1648af18b0
 # ╠═cd890923-e0fe-4280-bd20-b35b4e272746
-# ╠═0e2a8679-ab65-47d3-a0f2-40cceccf79b7
 # ╠═7dce16bd-8718-4311-8a00-8820032504f3
 # ╠═5cdace51-80fc-4e8e-a44f-f4c3a2904a6e
 # ╠═d51a9d54-2174-45dd-8f1e-0a8c7d8cf7f6
-# ╠═59e9a2dc-15a9-471c-b2ae-bc90390693f6
-# ╠═8c52ee1d-b215-4bbf-88a5-a6877a30b510
 # ╠═101938bd-cf7e-4a72-a20a-7816915fa607
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
