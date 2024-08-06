@@ -17,8 +17,8 @@ end
 
 # ╔═╡ be677715-172c-45f9-ab71-24baa904e9ce
 begin
-	σₒ = 1.                  # Kernel Scale
-	l = 1.		    
+	σₒ = 0.01                  # Kernel Scale
+	l = 0.1		    
 	Num = 150            # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
@@ -210,15 +210,15 @@ end;
 end 
 
 # ╔═╡ 7dc6ea89-303f-4ea5-b45f-492d36c55168
-animCar = @animate for i in 1:size(nd,1)
-	heatmap(1:size(P2[:,:,i],1),
-		    1:size(P2[:,:,i],2), P2[:,:,i],
+animCar = @animate for iii in 1:size(nd,1)
+	heatmap(1:size(P2[:,:,iii],1),
+		    1:size(P2[:,:,iii],2), P2[:,:,iii],
 		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
 			aspectratio=:equal,
 			size=(700, 700),
 		    xlabel="feature coord. (n x d)",
 			ylabel="feature coord. (n x d)",
-		    title="Si_FC3 (Traning Data = " *string(nd[i]) *")")
+		    title="Si_FC3 (Traning Data = " *string(nd[iii]) *")")
 end
 
 # ╔═╡ 599c9d3d-ecaa-438c-bb6f-d600e27a16cd
@@ -231,8 +231,8 @@ begin
 end;
 
 # ╔═╡ 77c109a2-7f96-455e-8fbf-290f5d4903c5
-@time for i in 1:size(nd,1)
-	numt1 = nd[i]
+@time for j in 1:size(nd,1)
+	numt1 = nd[j]
 	equi, feature, energy, force, Target = ASEFeatureTarget(
     "feature_vasp", "energy_vasp", "force_vasp", numt1, DIM);
 	
@@ -242,21 +242,21 @@ end;
 	K₂ₙₘ = Coveriance_fc2(kernel, featu₂, equi₂);
 	Mp = PosteriorFC2(Kₘₘ, K₂ₙₘ, Targ₂);
 	
-	P22[:,:,i] = Mp 
+	P22[:,:,j] = Mp 
 	
-	SumRule2[i] = abs(sum(Mp))
+	SumRule2[j] = abs(sum(Mp))
 end 
 
 # ╔═╡ 4c9554ab-4c53-4937-897a-cec405f8cb4e
-animCar2 = @animate for i in 1:size(nd,1)
-	heatmap(1:size(P22[:,:,i],1),
-		    1:size(P22[:,:,i],2), P22[:,:,i],
+animCar2 = @animate for iii in 1:size(nd,1)
+	heatmap(1:size(P22[:,:,iii],1),
+		    1:size(P22[:,:,iii],2), P22[:,:,iii],
 		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
 			aspectratio=:equal,
 			size=(700, 700),
 		    xlabel="feature coord. (n x d)",
 			ylabel="feature coord. (n x d)",
-		    title="Si_FC3 (Traning Data = " *string(nd[i]) *")")
+		    title="Si_FC3 (Traning Data = " *string(nd[iii]) *")")
 end
 
 # ╔═╡ 3b70d64f-b501-4fd1-87df-6ebd5ab26234

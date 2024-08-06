@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.38
+# v0.19.45
 
 using Markdown
 using InteractiveUtils
@@ -255,18 +255,25 @@ FC2_p = permutation2(FC2_re);
 Natoms = size(FC2_p, 3)
 
 # ╔═╡ 8e1179d0-189f-4c22-9ac7-2ea40bffbe7f
+#=╠═╡
 FC22 = zeros(3, 3, natoms, Natoms);
+  ╠═╡ =#
 
 # ╔═╡ f658d29d-4651-43ad-99cb-c288ffdaef5d
+#=╠═╡
 FC22
+  ╠═╡ =#
 
 # ╔═╡ 8e7a3e31-09dd-4950-9344-ebcc8204db61
+#=╠═╡
 for m in 1:natoms
 	for n in 1:Natoms
 	end
 end
+  ╠═╡ =#
 
 # ╔═╡ fa71741a-c1c8-4b8d-81b1-c4d9e63ba5ed
+#=╠═╡
 begin
 	m1 = 0.3
 	check = m1*ones(3, 3)
@@ -285,23 +292,30 @@ begin
 		end
 	end
 end
+  ╠═╡ =#
 
 # ╔═╡ a3cab574-f6ee-4644-9aa9-bcbd9a16bf59
+#=╠═╡
 begin
 	diff_fc2 = FC2_p[:, :, 3, 3] - FC2_p[:, :, 1, 2]
 	all(broadcast(abs, diff_fc2) .< check)
 end
+  ╠═╡ =#
 
 # ╔═╡ 35c7ab43-dff6-46a8-a7c3-c7b5ce8b4e10
+#=╠═╡
 begin
 	C = zeros(3,3,Natoms,Natoms)
 	for n in 2:natoms
 		C[:,:,16,1] .-= FC2_p[:,:,16,n]
 	end
 end
+  ╠═╡ =#
 
 # ╔═╡ 58efdf5e-1865-4cf7-b728-837482d346f3
+#=╠═╡
 C
+  ╠═╡ =#
 
 # ╔═╡ 344e4fd5-79d3-4705-8e19-7e9f973b328b
 FC2_p
@@ -376,13 +390,15 @@ end
 # ╔═╡ 101938bd-cf7e-4a72-a20a-7816915fa607
 rmsd(Phon, Predict_r; normalize=false)
 
-# ╔═╡ f6bb2a6f-5973-40cb-9c4f-d2fca41d49b8
-natoms = Int(Natoms/prod(supercell))
-
 # ╔═╡ 876a107e-481c-4037-a890-3c2335135922
 # ╠═╡ disabled = true
 #=╠═╡
 natoms = size(FC2_re, 3)
+  ╠═╡ =#
+
+# ╔═╡ f6bb2a6f-5973-40cb-9c4f-d2fca41d49b8
+#=╠═╡
+natoms = Int(Natoms/prod(supercell))
   ╠═╡ =#
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
