@@ -17,7 +17,7 @@ end
 
 # ╔═╡ 4d64d58d-1a82-417e-9d21-74036e431368
 begin
-	σₒ = 0.1                  # Kernel Scale
+	σₒ = 0.1# Kernel Scale
 	l = 0.4		    
 	Num = 300                # Number of training points
 	DIM = 3                     # Dimension of Materials
@@ -146,13 +146,10 @@ end
 
 # ╔═╡ 9acfbb37-06d7-40d4-97b1-c5e34b517533
 begin
-	nd = [1,5,10,15,20,30,40,50,60,80,100,130,160,199,250,300,400,500]
+	nd = [1,5,10,15,20,30,40,50,60,80,100,130,160,199,250,300, 400, 500]
 	P3 = zeros(( 48, 48, 48, size(nd,1)))
 	SumRule3 = zeros((size(nd,1)))
 end;
-
-# ╔═╡ 04e2197f-b0e5-4e94-9775-afdbae7e4108
-length(nd)
 
 # ╔═╡ 54f99a19-dbc1-47e9-9c48-08f75d2fe890
 @time for i in 1:size(nd,1)
@@ -226,7 +223,7 @@ FC3_re[1,2,3,1,1,1]
 P3[1,2,3,16]
 
 # ╔═╡ e909acc2-885b-4423-b966-6608de88c6ed
-scatter(nd[1:18], P3[1,2,3,1:18],
+scatter(nd[1:18], abs.( P3[1,2,3,1:18] - (-32.50811164*ones((18)))),
 		xlabel="Training points",
 		ylabel="Sum of FC3 element",
 		xlim = (-1, 505), 
@@ -236,14 +233,29 @@ scatter(nd[1:18], P3[1,2,3,1:18],
 		title="Si2_Sum-Rule_FC3 "
 	)
 
-# ╔═╡ 1a54e4ca-ff16-4a04-998a-017f82f5ecec
-
-
-# ╔═╡ 8be4b29f-f86b-44f5-b009-23735a1a8d26
-P3[1,2,3,1:18]
-
 # ╔═╡ 9ed65f7b-90a5-4665-8689-5dd88a3ef32e
- P3[1,2,3,1:16]
+abs.( P3[1,2,3,1:18] - (-32.50811164*ones((18))))
+
+# ╔═╡ a00fea0d-14f6-49e5-b762-aa6af153f800
+(P3[1:3,1:3,1:3,18] -
+P3[4:6,4:6,4:6,18] +
+P3[7:9,7:9,7:9,18] -
+P3[10:12,10:12,10:12,18])/4
+
+# ╔═╡ 6f060e20-b6b9-4ce0-85e2-f9644920b717
+P3[4:6,4:6,4:6,18] 
+
+# ╔═╡ 95244769-1438-4366-9960-176cf35b13e3
+
+
+# ╔═╡ b815ce68-f92a-4b50-a054-e30cb9ffe26f
+(P3[1:3,4:6,4:6,18] + P3[4:6,1:3,4:6,18] + P3[4:6,4:6,1:3,18])/3
+
+# ╔═╡ 0cee7ae4-505c-419f-ab48-3f238c5995a8
+P3[4:6,1:3,4:6,18]
+
+# ╔═╡ 36e6f9c8-7ec0-4ad5-8d07-49aa5ff3c2e8
+P3[4:6,4:6,1:3,18]
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -350,9 +362,9 @@ weakdeps = ["SparseArrays"]
 
 [[deps.CodecZlib]]
 deps = ["TranscodingStreams", "Zlib_jll"]
-git-tree-sha1 = "b8fe8546d52ca154ac556809e10c75e6e7430ac8"
+git-tree-sha1 = "bce6804e5e6044c6daab27bb533d1295e4a2e759"
 uuid = "944b1d66-785c-5afd-91f1-9de20f533193"
-version = "0.7.5"
+version = "0.7.6"
 
 [[deps.ColorSchemes]]
 deps = ["ColorTypes", "ColorVectorSpace", "Colors", "FixedPointNumbers", "PrecompileTools", "Random"]
@@ -390,9 +402,9 @@ version = "0.3.0"
 
 [[deps.Compat]]
 deps = ["TOML", "UUIDs"]
-git-tree-sha1 = "b1c55339b7c6c350ee89f2c1604299660525b248"
+git-tree-sha1 = "8ae8d32e09f0dcf42a36b90d4e17f5dd2e4c4215"
 uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
-version = "4.15.0"
+version = "4.16.0"
 weakdeps = ["Dates", "LinearAlgebra"]
 
     [deps.Compat.extensions]
@@ -470,6 +482,12 @@ version = "1.0.0"
 deps = ["Printf"]
 uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
 version = "1.11.0"
+
+[[deps.Dbus_jll]]
+deps = ["Artifacts", "Expat_jll", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "fc173b380865f70627d7dd1190dc2fce6cc105af"
+uuid = "ee1fde0b-3d02-5ea6-8484-8dfef6360eab"
+version = "1.14.10+0"
 
 [[deps.DelimitedFiles]]
 deps = ["Mmap"]
@@ -621,9 +639,9 @@ version = "1.0.14+0"
 
 [[deps.Functors]]
 deps = ["LinearAlgebra"]
-git-tree-sha1 = "8a66c07630d6428eaab3506a0eabfcf4a9edea05"
+git-tree-sha1 = "64d8e93700c7a3f28f717d265382d52fac9fa1c1"
 uuid = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
-version = "0.4.11"
+version = "0.4.12"
 
 [[deps.Future]]
 deps = ["Random"]
@@ -631,10 +649,10 @@ uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 version = "1.11.0"
 
 [[deps.GLFW_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Libglvnd_jll", "Xorg_libXcursor_jll", "Xorg_libXi_jll", "Xorg_libXinerama_jll", "Xorg_libXrandr_jll", "xkbcommon_jll"]
-git-tree-sha1 = "3f74912a156096bd8fdbef211eff66ab446e7297"
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Libglvnd_jll", "Xorg_libXcursor_jll", "Xorg_libXi_jll", "Xorg_libXinerama_jll", "Xorg_libXrandr_jll", "libdecor_jll", "xkbcommon_jll"]
+git-tree-sha1 = "532f9126ad901533af1d4f5c198867227a7bb077"
 uuid = "0656b61e-2033-5cc2-a64a-77c0f6c09b89"
-version = "3.4.0+0"
+version = "3.4.0+1"
 
 [[deps.GPUArrays]]
 deps = ["Adapt", "GPUArraysCore", "LLVM", "LinearAlgebra", "Printf", "Random", "Reexport", "Serialization", "Statistics"]
@@ -778,9 +796,9 @@ version = "3.0.0+1"
 
 [[deps.LLVM]]
 deps = ["CEnum", "LLVMExtra_jll", "Libdl", "Preferences", "Printf", "Requires", "Unicode"]
-git-tree-sha1 = "020abd49586480c1be84f57da0017b5d3db73f7c"
+git-tree-sha1 = "2470e69781ddd70b8878491233cd09bc1bd7fc96"
 uuid = "929cbde3-209d-540e-8aea-75f648917ca0"
-version = "8.0.0"
+version = "8.1.0"
 
     [deps.LLVM.extensions]
     BFloat16sExt = "BFloat16s"
@@ -790,9 +808,9 @@ version = "8.0.0"
 
 [[deps.LLVMExtra_jll]]
 deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
-git-tree-sha1 = "c2636c264861edc6d305e6b4d528f09566d24c5e"
+git-tree-sha1 = "597d1c758c9ae5d985ba4202386a607c675ee700"
 uuid = "dad2f222-ce93-54a1-a47d-0025e8a3acab"
-version = "0.0.30+0"
+version = "0.0.31+0"
 
 [[deps.LLVMOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -813,16 +831,18 @@ version = "1.3.1"
 
 [[deps.Latexify]]
 deps = ["Format", "InteractiveUtils", "LaTeXStrings", "MacroTools", "Markdown", "OrderedCollections", "Requires"]
-git-tree-sha1 = "5b0d630f3020b82c0775a51d05895852f8506f50"
+git-tree-sha1 = "ce5f5621cac23a86011836badfedf664a612cee4"
 uuid = "23fbe1c1-3f47-55db-b15f-69d7ec21a316"
-version = "0.16.4"
+version = "0.16.5"
 
     [deps.Latexify.extensions]
     DataFramesExt = "DataFrames"
+    SparseArraysExt = "SparseArrays"
     SymEngineExt = "SymEngine"
 
     [deps.Latexify.weakdeps]
     DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+    SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
     SymEngine = "123dc426-2d89-5057-bbad-38513e3affd8"
 
 [[deps.LazyArtifacts]]
@@ -1038,6 +1058,12 @@ version = "1.6.3"
 deps = ["Artifacts", "Libdl"]
 uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
 version = "10.42.0+1"
+
+[[deps.Pango_jll]]
+deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "FriBidi_jll", "Glib_jll", "HarfBuzz_jll", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "cb5a2ab6763464ae0f19c86c56c63d4a2b0f5bda"
+uuid = "36c8627f-9965-5494-a995-c6b170f724f3"
+version = "1.52.2+0"
 
 [[deps.Parsers]]
 deps = ["Dates", "PrecompileTools", "UUIDs"]
@@ -1355,13 +1381,9 @@ uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 version = "1.11.0"
 
 [[deps.TranscodingStreams]]
-git-tree-sha1 = "96612ac5365777520c3c5396314c8cf7408f436a"
+git-tree-sha1 = "e84b3a11b9bece70d14cce63406bbc79ed3464d2"
 uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
-version = "0.11.1"
-weakdeps = ["Random", "Test"]
-
-    [deps.TranscodingStreams.extensions]
-    TestExt = ["Test", "Random"]
+version = "0.11.2"
 
 [[deps.URIs]]
 git-tree-sha1 = "67db6cc7b3821e19ebe75791a9dd19c9b1188f2b"
@@ -1667,6 +1689,12 @@ deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
 version = "5.8.0+1"
 
+[[deps.libdecor_jll]]
+deps = ["Artifacts", "Dbus_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "Pango_jll", "Wayland_jll", "xkbcommon_jll"]
+git-tree-sha1 = "9bf7903af251d2050b467f76bdbe57ce541f7f4f"
+uuid = "1183f4f0-6f2a-5f1a-908b-139f9cdfea6f"
+version = "0.2.2+0"
+
 [[deps.libevdev_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "141fe65dc3efabb0b1d5ba74e91f6ad26f84cc22"
@@ -1693,9 +1721,9 @@ version = "1.6.43+1"
 
 [[deps.libvorbis_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Ogg_jll", "Pkg"]
-git-tree-sha1 = "b910cb81ef3fe6e78bf6acee440bda86fd6ae00c"
+git-tree-sha1 = "490376214c4721cdaca654041f635213c6165cb3"
 uuid = "f27f6e37-5d2b-51aa-960f-b287f2bc3b7a"
-version = "1.3.7+1"
+version = "1.3.7+2"
 
 [[deps.mtdev_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1742,7 +1770,6 @@ version = "1.4.1+1"
 # ╠═5038344e-f4e5-4a74-93c6-44e7c7587bdf
 # ╠═74412c53-4a9b-490e-b4b1-c4301710166f
 # ╠═9acfbb37-06d7-40d4-97b1-c5e34b517533
-# ╠═04e2197f-b0e5-4e94-9775-afdbae7e4108
 # ╠═54f99a19-dbc1-47e9-9c48-08f75d2fe890
 # ╠═fd40efd4-6f5e-4ebf-b672-1828e46d756c
 # ╠═0a00768a-0818-48a4-ab8b-07b1cd26776d
@@ -1754,8 +1781,12 @@ version = "1.4.1+1"
 # ╠═c7e121af-e8d2-4db5-9f55-1f605e643578
 # ╠═d4d61bb0-d2cf-40fe-abfe-550d23ad4c3f
 # ╠═e909acc2-885b-4423-b966-6608de88c6ed
-# ╠═1a54e4ca-ff16-4a04-998a-017f82f5ecec
-# ╠═8be4b29f-f86b-44f5-b009-23735a1a8d26
 # ╠═9ed65f7b-90a5-4665-8689-5dd88a3ef32e
+# ╠═a00fea0d-14f6-49e5-b762-aa6af153f800
+# ╠═6f060e20-b6b9-4ce0-85e2-f9644920b717
+# ╠═95244769-1438-4366-9960-176cf35b13e3
+# ╠═b815ce68-f92a-4b50-a054-e30cb9ffe26f
+# ╠═0cee7ae4-505c-419f-ab48-3f238c5995a8
+# ╠═36e6f9c8-7ec0-4ad5-8d07-49aa5ff3c2e8
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
