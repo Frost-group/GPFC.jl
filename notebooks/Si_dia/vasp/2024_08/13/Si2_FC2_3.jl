@@ -342,6 +342,34 @@ end
 # ╔═╡ 81582d60-1063-451e-9367-9bf712b2b440
 phon = [a_phon, b_phon, c_phon, d_phon]
 
+# ╔═╡ c956dc5b-5179-4269-a777-9f30de14cf40
+zeros((size(P3,4)))
+
+# ╔═╡ c4adbac8-f1d3-4b84-a2ec-9ffa07208458
+function RMSE(FC_set, Phonopy)
+	rmse = zeros((size(FC_set,4)))
+	for iii in 1:size(FC_set,4)
+		a, b, c, d = get_element_FC3(FC_set[:,:,:,iii])
+		gpfc = [a, b, c, d ]
+		rmse[iii] = rmsd(gpfc, Phonopy)
+	end
+	return rmse
+end
+
+# ╔═╡ 7e2d79d9-a794-4a6a-bfde-14ab00bd2f09
+RMSE(P3, phon )
+
+# ╔═╡ 0d140e80-37e9-452c-828b-60563c55ab0b
+scatter(nd[1:18], RMSE(P3, phon ),
+		xlabel="Training points",
+		ylabel="Sum of FC3 element",
+		xlim = (-1, 505), 
+		#ylim = (-1.0, 100.0),
+		labels = "Cartesian",
+		linewidth=3,
+		title="Si2_Sum-Rule_FC3 "
+	)
+
 # ╔═╡ 77b73e5a-51e1-4f7e-ba81-3f3b9ae567a0
 rmsd([a, b, c, d], phon)
 
@@ -1925,6 +1953,10 @@ version = "1.4.1+1"
 # ╠═bbc76ac2-8b3a-4053-ae45-f2da5c39a2e7
 # ╠═b6a0e216-4f8f-4d8f-901d-a82562f725fc
 # ╠═81582d60-1063-451e-9367-9bf712b2b440
+# ╠═c956dc5b-5179-4269-a777-9f30de14cf40
+# ╠═c4adbac8-f1d3-4b84-a2ec-9ffa07208458
+# ╠═7e2d79d9-a794-4a6a-bfde-14ab00bd2f09
+# ╠═0d140e80-37e9-452c-828b-60563c55ab0b
 # ╠═77b73e5a-51e1-4f7e-ba81-3f3b9ae567a0
 # ╠═c9582dfa-c7a4-4485-9a2e-e7d6997aebdb
 # ╠═a365a29d-cdd8-4cc9-8595-44bfea13c4e6
