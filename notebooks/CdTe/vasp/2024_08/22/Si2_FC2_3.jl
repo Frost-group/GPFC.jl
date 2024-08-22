@@ -348,25 +348,16 @@ zeros((size(P3,4)))
 # ╔═╡ c4adbac8-f1d3-4b84-a2ec-9ffa07208458
 function RMSE(FC_set, Phonopy)
 	rmse = zeros((size(FC_set,4)))
-	rmse_pma = zeros((size(FC_set,4)))
-	rmse_pra = zeros((size(FC_set,4)))
-	
-	mean_ph = mean_ph(Phonopy)
-	range_ph = maximum(Phonopy) - minimum(Phonopy)
-	
 	for iii in 1:size(FC_set,4)
 		a, b, c, d = get_element_FC3(FC_set[:,:,:,iii])
 		gpfc = [a, b, c, d ]
-		
 		rmse[iii] = rmsd(gpfc, Phonopy)
-		rmse_pma[iii] = (rmse[iii]/mean_ph)*100
-		rmse_pra[iii] = (rmse[iii]/range_ph )*100
 	end
-	return rmse, rmse_pma, rmse_pra
+	return rmse
 end
 
 # ╔═╡ 7e2d79d9-a794-4a6a-bfde-14ab00bd2f09
-rmse, rmse_pma, rmse_pra = RMSE(P3, phon )
+RMSE(P3, phon )
 
 # ╔═╡ 0d140e80-37e9-452c-828b-60563c55ab0b
 scatter(nd[1:18], RMSE(P3, phon ),
@@ -378,9 +369,6 @@ scatter(nd[1:18], RMSE(P3, phon ),
 		linewidth=3,
 		title="Si2_Sum-Rule_FC3 "
 	)
-
-# ╔═╡ 288921d3-310d-4fe9-930a-a58eaa4149da
-
 
 # ╔═╡ 77b73e5a-51e1-4f7e-ba81-3f3b9ae567a0
 rmsd([a, b, c, d], phon)
@@ -1969,7 +1957,6 @@ version = "1.4.1+1"
 # ╠═c4adbac8-f1d3-4b84-a2ec-9ffa07208458
 # ╠═7e2d79d9-a794-4a6a-bfde-14ab00bd2f09
 # ╠═0d140e80-37e9-452c-828b-60563c55ab0b
-# ╠═288921d3-310d-4fe9-930a-a58eaa4149da
 # ╠═77b73e5a-51e1-4f7e-ba81-3f3b9ae567a0
 # ╠═c9582dfa-c7a4-4485-9a2e-e7d6997aebdb
 # ╠═a365a29d-cdd8-4cc9-8595-44bfea13c4e6
