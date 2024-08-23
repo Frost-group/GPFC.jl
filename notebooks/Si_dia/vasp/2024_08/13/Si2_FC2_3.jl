@@ -350,17 +350,18 @@ function RMSE(FC_set, Phonopy)
 	rmse = zeros((size(FC_set,4)))
 	rmse_pma = zeros((size(FC_set,4)))
 	rmse_pra = zeros((size(FC_set,4)))
-	
-	mean_ph = mean_ph(Phonopy)
+	rmse_p   = zeros((size(FC_set,4)))
+	mean_ph = -mean(Phonopy)
 	range_ph = maximum(Phonopy) - minimum(Phonopy)
 	
 	for iii in 1:size(FC_set,4)
 		a, b, c, d = get_element_FC3(FC_set[:,:,:,iii])
 		gpfc = [a, b, c, d ]
-		
+		r_gpfc = 
 		rmse[iii] = rmsd(gpfc, Phonopy)
+		
 		rmse_pma[iii] = (rmse[iii]/mean_ph)*100
-		rmse_pra[iii] = (rmse[iii]/range_ph )*100
+		rmse_pra[iii] = (rmse[iii]/range_ph)*100
 	end
 	return rmse, rmse_pma, rmse_pra
 end
@@ -369,15 +370,26 @@ end
 rmse, rmse_pma, rmse_pra = RMSE(P3, phon )
 
 # ╔═╡ 0d140e80-37e9-452c-828b-60563c55ab0b
-scatter(nd[1:18], RMSE(P3, phon ),
-		xlabel="Training points",
-		ylabel="Sum of FC3 element",
-		xlim = (-1, 505), 
-		#ylim = (-1.0, 100.0),
-		labels = "Cartesian",
-		linewidth=3,
-		title="Si2_Sum-Rule_FC3 "
-	)
+begin
+	scatter(nd[1:18], rmse,
+			xlabel="Training points",
+			ylabel="Sum of FC3 element",
+			xlim = (-1, 505), 
+			#ylim = (-1.0, 100.0),
+			labels = "Cartesian",
+			linewidth=3,
+			title="Si2_Sum-Rule_FC3 "
+		)
+	scatter!(nd[1:18], rmse_pma,
+			xlabel="Training points",
+			ylabel="Sum of FC3 element",
+			xlim = (-1, 505), 
+			#ylim = (-1.0, 100.0),
+			labels = "Cartesian",
+			linewidth=3,
+			title="Si2_Sum-Rule_FC3 "
+		)
+end
 
 # ╔═╡ 288921d3-310d-4fe9-930a-a58eaa4149da
 
