@@ -28,11 +28,101 @@ begin
 	CdTe_FC2 = [294.926, 248.585, 209.583, 151.083, 101.268, 88.1728, 40.0044, 4.02201, 3.12722, 0.60556, 0.928747, 0.565053, 0.431276, 0.473945]
 end
 
+# ╔═╡ 34e06f4b-c656-4375-a6ac-f8ebba8c4465
+begin
+	PbTe_Dyn = [0.378974, 0.0378481, 0.000783911, 0.00086716, 0.00109887, 0.0008761, 0.00105937, 0.00109018, 0.000815923, 0.000643651, 0.000695601, 0.000692554, 0.00066461, 0.00066096]
+	Si2_Dyn = [2.95189, 0.0446756, 0.0529071, 0.0378372, 0.0173971, 0.00308791, 0.0019035, 9.71615e-5, 0.00527029, 0.005006, 0.00334861, 0.00247735, 0.000974923, 0.00304619]
+	NaCl_Dyn = [1.85097, 0.16521, 0.0100299, 0.0104264, 0.00960313, 0.0116711, 0.0119133, 0.011971, 0.0123184, 0.0108635, 0.0101532, 0.0102546, 0.0104466, 0.0101875]
+	GaAs_Dyn = [0.881128, 0.00560648, 0.00477425, 0.0131028, 0.0196839, 0.00145519, 0.00178288, 0.00264655, 0.00176152, 7.00014e-5, 0.00095691, 0.00173119, 0.00160573, 0.000283117]
+	CdTe_Dyn = [0.308435, 0.00390309, 0.00275901, 0.00512003, 0.00640051, 0.000257708, 0.000833073, 0.00118694, 0.000915799, 0.000252645, 0.000621576, 0.000286149, 0.000393916, 0.000765755]
+end
+
 # ╔═╡ b42f2b09-f5dc-4283-8bbf-715ac33f0f12
 nd = [1,5,10,15,20,30,40,50,60,80,100,130,160,199]
 
 # ╔═╡ e268a975-42a3-4b42-87ee-339c03276e04
 size(GaAs_FC2)
+
+# ╔═╡ efd86038-00db-4312-a5f9-ec7ede4e8671
+begin
+	plot(layout=(1,1))
+	plot!(size=(840,700))
+	plot!(nd, [Si2_FC2 GaAs_FC2 CdTe_FC2 NaCl_FC2 PbTe_FC2],
+		    color = ["#F0BB62" "#6E9A50" "#184D47" "#FF90BB" "#C64756"],
+			labels = ["d-"*L"\textbf{Si}:"*L"\;\Phi^{2}" L"\textbf{GaAs}:"*L"\;\Phi^{2}" L"\textbf{CdTe}:"*L"\;\Phi^{2}" L"\textbf{NaCl}:"*L"\;\Phi^{2}" L"\textbf{PbTe}:"*L"\;\Phi^{2}"],
+			linestyle = :solid,
+			linewidth=1.5,
+			marker=[:circle :utriangle :dtriangle :diamond :rect],
+			label="Line with Markers"
+		)
+
+	plot!(nd, [Si2_Dyn GaAs_Dyn CdTe_Dyn NaCl_Dyn PbTe_Dyn],
+		    color = ["#F0BB62" "#6E9A50" "#184D47" "#FF90BB" "#C64756"],
+			labels = ["d-"*L"\textbf{Si}:"*L"\;\mathbf{D}_{\Gamma}" L"\textbf{GaAs}:"*L"\;\mathbf{D}_{\Gamma}" L"\textbf{CdTe}:"*L"\;\mathbf{D}_{\Gamma}" L"\textbf{NaCl}:"*L"\;\mathbf{D}_{\Gamma}" L"\textbf{PbTe}:"*L"\;\mathbf{D}_{\Gamma}"],
+			linestyle = :dashdot ,
+			linewidth= 3.5,
+			marker=[:circle :utriangle :dtriangle :diamond :rect],
+			label="Line with Markers"
+		)
+	vline!([6],
+			color = "blue",
+			linestyle = :dash,
+			label="6 points")
+	vline!([50],
+			color = "black",
+		linestyle = :dash,
+			label="50 points")
+	
+	plot!(xscale=:log10,
+			yscale=:log10,
+			legend=:outertop,
+			legendcolumns=5,
+			xlabel="Training points",
+			ylabel= "Summing All of FC2-Correlations" ,
+			title="Acoustic Sum Rule",
+			titlefontsize=24, guidefontsize=20, tickfontsize=14, legendfontsize=10
+		)
+	#savefig("FC2_sumrule_log.png")
+end
+
+# ╔═╡ dd0377ce-1d90-43ba-93e6-3a1b3eddce7b
+begin
+	plot(layout=(1,1))
+	plot!(size=(850,700))
+	plot!(nd, [Si2_FC2 PbTe_FC2],
+		    color = ["#F0BB62" "#C64756"],
+			labels = ["d-"*L"\textbf{Si}:"*L"\;\Phi_{2}"  L"\textbf{PbTe}:"*L"\;\Phi_{2}"],
+			linestyle = :solid,
+			linewidth=1.5,
+			marker=[:circle :rect],
+			label="Line with Markers"
+		)
+
+	plot!(nd, [Si2_Dyn PbTe_Dyn],
+		    color = ["#F0BB62" "#C64756"],
+			labels = ["d-"*L"\textbf{Si}:"*L"\;\mathbf{D}_{\Gamma}" L"\textbf{PbTe}:"*L"\;\mathbf{D}_{\Gamma}"],
+			linestyle = :dashdot ,
+			linewidth= 3.5,
+			marker=[:circle :rect],
+			label="Line with Markers"
+		)
+	vline!([6],
+			color = "blue",
+			label="6 points")
+	vline!([50],
+			color = "black",
+			label="50 points")
+	plot!(xscale=:log10,
+			yscale=:log10,
+			legend=:bottomleft,
+			legendcolumns=2,
+			xlabel="Training points",
+			ylabel= "Summing All of FC2-Correlations" ,
+			title="Acoustic Sum Rule",
+			titlefontsize=24, guidefontsize=20, tickfontsize=14, legendfontsize=11
+		)
+	#savefig("FC2_Si_PbTe.png")
+end
 
 # ╔═╡ 707c4dad-482f-43bd-b2d6-2886ef7e1343
 begin
@@ -45,150 +135,6 @@ begin
 	Si2_dyn3 = [ 0.00296508, 0.0270175, 0.0135078, 0.0622455, 0.00187626, 0.0245458, 0.0429987, 0.0119454, 0.0277295, 0.00158267, 0.0134621, 0.0678443, 0.0549262]
 	#1.50533e-12,
 end
-
-# ╔═╡ e6877cc5-a967-4da8-a07d-e9aacebccf02
-begin
-	plot(nd[2:14], [PbTe_FC3 Si2_FC3 NaCl_FC3 Si2_dyn3],
-			xlabel="Training points",
-			ylabel= "Sum of" * L"\;\Phi_{3}\;" * "elements" ,
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = [L"\textbf{PbTe}" L"\textbf{Si}\;\textbf{bulk}" L"\textbf{NaCl}" L"\textbf{Si}\;\textbf{bulk}"],
-			linestyle = [:solid :solid :solid :dash],
-		
-			linewidth=[1.5 1.5 1.5 2.5],
-			title="Sum Rule of " * L"\Phi_{3}"
-		)
-
-	scatter!(nd[2:14], [PbTe_FC3 Si2_FC3 NaCl_FC3 Si2_dyn3],
-			#xlim = (-1, 205), 
-			#ylim = (-2.0, 50.0),
-			xscale=:log10,
-			yscale=:log10,
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["" "" ""],
-			legend=:bottomright,
-			#legend = false,
-			linewidth=3,
-		)
-	#savefig("FC3_sumrule.png")
-end
-
-# ╔═╡ 8487126f-258b-40c0-83ad-5600ced08a06
-begin
-	PbTe_Dyn = [0.378974, 0.0378481, 0.000783911, 0.00086716, 0.00109887, 0.0008761, 0.00105937, 0.00109018, 0.000815923, 0.000643651, 0.000695601, 0.000692554, 0.00066461, 0.00066096]
-	Si2_Dyn = [2.95189, 0.0446756, 0.0529071, 0.0378372, 0.0173971, 0.00308791, 0.0019035, 9.71615e-5, 0.00527029, 0.005006, 0.00334861, 0.00247735, 0.000974923, 0.00304619]
-	NaCl_Dyn = [1.85097, 0.16521, 0.0100299, 0.0104264, 0.00960313, 0.0116711, 0.0119133, 0.011971, 0.0123184, 0.0108635, 0.0101532, 0.0102546, 0.0104466, 0.0101875]
-	GaAs_Dyn = [0.881128, 0.00560648, 0.00477425, 0.0131028, 0.0196839, 0.00145519, 0.00178288, 0.00264655, 0.00176152, 7.00014e-5, 0.00095691, 0.00173119, 0.00160573, 0.000283117]
-	CdTe_Dyn = [0.308435, 0.00390309, 0.00275901, 0.00512003, 0.00640051, 0.000257708, 0.000833073, 0.00118694, 0.000915799, 0.000252645, 0.000621576, 0.000286149, 0.000393916, 0.000765755]
-end
-
-# ╔═╡ dd0377ce-1d90-43ba-93e6-3a1b3eddce7b
-begin
-	plot(layout=(1,1))
-	plot!(size=(900,700))
-	plot!(nd, [Si2_FC2 GaAs_FC2 CdTe_FC2 NaCl_FC2 PbTe_FC2],
-		    color = ["#F0BB62" "#6E9A50" "#C64756" "#184D47" "#FF90BB"],
-			labels = ["d-"*L"\textbf{Si}:"*L"\;\Phi_{2}" L"\textbf{GaAs}:"*L"\;\Phi_{2}" L"\textbf{CdTe}:"*L"\;\Phi_{2}" L"\textbf{NaCl}:"*L"\;\Phi_{2}" L"\textbf{PbTe}:"*L"\;\Phi_{2}"],
-			linestyle = :solid,
-			linewidth=1.5
-		)
-
-	scatter!(nd, [Si2_FC2 GaAs_FC2 CdTe_FC2 NaCl_FC2 PbTe_FC2],
-		    color = ["#F0BB62" "#6E9A50" "#C64756" "#184D47" "#FF90BB"],
-			labels = ["" "" "" "" ""],
-		)
-
-	plot!(nd, [Si2_Dyn GaAs_Dyn CdTe_Dyn NaCl_Dyn PbTe_Dyn],
-		    color = ["#F0BB62" "#6E9A50" "#C64756" "#184D47" "#FF90BB"],
-			labels = ["d-"*L"\textbf{Si}:"*L"\;\mathbf{D}_{\Gamma}" L"\textbf{GaAs}:"*L"\;\mathbf{D}_{\Gamma}" L"\textbf{CdTe}:"*L"\;\mathbf{D}_{\Gamma}" L"\textbf{NaCl}:"*L"\;\mathbf{D}_{\Gamma}" L"\textbf{PbTe}:"*L"\;\mathbf{D}_{\Gamma}"],
-			linestyle = :dash ,
-			linewidth= 3.5
-		)
-
-	scatter!(nd, [Si2_Dyn GaAs_Dyn CdTe_Dyn NaCl_Dyn PbTe_Dyn],
-			#xlim = (-1, 200), 
-			#ylim = (-0.1, 3.5),
-			xscale=:log10,
-			yscale=:log10,
-		    color = ["#F0BB62" "#6E9A50" "#C64756"  "#184D47" "#FF90BB"],
-			labels = ["" "" "" "" ""],
-			#legend = false,
-			linewidth=3,
-			xlabel="Training points",
-			ylabel= "Summing All of FC2-Correlations" ,
-			title="Acoustic Sum Rule",
-			titlefontsize=24, guidefontsize=20, tickfontsize=14, legendfontsize=11
-		)
-	plot!(legend=:outertop, legendcolumns=5)
-	savefig("FC2_sumrule_log.png")
-end
-
-# ╔═╡ cea8c5c2-837f-48cf-9fb7-0af50eaae576
-begin
-	plot(nd, [PbTe_Dyn Si2_Dyn NaCl_Dyn],
-			xlabel="Training points",
-			ylabel= "Sum of" * L"\;\mathbf{D}(\mathbf{d}_{\mathbf{q}=\Gamma})\;" * "elements" ,
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = [L"\textbf{PbTe}" L"\textbf{Si}\;\textbf{bulk}" L"\textbf{NaCl}"],
-			linestyle = [:solid :dash :dot],
-		
-			linewidth=[1.5 2 2.5],
-			title="Sum Rule of " * L"\mathbf{D}(\mathbf{d}_{\mathbf{q}=\Gamma})"
-		)
-
-	scatter!(nd, [PbTe_Dyn Si2_Dyn NaCl_Dyn],
-			#xlim = (-1, 105), 
-			#ylim = (-0.1, 3.5),
-			xscale=:log10,
-			yscale=:log10,
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["" "" ""],
-			#legend = false,
-		legend=:bottomleft,
-			linewidth=3,
-		)
-	#savefig("Dyn_sumrule_log.png")
-end
-
-# ╔═╡ 2ec8477f-58c4-4f3a-8a29-edcb70dbdf3c
-anim = @animate for i in 1:size(nd,1)
-	plot(nd[1:i], [Si2_FC2[1:i] NaCl_FC2[1:i] PbTe_FC2[1:i]],
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["d-"*L"\textbf{Si}:"*L"\;\Phi_{2}" L"\textbf{NaCl}:"*L"\;\Phi_{2}" L"\textbf{PbTe}:"*L"\;\Phi_{2}" ],
-			linestyle = :solid,
-			linewidth=1.5
-		)
-
-	scatter!(nd[1:i], [Si2_FC2[1:i] NaCl_FC2[1:i] PbTe_FC2[1:i]],
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["" "" ""],
-		)
-
-	plot!(nd[1:i], [Si2_Dyn[1:i] NaCl_Dyn[1:i] PbTe_Dyn[1:i] ],
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["d-"*L"\textbf{Si}:"*L"\;\mathbf{D}_{\Gamma}" L"\textbf{NaCl}:"*L"\;\mathbf{D}_{\Gamma}" L"\textbf{PbTe}:"*L"\;\mathbf{D}_{\Gamma}"],
-			linestyle = :dash ,
-			linewidth= 2.5
-		)
-
-	scatter!(nd[1:i], [Si2_Dyn[1:i] NaCl_Dyn[1:i] PbTe_Dyn[1:i] ],
-			#xlim = (-1, 105), 
-			#ylim = (-0.1, 3.5),
-			xscale=:log10,
-			yscale=:log10,
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["" "" ""],
-			#legend = false,
-			linewidth=3,
-			xlabel="Training points",
-			ylabel= "Sum of correlation elements" ,
-			title="Sum Rule Relation (Traning Data = " *string(nd[i]) *")",
-			legend=:bottomleft
-		)
-end
-
-# ╔═╡ 8f733a5a-5e08-44f0-8fb3-6dd27e66cb4e
-gif(anim, "FC2_all.gif", fps=2)
 
 # ╔═╡ ff35334a-6643-41b2-aef7-b82f733bd973
 begin
@@ -205,39 +151,48 @@ begin
 	
 end
 
-# ╔═╡ ce169d57-79af-47b6-a49a-47a34e6b5565
-animFC3 = @animate for i in 1:size(ndt,1)
-	plot(ndt[1:i], [Si2_FC3_k[1:i] NaCl_FC3_k[1:i] PbTe_FC3_k[1:i] ],
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["d-"*L"\textbf{Si}:"*L"\;\Phi_{3}(\textbf{q})" L"\textbf{NaCl}:"*L"\;\Phi_{3}(\textbf{q})" L"\textbf{PbTe}:"*L"\;\Phi_{3}(\textbf{q})"],
-			linestyle = :solid ,
-			linewidth=2.5
-		)
-
-	scatter!(ndt[1:i], [Si2_FC3_k[1:i] NaCl_FC3_k[1:i] PbTe_FC3_k[1:i] ],
-		    color = ["#F0BB62" "#6E9A50" "#C64756"],
-			labels = ["" "" ""],
-			xlim = (-1, 105), 
-			ylim = (-20.0, 1500.0),
+# ╔═╡ a02d22dd-732e-4c5d-b27a-561f3e1e4b53
+begin
+	plot(layout=(1,1))
+	plot!(size=(900,700))
+	plot!(ndt, [Si2_FC3_k PbTe_FC3_k],
+			    color = ["#F0BB62" "#C64756"],
+				labels = ["d-"*L"\textbf{Si}:"*L"\;\Phi_{3}(\textbf{q}=\Gamma)" L"\textbf{PbTe}:"*L"\;\Phi_{3}(\textbf{q}=\Gamma)"],
+				linestyle = :dashdot,
+				linewidth=3.5,
+				marker=[:circle :rect],
+				label="Line with Markers"
+				)
+	vline!([50],
+			color = "black",
+			label="50 points")
+	plot!(xscale=:log10,
+			yscale=:log10,
+			legend=:bottomleft,
+			legendcolumns=2,
 			xlabel="Training points",
-			ylabel= "Sum of correlation elements",
-			title="Sum Rule Relation (Traning Data = " *string(ndt[i]) *")"
-		)
+			ylabel= "Summing All of FC3-Correlations" ,
+			title="Acoustic Sum Rule",
+			titlefontsize=24, guidefontsize=20, tickfontsize=14, legendfontsize=11
+			)
+	#savefig("FC3_sumrule_log.png")
 end
-
-# ╔═╡ d94b5133-04a3-460c-b5dd-de424d09f012
-gif(animFC3, "FC3_all.gif", fps=2)
 
 # ╔═╡ 20f4bc03-c661-4689-9822-2d4429210caa
 begin
 	plot(layout=(1,1))
 	plot!(size=(900,700))
 	plot!(ndt, [Si2_FC3_k GaAs_FC3_k CdTe_FC3_k NaCl_FC3_k PbTe_FC3_k],
-			    color = ["#F0BB62" "#6E9A50" "#C64756" "#184D47" "#FF90BB"],
+			    color = ["#F0BB62" "#6E9A50" "#184D47" "#FF90BB" "#C64756"],
 				labels = ["d-"*L"\textbf{Si}:"*L"\;\Phi_{3}(\textbf{q}=\Gamma)" L"\textbf{GaAs}:"*L"\;\Phi_{3}(\textbf{q}=\Gamma)" L"\textbf{CdTe}:"*L"\;\Phi_{3}(\textbf{q}=\Gamma)" L"\textbf{NaCl}:"*L"\;\Phi_{3}(\textbf{q}=\Gamma)" L"\textbf{PbTe}:"*L"\;\Phi_{3}(\textbf{q}=\Gamma)"],
-				linestyle = :dash ,
-				linewidth=3.5
+				linestyle = :dashdot,
+				linewidth=3.5,
+				marker=[:circle :utriangle :dtriangle :diamond :rect],
+				label="Line with Markers"
 			)
+	vline!([50],
+			color = "black",
+			label="50 points")
 	scatter!(ndt, [Si2_FC3_k GaAs_FC3_k CdTe_FC3_k NaCl_FC3_k PbTe_FC3_k],
 			    color = ["#F0BB62" "#6E9A50" "#C64756" "#184D47" "#FF90BB"],
 				labels = ["" "" "" "" ""],
@@ -249,40 +204,118 @@ begin
 				titlefontsize=24, guidefontsize=20, tickfontsize=14, legendfontsize=13
 			)
 	plot!(legend=:outertop, legendcolumns=3)
-	savefig("FC3_sumrule_log.png")
+	#savefig("FC3_sumrule_log.png")
 end
 
 # ╔═╡ 37081e28-ee3b-4fa7-9e8e-6878d855702f
 begin
-	nd1 = [1,5,10,15,20,30,40,50,60,80,100,130,160,199,250,300, 400, 500]
+	nd1 = [1,5,10,15,20,30,40,50,60,80,100,130,160,199, 250, 300]
 	
-	PbTe_fc2_error = [478.834, 429.364, 378.193, 335.919, 289.961, 166.73, 86.1142, 12.275, 1.94481, 1.36049, 0.405952, 0.321987, 0.111758, 0.0241396]
+	Si2_fc2_error = [8.39122, 6.74113, 6.14914, 5.23859, 4.5644, 3.17436, 1.37573, 0.395167, 0.186782, 0.163425, 0.130997, 0.110689, 0.120036, 0.0744577, 0.0435957, 0.0371096]
 	
-	Si2_fc2_error = [663.231, 548.68, 459.382, 380.314, 286.179, 79.5129, 20.2168, 5.5683, 2.60258, 0.472595, 0.695432, 0.250762, 0.329402, 0.738597]
+	#Si2_fc2_error = [164.565, 132.204, 120.595, 102.737, 89.5152, 62.2543, 26.9804, 7.74987, 3.66309, 3.20503, 2.56906, 2.17079, 2.3541, 1.46023, 0.854983, 0.72778]
 	
-	NaCl_fc2_error = [413.024, 368.635, 322.939, 250.758, 221.4, 101.458, 41.279, 5.11173, 1.58728, 1.001, 0.347564, 0.218002, 0.137059, 0.0211458]
+	NaCl_fc2_error = [65.3039, 59.6935, 50.8033, 44.1822, 38.8205, 25.1767, 12.4901, 0.830285, 0.258152, 0.21534, 0.277866, 0.24138, 0.207627, 0.205268, 0.410462, 0.139183]
 	
-	GaAs_fc2_error = [509.143, 425.662, 357.593, 258.17, 170.893, 146.963, 65.7339, 4.54043, 0.0475614, 0.209899, 0.447558, 0.379726, 0.671995, 0.940818]
+	GaAs_fc2_error = [8.7579, 7.44856, 6.82373, 6.13416, 5.19829, 3.34918, 1.30994, 0.431748, 0.183022, 0.152946, 0.136986, 0.127517, 0.0879948, 0.0893594, 0.0831861, 0.0706297]
 	
-	CdTe_fc2_error = [294.926, 248.585, 209.583, 151.083, 101.268, 88.1728, 40.0044, 4.02201, 3.12722, 0.60556, 0.928747, 0.565053, 0.431276, 0.473945]
+	CdTe_fc2_error = [9.38121, 8.5534, 7.75833, 7.02812, 5.69708, 3.56208, 1.33434, 0.44298, 0.196552, 0.169089, 0.15732, 0.139858, 0.162026, 0.126975, 0.0943923, 0.0856584]
+
+	PbTe_fc2_error = [59.6266, 56.1314, 47.2247, 39.5822, 35.0195, 22.0158, 10.6882, 2.75508, 4.15642, 2.45827, 2.15177, 2.41854, 1.79261, 1.7563, 1.67625, 1.1906]
 end;
+
+# ╔═╡ 0c6f2e65-86a9-474a-800e-13d1e90efa82
+begin
+	plot(layout=(1,1))
+	plot!(size=(900,700))
+	plot!(nd1, [Si2_fc2_error GaAs_fc2_error CdTe_fc2_error NaCl_fc2_error 	PbTe_fc2_error],
+			    color = ["#F0BB62" "#6E9A50" "#C64756" "#184D47" "#FF90BB"],
+				labels = ["d-"*L"\textbf{Si}:"*L"\;\Phi^{2}" L"\textbf{GaAs}:"*L"\;\Phi^{2}" L"\textbf{CdTe}:"*L"\;\Phi^{2}" L"\textbf{NaCl}:"*L"\;\Phi^{2}" L"\textbf{PbTe}:"*L"\;\Phi^{2}"],
+				#linestyle = :dashdot,
+				linewidth=1.5,
+				marker=[:circle :utriangle :dtriangle :diamond :rect],
+				label="Line with Markers"
+				)
+	vline!([50],
+			color = "black",
+			label="50 points")
+	plot!(xscale=:log10,
+			yscale=:log10,
+			legend=:bottomleft,
+			legendcolumns=3,
+			xlabel="Training points",
+			ylabel= "FC2 RMSE (%)" ,
+			title="Comparison of GPFC with FDM",
+			titlefontsize=24, guidefontsize=20, tickfontsize=14, legendfontsize=11
+			)
+	#savefig("FC3_sumrule_log.png")
+end
+
+# ╔═╡ 2424d476-f9d5-4150-afdf-6d5ab5ad310a
+begin
+	plot(layout=(1,1))
+	plot!(size=(900,700))
+	plot!(nd1, [Si2_fc2_error PbTe_fc2_error],
+			    color = ["#F0BB62" "#C64756"],
+				labels = ["d-"*L"\textbf{Si}:"*L"\;\Phi^{2}" L"\textbf{PbTe}:"*L"\;\Phi^{2}"],
+				#linestyle = :dashdot,
+				linewidth=1.5,
+				marker=[:circle :rect],
+				label="Line with Markers"
+				)
+	plot!(xscale=:log10,
+			yscale=:log10,
+			legend=:bottomleft,
+			legendcolumns=2,
+			xlabel="Training points",
+			ylabel= "FC2 RMSE (%)" ,
+			title="Comparison of GPFC with FDM",
+			titlefontsize=24, guidefontsize=20, tickfontsize=14, legendfontsize=11
+			)
+	#savefig("FC3_sumrule_log.png")
+end
 
 # ╔═╡ a81a3406-30e7-4a35-867c-1c6d9f0e731c
 begin
-	PbTe_fc3_error = [478.834, 429.364, 378.193, 335.919, 289.961, 166.73, 86.1142, 12.275, 1.94481, 1.36049, 0.405952, 0.321987, 0.111758, 0.0241396]
-
+	nd2 = [1,5,10,15,20,30,40,50,60,80,100,130,160,199,250, 300, 400, 500, 600]
 	#Si2_fc3_error = [17.1177, 17.1069, 17.0829, 17.0142, 16.8825, 16.6741, 16.3861, 16.1031, 15.7004, 14.8106, 14.0019, 12.7779, 11.6354, 9.85095, 7.7462, 5.71204, 1.51293, 0.0315699]  #rmse
 	
-	Si2_fc3_error = [136.874, 136.788, 136.596, 136.047, 134.994, 133.327, 131.024, 128.761, 125.542, 118.427, 111.96, 102.173, 93.0372, 78.7688, 61.9391, 45.6738, 12.0975, 0.252435] #pma
+	#Si2_fc3_error = [136.874, 136.788, 136.596, 136.047, 134.994, 133.327, 131.024, 128.761, 125.542, 118.427, 111.96, 102.173, 93.0372, 78.7688, 61.9391, 45.6738, 12.0975, 0.252435] #pma
 	
-	#Si2_fc3_error =  [58.4313, 58.3944, 58.3125, 58.078, 57.6285, 56.917, 55.934, 54.9678, 53.5934, 50.556, 47.7954, 43.6173, 39.7174, 33.6262, 26.4417, 19.498, 5.16438, 0.107764] #pra
+	Si2_fc3_error =  [58.4313, 58.3944, 58.3125, 58.078, 57.6285, 56.917, 55.934, 54.9678, 53.5934, 50.556, 47.7954, 43.6173, 39.7174, 33.6262, 26.4417, 19.498, 5.16438, 0.107764, 0.1] #pra
 	
 	NaCl_fc3_error = [413.024, 368.635, 322.939, 250.758, 221.4, 101.458, 41.279, 5.11173, 1.58728, 1.001, 0.347564, 0.218002, 0.137059, 0.0211458]
 	
 	GaAs_fc3_error = [509.143, 425.662, 357.593, 258.17, 170.893, 146.963, 65.7339, 4.54043, 0.0475614, 0.209899, 0.447558, 0.379726, 0.671995, 0.940818]
 	
 	CdTe_fc3_error = [294.926, 248.585, 209.583, 151.083, 101.268, 88.1728, 40.0044, 4.02201, 3.12722, 0.60556, 0.928747, 0.565053, 0.431276, 0.473945]
+
+	PbTe_fc3_error = [136.874, 136.788, 136.596, 136.047, 134.994, 133.327, 131.024, 128.761, 125.542, 118.427, 111.96, 102.173, 93.0372, 78.7688, 61.9391, 45.6738, 12.0975, 0.252435, 0.1]
 end;
+
+# ╔═╡ e2374372-8885-4ef5-b662-b77409025f14
+begin
+	plot(layout=(1,1))
+	plot!(size=(900,700))
+	plot!(nd2, [Si2_fc3_error PbTe_fc3_error],
+			    color = ["#F0BB62" "#C64756"],
+				labels = ["d-"*L"\textbf{Si}:"*L"\;\Phi_{3}(\textbf{q}=\Gamma)" L"\textbf{PbTe}:"*L"\;\Phi_{3}(\textbf{q}=\Gamma)"],
+				linestyle = :dashdot,
+				linewidth=3.5,
+				marker=[:circle :rect],
+				label="Line with Markers"
+				)
+	plot!(xscale=:log10,
+			#yscale=:log10,
+			legend=:bottomleft,
+			legendcolumns=2,
+			xlabel="Training points",
+			ylabel= "FC3 RMSE (%)" ,
+			title="Comparison of GPFC with FDM",
+			titlefontsize=24, guidefontsize=20, tickfontsize=14, legendfontsize=11
+			)
+	#savefig("FC3_sumrule_log.png")
+end
 
 # ╔═╡ d4d8f121-7e92-4bca-a2aa-e9ecda546c96
 [ 1.79239e-9
@@ -1830,21 +1863,20 @@ version = "1.4.1+1"
 # ╔═╡ Cell order:
 # ╠═08f2031c-87c8-11ee-140d-23db21459e52
 # ╠═48f10f1e-5fb1-4fe3-ae65-c2d874b84a3d
+# ╠═34e06f4b-c656-4375-a6ac-f8ebba8c4465
 # ╠═b42f2b09-f5dc-4283-8bbf-715ac33f0f12
 # ╠═e268a975-42a3-4b42-87ee-339c03276e04
+# ╠═efd86038-00db-4312-a5f9-ec7ede4e8671
 # ╠═dd0377ce-1d90-43ba-93e6-3a1b3eddce7b
 # ╠═707c4dad-482f-43bd-b2d6-2886ef7e1343
-# ╠═e6877cc5-a967-4da8-a07d-e9aacebccf02
-# ╠═8487126f-258b-40c0-83ad-5600ced08a06
-# ╠═cea8c5c2-837f-48cf-9fb7-0af50eaae576
-# ╠═2ec8477f-58c4-4f3a-8a29-edcb70dbdf3c
-# ╠═8f733a5a-5e08-44f0-8fb3-6dd27e66cb4e
 # ╠═ff35334a-6643-41b2-aef7-b82f733bd973
-# ╠═ce169d57-79af-47b6-a49a-47a34e6b5565
-# ╠═d94b5133-04a3-460c-b5dd-de424d09f012
+# ╠═a02d22dd-732e-4c5d-b27a-561f3e1e4b53
 # ╠═20f4bc03-c661-4689-9822-2d4429210caa
 # ╠═37081e28-ee3b-4fa7-9e8e-6878d855702f
+# ╠═0c6f2e65-86a9-474a-800e-13d1e90efa82
+# ╠═2424d476-f9d5-4150-afdf-6d5ab5ad310a
 # ╠═a81a3406-30e7-4a35-867c-1c6d9f0e731c
+# ╠═e2374372-8885-4ef5-b662-b77409025f14
 # ╠═d4d8f121-7e92-4bca-a2aa-e9ecda546c96
 # ╠═e795ec2a-3598-4840-be6f-fd68f1922c57
 # ╠═9fe84d8c-c81d-43ee-9406-4f25f38352ea

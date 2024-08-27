@@ -17,7 +17,7 @@ end
 
 # ╔═╡ d8b8b25d-e716-47e9-b2e4-12731df9e7c0
 begin
-	σₒ = 0.1                 # Kernel Scale
+	σₒ = 0.05                 # Kernel Scale
 	l = 0.4			    		# Length Scale
 		
 	Num = 300                 # Number of training points
@@ -115,10 +115,13 @@ Target[151] = energy[151]
 -sqrt((-60.29785987)^2/(-60.29658902)^2 * (energy[3])^2)
 
 # ╔═╡ 43be9198-3311-4266-ad32-9f248722a906
--sqrt((-60.29556977)^2/(-60.29658902)^2 * (energy[3])^2)
+-sqrt((-60.29727204)^2/(-60.29658902)^2 * (energy[3])^2)
+
+# ╔═╡ cc9ca3ef-b71c-4f9c-a3c9-5e9fa563eaed
+
 
 # ╔═╡ 5f0b2b77-2317-4c64-9afd-9ed7a5b36fb1
-
+Target[201]
 
 # ╔═╡ cbd94f02-b08d-4208-9e2a-b24a35d2646a
 function Marginal(kernel, X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
@@ -1896,6 +1899,7 @@ version = "1.4.1+1"
 # ╠═e1c8aff8-39e8-4171-bb88-479bd6a4f9d7
 # ╠═492dbbcf-19d1-4e2d-b6ca-84e4b40687bf
 # ╠═43be9198-3311-4266-ad32-9f248722a906
+# ╠═cc9ca3ef-b71c-4f9c-a3c9-5e9fa563eaed
 # ╠═5f0b2b77-2317-4c64-9afd-9ed7a5b36fb1
 # ╠═cbd94f02-b08d-4208-9e2a-b24a35d2646a
 # ╠═e9efaf81-6634-435c-8030-45cc949d8068

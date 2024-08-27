@@ -38,8 +38,8 @@ plot(nTrain, error)
 
 # ╔═╡ 7150c40a-ba7b-4a0a-80e8-090f606e52f2
 begin
-	σₑ = 1e-5				      # Energy Gaussian noise
-	σₙ = 1e-5                   # Force Gaussian noise for Model 2 (σₑ independent)
+	σₑ = 1e-7				      # Energy Gaussian noise
+	σₙ = 1e-7                   # Force Gaussian noise for Model 2 (σₑ independent)
 end
 
 # ╔═╡ e62f0b5c-f521-4ff8-b153-cc868aec1e5f
@@ -319,56 +319,96 @@ FC2_p
 FC2_re[:,:,1,12] == FC2_re[:,:,12,1]
 
 # ╔═╡ 7dce16bd-8718-4311-8a00-8820032504f3
-function get_element(FC)
-	a = mean(
-			[FC[:,:,1,1][1,1] FC[:,:,1,1][2,2] FC[:,:,1,1][3,3]]
-		)
-	
-	b = mean(
-			[FC[:,:,1,2][1,1] FC[:,:,1,2][2,2] FC[:,:,1,2][3,3]] 
-		)
-
-	c = mean(
-		[FC[:,:,1,2][1,2] FC[:,:,1,2][1,3] FC[:,:,1,2][2,3]
-		 FC[:,:,1,2][2,1] FC[:,:,1,2][3,1] FC[:,:,1,2][3,2]]	
+function get_element(FC2_re)
+	a1 = mean(
+		[FC2_re[:,:,1,1][1,1] FC2_re[:,:,1,1][2,2] FC2_re[:,:,1,1][3,3]]
 	)
-	d = mean(
-			[FC[:,:,1,3][1,2] FC[:,:,1,3][2,1] 
-			FC[:,:,1,5][1,3] FC[:,:,1,5][3,1] 
-			-FC[:,:,1,7][2,3] -FC[:,:,1,7][3,2]
-			FC[:,:,1,9][2,3] FC[:,:,1,9][3,2] 
-			-FC[:,:,1,11][1,3] -FC[:,:,1,11][3,1] 
-			-FC[:,:,1,13][1,2] -FC[:,:,1,13][2,1]]	
-		)
-	e = mean(
-			[FC[:,:,1,3][1,1] FC[:,:,1,3][2,2] 
-			FC[:,:,1,5][1,1] FC[:,:,1,5][3,3] 
-			FC[:,:,1,7][2,2] FC[:,:,1,7][3,3]
-			FC[:,:,1,9][2,2] FC[:,:,1,9][3,3] 
-			FC[:,:,1,11][1,1] FC[:,:,1,11][3,3] 
-			FC[:,:,1,13][1,1] FC[:,:,1,13][2,2]]	
-		)
-	f = mean(
-			[FC[:,:,1,3][3,3] FC[:,:,1,5][2,2] FC[:,:,1,7][1,1]
-			 FC[:,:,1,9][1,1] FC[:,:,1,11][2,2] FC[:,:,1,13][3,3]]	
-		)
-	g = mean(
-		[FC[:,:,1,15][1,1] FC[:,:,1,15][2,2] FC[:,:,1,15][3,3]]	
+	b1 = mean(
+		[FC2_re[:,:,1,2][1,1] FC2_re[:,:,1,2][2,2] FC2_re[:,:,1,2][3,3]] 
+	)
+	c1 = mean(
+		[FC2_re[:,:,1,4][3,3] FC2_re[:,:,1,6][2,2] FC2_re[:,:,1,8][1,1]
+		 FC2_re[:,:,1,10][1,1] FC2_re[:,:,1,12][2,2] FC2_re[:,:,1,14][3,3]]	
+	)
+	d1 = mean(
+		[FC2_re[:,:,1,3][1,2] FC2_re[:,:,1,3][2,1] 
+		FC2_re[:,:,1,5][1,3] FC2_re[:,:,1,5][3,1] 
+		-FC2_re[:,:,1,7][2,3] -FC2_re[:,:,1,7][3,2]
+		FC2_re[:,:,1,9][2,3] FC2_re[:,:,1,9][3,2] 
+		-FC2_re[:,:,1,11][1,3] -FC2_re[:,:,1,11][3,1] 
+		-FC2_re[:,:,1,13][1,2] -FC2_re[:,:,1,13][2,1]]	
+	)
+	e1 = mean(
+		[FC2_re[:,:,1,3][1,1] FC2_re[:,:,1,3][2,2] 
+		FC2_re[:,:,1,5][1,1] FC2_re[:,:,1,5][3,3] 
+		FC2_re[:,:,1,7][2,2] FC2_re[:,:,1,7][3,3]
+		FC2_re[:,:,1,9][2,2] FC2_re[:,:,1,9][3,3] 
+		FC2_re[:,:,1,11][1,1] FC2_re[:,:,1,11][3,3] 
+		FC2_re[:,:,1,13][1,1] FC2_re[:,:,1,13][2,2]]	
+	)
+	f1 = mean(
+		[FC2_re[:,:,1,3][3,3] FC2_re[:,:,1,5][2,2] FC2_re[:,:,1,7][1,1]
+		 FC2_re[:,:,1,9][1,1] FC2_re[:,:,1,11][2,2] FC2_re[:,:,1,13][3,3]]	
+	)
+	g1 = mean(
+		[FC2_re[:,:,1,15][1,1] FC2_re[:,:,1,15][2,2] FC2_re[:,:,1,15][3,3]]	
+	)
+	h1 = mean(
+		[FC2_re[:,:,1,4][1,1] FC2_re[:,:,1,4][2,2] 
+		FC2_re[:,:,1,6][1,1] FC2_re[:,:,1,6][3,3] 
+		FC2_re[:,:,1,8][2,2] FC2_re[:,:,1,8][3,3]
+		FC2_re[:,:,1,10][2,2] FC2_re[:,:,1,10][3,3] 
+		FC2_re[:,:,1,12][1,1] FC2_re[:,:,1,12][3,3] 
+		FC2_re[:,:,1,14][1,1] FC2_re[:,:,1,14][2,2]]	
 	)
 
-	h = mean(
-			[FC[:,:,1,12][1,1] FC[:,:,1,12][2,2] FC[:,:,1,12][3,3]]	
-		)
-	
-	i = mean(
-			[FC[:,:,1,12][1,2] -FC[:,:,1,12][1,3] FC[:,:,1,12][2,3]
-			FC[:,:,1,12][2,1] -FC[:,:,1,12][3,1] FC[:,:,1,12][3,2]]	
-		)
-	return a, b, c, d, e, f, g, h, i
+	a2 = mean(
+		[FC2_re[:,:,2,2][1,1] FC2_re[:,:,2,2][2,2] FC2_re[:,:,2,2][3,3]]
+	)
+	b2 = mean(
+		[FC2_re[:,:,2,1][1,1] FC2_re[:,:,2,1][2,2] FC2_re[:,:,2,1][3,3]
+		FC2_re[:,:,2,15][1,1] FC2_re[:,:,2,15][2,2] FC2_re[:,:,2,15][3,3]]
+	)
+	c2 = mean(
+		[FC2_re[:,:,2,3][3,3] FC2_re[:,:,2,5][2,2] FC2_re[:,:,2,7][1,1]
+		 FC2_re[:,:,2,9][1,1] FC2_re[:,:,2,11][2,2] FC2_re[:,:,2,13][3,3]]	
+	)
+	d2 = mean(
+		[FC2_re[:,:,2,4][1,2] FC2_re[:,:,2,4][2,1] 
+		FC2_re[:,:,2,6][1,3] FC2_re[:,:,2,6][3,1] 
+		-FC2_re[:,:,2,8][2,3] -FC2_re[:,:,2,8][3,2]
+		FC2_re[:,:,2,10][2,3] FC2_re[:,:,2,10][3,2] 
+		-FC2_re[:,:,2,12][1,3] -FC2_re[:,:,2,12][3,1] 
+		-FC2_re[:,:,2,14][1,2] -FC2_re[:,:,2,14][2,1]]	
+	)
+	e2 = mean(
+		[FC2_re[:,:,2,4][1,1] FC2_re[:,:,2,4][2,2] 
+		FC2_re[:,:,2,6][1,1] FC2_re[:,:,2,6][3,3] 
+		FC2_re[:,:,2,8][2,2] FC2_re[:,:,2,8][3,3]
+		FC2_re[:,:,2,10][2,2] FC2_re[:,:,2,10][3,3] 
+		FC2_re[:,:,2,12][1,1] FC2_re[:,:,2,12][3,3] 
+		FC2_re[:,:,2,14][1,1] FC2_re[:,:,2,14][2,2]]	
+	)
+	f2 = mean(
+		[FC2_re[:,:,2,4][3,3] FC2_re[:,:,2,6][2,2] FC2_re[:,:,2,8][1,1]
+		 FC2_re[:,:,2,10][1,1] FC2_re[:,:,2,12][2,2] FC2_re[:,:,2,14][3,3]]	
+	)
+	g2 = mean(
+		[FC2_re[:,:,2,16][1,1] FC2_re[:,:,2,16][2,2] FC2_re[:,:,2,16][3,3]]	
+	)
+	h2 = mean(
+		[FC2_re[:,:,2,3][1,1] FC2_re[:,:,2,3][2,2] 
+		FC2_re[:,:,2,5][1,1] FC2_re[:,:,2,5][3,3] 
+		FC2_re[:,:,2,7][2,2] FC2_re[:,:,2,7][3,3]
+		FC2_re[:,:,2,9][2,2] FC2_re[:,:,2,9][3,3] 
+		FC2_re[:,:,2,11][1,1] FC2_re[:,:,2,11][3,3] 
+		FC2_re[:,:,2,13][1,1] FC2_re[:,:,2,13][2,2]]	
+	)
+	return a1, b1, c1, d1, e1, f1, g1 ,h1, a2, b2, c2, d2, e2, f2, g2 ,h2
 end
 
 # ╔═╡ 5cdace51-80fc-4e8e-a44f-f4c3a2904a6e
-Phon = [13.57907074, -3.42914722, -2.28620722, -0.50516663, -0.5005471, 0.82159303, -0.16753905, 0.16601453, 0.12720109]
+Phon = [2.1160722, 0.02765919, -0.70121375, -0.27665411, -0.10657938, 0.03523089, -0.17260477, -0.060126, 2.71334408, 0.02762525, -0.7011685, -0.39501141, -0.30137421, 0.05601417, -0.03196405, -0.06020661]
 
 # ╔═╡ 7f3fa67b-c5d8-4b70-b660-c9d5d2192fd0
 rmsd(Phon, Predict; normalize=false)
@@ -376,14 +416,50 @@ rmsd(Phon, Predict; normalize=false)
 # ╔═╡ 82e0f6f6-aa85-48ec-8875-3163624dcd83
 rmsd(Phon, Predict; normalize=false)
 
-# ╔═╡ d51a9d54-2174-45dd-8f1e-0a8c7d8cf7f6
+# ╔═╡ b4cc29ca-4c1c-4d0e-a1bb-edd5483480ce
 begin
-	Predict_r = collect(get_element(FC2_re))
-	Predict_p = collect(get_element(FC2_p))
-end
+	nd = [1,5,10,15,20,30,40,50,60,80,100,130,160,199,250,300]
+	P2 = zeros(( 48, 48, size(nd,1)))
+	SR2 = zeros((size(nd,1)))
+end;
+
+# ╔═╡ cf03ac1a-a973-48bb-a0d3-1cb927b8dc21
+@time for i1 in 1:size(nd,1)
+	numt1 = nd[i1]
+	equi, feature, energy, force, Target = ASEFeatureTarget(
+    "feature_vasp", "energy_vasp", "force_vasp", numt1, DIM);
+
+	Kₘₘ = Marginal(kernel, feature, σₑ, σₙ);
+	K₂ₙₘ = Coveriance_fc2(kernel, feature, equi);
+	Mp = PosteriorFC2(Kₘₘ, K₂ₙₘ, Target);
+	
+	P2[:,:,i1] = Mp 
+	
+	SR2[i1] = abs(sum(Mp))
+end 
 
 # ╔═╡ 101938bd-cf7e-4a72-a20a-7816915fa607
-rmsd(Phon, Predict_r; normalize=false)
+function RMSE(FC_set, Phonopy)
+	rmse = zeros((size(FC_set,3)))
+	rmse_pma = zeros((size(FC_set,3)))
+	rmse_pra = zeros((size(FC_set,3)))
+	rmse_p   = zeros((size(FC_set,3)))
+	mean_ph = mean(Phonopy)
+	range_ph = maximum(Phonopy) - minimum(Phonopy)
+	
+	for iii in 1:size(FC_set,3)
+		FC2_re = recon_FC2(FC_set[:,:,iii])
+		a1, b1, c1, d1, e1, f1, g1 ,h1, a2, b2, c2, d2, e2, f2, g2 ,h2 = get_element(FC2_re)
+		gpfc = [a1, b1, c1, d1, e1, f1, g1 ,h1, a2, b2, c2, d2, e2, f2, g2 ,h2]
+		rmse[iii] = rmsd(gpfc, Phonopy)
+		rmse_pma[iii] = (rmse[iii]/mean_ph)*100
+		rmse_pra[iii] = (rmse[iii]/range_ph)*100
+	end
+	return rmse, rmse_pma, rmse_pra
+end
+
+# ╔═╡ 9f3838b8-9641-4380-bade-56e09a5537f5
+RMSE(P2, Phon)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1926,7 +2002,9 @@ version = "1.4.1+1"
 # ╠═cd890923-e0fe-4280-bd20-b35b4e272746
 # ╠═7dce16bd-8718-4311-8a00-8820032504f3
 # ╠═5cdace51-80fc-4e8e-a44f-f4c3a2904a6e
-# ╠═d51a9d54-2174-45dd-8f1e-0a8c7d8cf7f6
+# ╠═b4cc29ca-4c1c-4d0e-a1bb-edd5483480ce
+# ╠═cf03ac1a-a973-48bb-a0d3-1cb927b8dc21
 # ╠═101938bd-cf7e-4a72-a20a-7816915fa607
+# ╠═9f3838b8-9641-4380-bade-56e09a5537f5
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

@@ -385,6 +385,51 @@ end
 # ╔═╡ 101938bd-cf7e-4a72-a20a-7816915fa607
 rmsd(Phon, Predict_r; normalize=false)
 
+# ╔═╡ c79bd8d8-ae2b-4721-bfe9-866838961a3e
+begin
+	nd = [1,5,10,15,20,30,40,50,60,80,100,130,160,199,250,300]
+	P2 = zeros(( 48, 48, size(nd,1)))
+	SumRule2 = zeros((size(nd,1)))
+end;
+
+# ╔═╡ 3cc6ef40-86da-4829-9186-a6ee9febf55c
+@time for i in 1:size(nd,1)
+	numt1 = nd[i]
+	equi, feature, energy, force, Target = ASEFeatureTarget(
+    "feature_vasp", "energy_vasp", "force_vasp", numt1, DIM);
+
+	Kₘₘ = Marginal(kernel, feature, σₑ, σₙ);
+	K₂ₙₘ = Coveriance_fc2(kernel, feature, equi);
+	Mp = PosteriorFC2(Kₘₘ, K₂ₙₘ, Target);
+	
+	P2[:,:,i] = Mp 
+	
+	SumRule2[i] = abs(sum(Mp))
+end 
+
+# ╔═╡ 5fb5cee0-11d1-45e0-a2fa-b587d7027f1b
+function RMSE(FC_set, Phonopy)
+	rmse = zeros((size(FC_set,3)))
+	rmse_pma = zeros((size(FC_set,3)))
+	rmse_pra = zeros((size(FC_set,3)))
+	rmse_p   = zeros((size(FC_set,3)))
+	mean_ph = mean(Phonopy)
+	range_ph = maximum(Phonopy) - minimum(Phonopy)
+	
+	for iii in 1:size(FC_set,3)
+		FC2_re = recon_FC2(FC_set[:,:,iii])
+		a, b, c, d, e, f, g, h, i = get_element(FC2_re)
+		gpfc = [a, b, c, d, e, f, g, h, i]
+		rmse[iii] = rmsd(gpfc, Phonopy)
+		rmse_pma[iii] = (rmse[iii]/mean_ph)*100
+		rmse_pra[iii] = (rmse[iii]/range_ph)*100
+	end
+	return rmse, rmse_pma, rmse_pra
+end
+
+# ╔═╡ 4566bbee-2fa2-4f8a-8842-b2f29d414eb6
+ RMSE(P2, Phon)
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -1928,5 +1973,9 @@ version = "1.4.1+1"
 # ╠═5cdace51-80fc-4e8e-a44f-f4c3a2904a6e
 # ╠═d51a9d54-2174-45dd-8f1e-0a8c7d8cf7f6
 # ╠═101938bd-cf7e-4a72-a20a-7816915fa607
+# ╠═c79bd8d8-ae2b-4721-bfe9-866838961a3e
+# ╠═3cc6ef40-86da-4829-9186-a6ee9febf55c
+# ╠═5fb5cee0-11d1-45e0-a2fa-b587d7027f1b
+# ╠═4566bbee-2fa2-4f8a-8842-b2f29d414eb6
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

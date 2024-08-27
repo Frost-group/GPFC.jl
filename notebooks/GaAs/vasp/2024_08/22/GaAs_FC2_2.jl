@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 63df6c30-e9f5-11ee-3fc6-5bd52f28f0f2
+# ╔═╡ 37c774b2-d55c-11ee-1c9f-0b3cacbf9179
 begin
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum, Statistics
@@ -15,11 +15,11 @@ begin
 	using StatsBase
 end
 
-# ╔═╡ 4d64d58d-1a82-417e-9d21-74036e431368
+# ╔═╡ 51463e77-9e95-43dc-bb50-40275e7b7966
 begin
-	σₒ = 0.1# Kernel Scale
+	σₒ = 0.05                  # Kernel Scale
 	l = 0.4		    
-	Num = 300                # Number of training points
+	Num = 150            # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
 	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
@@ -27,13 +27,22 @@ begin
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 end;
 
-# ╔═╡ b9885cb5-0745-4fbe-b30a-5251289c4832
+# ╔═╡ b6aa3986-7515-4605-adc0-09f8c80035fa
+nTrain = [1, 5, 10, 20, 30, 50, 100, 150, 250]
+
+# ╔═╡ c3d17d52-711c-432a-9f3d-7a7e082a9820
+error = [1.4271963068329054, 1.1465456184400518, 1.0458598856156927, 0.7763224219095277, 0.5399020229041219, 0.06721103083576878, 0.022280450219700584, 0.019584667977529967, 0.007414455659127275]
+
+# ╔═╡ f164ae2b-e4fd-4307-b8f1-66710e29c908
+plot(nTrain, error)
+
+# ╔═╡ 7150c40a-ba7b-4a0a-80e8-090f606e52f2
 begin
-	σₑ = 1e-7				      # Energy Gaussian noise
-	σₙ = 1e-7                  # Force Gaussian noise for Model 2 (σₑ independent)
+	σₑ = 1e-5				      # Energy Gaussian noise
+	σₙ = 1e-5                   # Force Gaussian noise for Model 2 (σₑ independent)
 end
 
-# ╔═╡ 59646fc6-1422-4004-8c9a-80a7416c9761
+# ╔═╡ e62f0b5c-f521-4ff8-b153-cc868aec1e5f
 begin
 	function kernelfunction1(kernel, x₁, x₂)
 		return Zygote.gradient( a -> kernel(a, x₂), x₁)[1]
@@ -49,7 +58,21 @@ begin
 	end
 end
 
-# ╔═╡ 9b93cb84-5991-4494-b1cb-e103d0fb3e0e
+# ╔═╡ 202378b4-a9fb-4a18-a793-1ea781b034d6
+function ARDlength(Mass, Supercell)
+	nAtom = size(Mass, 1)
+	nCell = Supercell[1]*Supercell[2]*Supercell[3]
+	L = zeros(3, nAtom * nCell)
+	for i in 1:nAtom
+		for j in 1:nCell
+			L[:,2*(j-1)+i] = Mass[i] * ones(3,1)
+		end
+	end
+	LL = reshape(L, (3 * nAtom * nCell,))
+	return LL
+end
+
+# ╔═╡ fe0638b5-758b-4ff2-afec-ad6c2ca917a4
 function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA::Int64)
 	a  = 4 - dimA
 	feature = (CSV.File(FileFeature)|> Tables.matrix)[begin:a:end,2:numt+1]
@@ -62,16 +85,22 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 	energy = (CSV.File(FileEnergy)|> Tables.matrix)[begin:numt,2]
 
 	force = -reshape((CSV.File(FileForce)|> Tables.matrix)[begin:a:end,2:numt+1], (dim*num,1))
-
-	force[1:dim] = zeros(dim)
-		
+    #force[1:dim] = zeros(dim)
+	
 	Target = vcat(energy, reshape(force, (dim*num,1)))
 	
 	
 	return equi, feature, energy, force, Target
 end
 
-# ╔═╡ 9fe36618-f4ef-4c84-9dd0-f1d03e8bdbb1
+# ╔═╡ a92c24e9-9882-4f0e-ad51-3145ae8ec6b3
+equi, feature, energy, force, Target = ASEFeatureTarget(
+    "feature_vasp", "energy_vasp", "force_vasp", Num, DIM);
+
+# ╔═╡ 7f82e862-182d-407b-a8d3-5807f21d93fd
+equi
+
+# ╔═╡ 3e7146ab-dcbf-42c8-b60c-540e3c28b60f
 function Marginal(kernel, X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
 	dim = size(X,1)
 	num = size(X,2)
@@ -106,317 +135,343 @@ function Marginal(kernel, X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
 	return Kₘₘ
 end
 
-# ╔═╡ 5038344e-f4e5-4a74-93c6-44e7c7587bdf
-function Coveriance_fc3(kernel, X::Matrix{Float64}, xₒ::Vector{Float64})
+# ╔═╡ 185467f5-39dd-4207-bede-217480061a76
+function Coveriance_fc2(kernel, X::Matrix{Float64}, xₒ::Vector{Float64})
 	dim = size(X,1)
 	num = size(X,2)
 	
-	#building Covariance matrix containers
-	K₃ₙₘ= zeros((dim, dim, dim, (1+dim)*num))
+	#Covariance matrix for FC2 prediction
+	#building Covariance matrix containers	
+	K₂ₙₘ= zeros((dim, dim, (1+dim)*num))
+		
 	for j in 1:num
-		#Fillin convarian of Energy vs FC3
-		K₃ₙₘ[:,:,:,j] = reshape(
-					-  kernelfunction3(kernel, X[:,j], xₒ)
+		#Fillin convarian of Energy vs FC2
+		K₂ₙₘ[:,:,j] = reshape(
+					 kernelfunction2(kernel, X[:,j], xₒ)
+					, (dim, dim)
+				)
+		#Fillin convarian of Force vs FC2
+		K₂ₙₘ[:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
+					 kernelfunction3(kernel, X[:,j], xₒ)
 					, (dim, dim, dim)
 				)
-		#Fillin convarian of Force vs FC3
-		K₃ₙₘ[:,:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
-					-  kernelfunction4(kernel, X[:,j], xₒ)
-					, (dim, dim, dim, dim)
-				)
 	end
-	return K₃ₙₘ
+	return K₂ₙₘ
 end
 
-# ╔═╡ 74412c53-4a9b-490e-b4b1-c4301710166f
-function PosteriorFC3(Marginal, Covariance, Target)
+# ╔═╡ 21f5d2e7-d8fb-4f76-924a-70e544619ab1
+function PosteriorFC2(Marginal, Covariance, Target)
 	dimₚ = size(Covariance, 1)
 	dimₜ = size(Marginal, 1)
-	Kₘₘ⁻¹ = inv(Marginal)   #
+	Kₘₘ⁻¹ = inv(Marginal)  
 	Kₙₘ = Covariance
 	
 	MarginalTar = zeros(dimₜ)
 	@einsum MarginalTar[m] = Kₘₘ⁻¹[m, n] * Target[n]
-
-	Meanₚ = zeros(dimₚ, dimₚ, dimₚ)
-	@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * MarginalTar[m]
+	
+	size(Kₙₘ) == (dimₚ, dimₚ, dimₜ)
+	Meanₚ = zeros(dimₚ, dimₚ)
+	@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * MarginalTar[m]
 
 	return Meanₚ 
 end
 
-# ╔═╡ 9acfbb37-06d7-40d4-97b1-c5e34b517533
+# ╔═╡ 5e72d87f-3eb5-4833-9a92-703cafc07c26
+function recon_FC2(FC2)
+	FC2_re = zeros(3,3,Int(size(FC2,1)/3),Int(size(FC2,1)/3));
+	for i in 1:Int(size(FC2,1)/3)
+		for j in 1:Int(size(FC2,1)/3)
+			FC2_re[:,:,i,j] = FC2[3*(i-1)+1:3*i,3*(j-1)+1:3*j]
+		end
+	end
+	return FC2_re
+end
+
+# ╔═╡ c6173687-4c23-49d2-8a9d-5e0ec8ecf636
+@time Kₘₘ = Marginal(kernel, feature, σₑ, σₙ);
+
+# ╔═╡ ecd99af7-6ca0-4f63-9489-328ef6045428
+@time K₂ₙₘ = Coveriance_fc2(kernel, feature, equi);
+
+# ╔═╡ 62ff7cd0-feec-4784-9590-2e1ca704cbc1
+@time FC2 = PosteriorFC2(Kₘₘ, K₂ₙₘ, Target);
+
+# ╔═╡ a9522f05-4036-4985-adeb-7125d2b2c948
+FC2;
+
+# ╔═╡ 54442166-7135-43a8-8934-a11809087e55
+FC2_re = recon_FC2(FC2);
+
+# ╔═╡ efcb0223-e6b2-4563-90e0-4589a9bf1459
+FC2_re
+
+# ╔═╡ 876a107e-481c-4037-a890-3c2335135922
+# ╠═╡ disabled = true
+#=╠═╡
+natoms = size(FC2_re, 3)
+  ╠═╡ =#
+
+# ╔═╡ f7157840-a2a1-452f-af27-aefd6f8b0c2d
+function permutation2(FC)
+	natoms = size(FC, 3)
+	FC2_perm = zeros(3,3,natoms,natoms);
+	for m in 1:natoms
+		for n in 1:natoms
+			if FC[:,:,m,n] != FC[:,:,n,m] 
+				C_n = 0.5*(FC[:,:,m,n] + FC[:,:,n,m])
+				FC2_perm[:,:,m,n] = C_n
+				FC2_perm[:,:,n,m] = C_n
+			else
+				FC2_perm[:,:,m,n] = FC[:,:,m,n]
+			end
+		end
+	end
+	return FC2_perm
+end
+
+# ╔═╡ 8b355b7d-ee53-4318-b0b9-732861b156d7
+supercell = (2,2,2)
+
+# ╔═╡ eee3b3d8-9373-4e52-8f45-b39105f4a678
+ones(3, 3)
+
+# ╔═╡ 90bf6cb7-f22b-4177-898f-69aab16554bb
+
+
+# ╔═╡ 1953404a-b50b-4977-ace4-40c2d9eb4cd1
+function permutation(FC, supercell)
+	Natoms = size(FC, 3)
+	natoms = Int(Natoms/prod(supercell))
+	FC2 = zeros(3, 3, natoms, Natoms);
+
+	for m in 1:natoms
+		for n in 1:natoms
+		end
+	end
+	return FC2	
+end
+
+# ╔═╡ 83e668b6-2e12-4b9d-b11d-bce26477e220
+
+
+# ╔═╡ 71f4a8b6-0414-4a5d-8fbd-31d94df20403
+FC2_p = permutation2(FC2_re);
+
+# ╔═╡ a619419c-49c0-4e91-9780-250094de1e7a
+Natoms = size(FC2_p, 3)
+
+# ╔═╡ f6bb2a6f-5973-40cb-9c4f-d2fca41d49b8
+natoms = Int(Natoms/prod(supercell))
+
+# ╔═╡ 8e1179d0-189f-4c22-9ac7-2ea40bffbe7f
+FC22 = zeros(3, 3, natoms, Natoms);
+
+# ╔═╡ f658d29d-4651-43ad-99cb-c288ffdaef5d
+FC22
+
+# ╔═╡ 8e7a3e31-09dd-4950-9344-ebcc8204db61
+for m in 1:natoms
+	for n in 1:Natoms
+	end
+end
+
+# ╔═╡ fa71741a-c1c8-4b8d-81b1-c4d9e63ba5ed
 begin
-	nd = [1,5,10,15,20,30,40,50,60,80,100,130,160,199,250,300, 400, 500]
-	P3 = zeros(( 48, 48, 48, size(nd,1)))
-	SumRule3 = zeros((size(nd,1)))
+	m1 = 0.3
+	check = m1*ones(3, 3)
+	
+	for k in 1:natoms
+		C1 = zeros(3,3)
+		for n in 1:Natoms
+			for m in 1:Natoms
+				diff_fc2 = FC2_p[:, :, k, n] - FC2_p[:, :, m, n]
+				if all(broadcast(abs, diff_fc2) .< check)
+					C1 .+= FC2_p[:, :, m, n]
+					println(all(broadcast(abs, diff_fc2) .< check))
+				end
+			end
+			FC22[:, :, k, n] = C1
+		end
+	end
+end
+
+# ╔═╡ a3cab574-f6ee-4644-9aa9-bcbd9a16bf59
+begin
+	diff_fc2 = FC2_p[:, :, 3, 3] - FC2_p[:, :, 1, 2]
+	all(broadcast(abs, diff_fc2) .< check)
+end
+
+# ╔═╡ 35c7ab43-dff6-46a8-a7c3-c7b5ce8b4e10
+begin
+	C = zeros(3,3,Natoms,Natoms)
+	for n in 2:natoms
+		C[:,:,16,1] .-= FC2_p[:,:,16,n]
+	end
+end
+
+# ╔═╡ 58efdf5e-1865-4cf7-b728-837482d346f3
+C
+
+# ╔═╡ 344e4fd5-79d3-4705-8e19-7e9f973b328b
+FC2_p
+
+# ╔═╡ cd890923-e0fe-4280-bd20-b35b4e272746
+FC2_re[:,:,1,12] == FC2_re[:,:,12,1]
+
+# ╔═╡ 7dce16bd-8718-4311-8a00-8820032504f3
+function get_element(FC2_re)
+	a1 = mean(
+			[FC2_re[:,:,1,1][1,1] FC2_re[:,:,1,1][2,2] FC2_re[:,:,1,1][3,3]]
+		)
+	
+	b1 = mean(
+			[FC2_re[:,:,1,2][1,1] FC2_re[:,:,1,2][2,2] FC2_re[:,:,1,2][3,3]] 
+		)
+
+	c1 = mean(
+		[FC2_re[:,:,1,2][1,2] FC2_re[:,:,1,2][1,3] FC2_re[:,:,1,2][2,3]
+		 FC2_re[:,:,1,2][2,1] FC2_re[:,:,1,2][3,1] FC2_re[:,:,1,2][3,2]]	
+	)
+	d1 = mean(
+			[FC2_re[:,:,1,3][1,2] FC2_re[:,:,1,3][2,1] 
+			FC2_re[:,:,1,5][1,3] FC2_re[:,:,1,5][3,1] 
+			-FC2_re[:,:,1,7][2,3] -FC2_re[:,:,1,7][3,2]
+			FC2_re[:,:,1,9][2,3] FC2_re[:,:,1,9][3,2] 
+			-FC2_re[:,:,1,11][1,3] -FC2_re[:,:,1,11][3,1] 
+			-FC2_re[:,:,1,13][1,2] -FC2_re[:,:,1,13][2,1]]	
+		)
+	e1 = mean(
+			[FC2_re[:,:,1,3][1,1] FC2_re[:,:,1,3][2,2] 
+			FC2_re[:,:,1,5][1,1] FC2_re[:,:,1,5][3,3] 
+			FC2_re[:,:,1,7][2,2] FC2_re[:,:,1,7][3,3]
+			FC2_re[:,:,1,9][2,2] FC2_re[:,:,1,9][3,3] 
+			FC2_re[:,:,1,11][1,1] FC2_re[:,:,1,11][3,3] 
+			FC2_re[:,:,1,13][1,1] FC2_re[:,:,1,13][2,2]]	
+		)
+	f1 = mean(
+			[FC2_re[:,:,1,3][3,3] FC2_re[:,:,1,5][2,2] FC2_re[:,:,1,7][1,1]
+			 FC2_re[:,:,1,9][1,1] FC2_re[:,:,1,11][2,2] FC2_re[:,:,1,13][3,3]]	
+		)
+	g1 = mean(
+		[FC2_re[:,:,1,15][1,1] FC2_re[:,:,1,15][2,2] FC2_re[:,:,1,15][3,3]]	
+	)
+	h1 = mean(
+			[FC2_re[:,:,1,12][1,1] FC2_re[:,:,1,12][2,2] FC2_re[:,:,1,12][3,3]]	
+		)
+	i1 = mean(
+			[FC2_re[:,:,1,12][1,2] -FC2_re[:,:,1,12][1,3] FC2_re[:,:,1,12][2,3]
+			FC2_re[:,:,1,12][2,1] -FC2_re[:,:,1,12][3,1] FC2_re[:,:,1,12][3,2]]	
+		)
+
+	a2 = mean(
+			[FC2_re[:,:,2,2][1,1] FC2_re[:,:,2,2][2,2] FC2_re[:,:,2,2][3,3]]
+		)
+	
+	b2 = mean(
+			[FC2_re[:,:,2,1][1,1] FC2_re[:,:,2,1][2,2] FC2_re[:,:,2,1][3,3]] 
+		)
+
+	c2 = mean(
+		[FC2_re[:,:,2,1][1,2] FC2_re[:,:,2,1][1,3] FC2_re[:,:,2,1][2,3]
+		 FC2_re[:,:,2,1][2,1] FC2_re[:,:,2,1][3,1] FC2_re[:,:,2,1][3,2]]	
+	)
+	d2 = mean(
+			[FC2_re[:,:,2,4][1,2] FC2_re[:,:,2,4][2,1] 
+			FC2_re[:,:,2,6][1,3] FC2_re[:,:,2,6][3,1] 
+			-FC2_re[:,:,2,8][2,3] -FC2_re[:,:,2,8][3,2]
+			FC2_re[:,:,2,10][2,3] FC2_re[:,:,2,10][3,2] 
+			-FC2_re[:,:,2,12][1,3] -FC2_re[:,:,2,12][3,1] 
+			-FC2_re[:,:,2,14][1,2] -FC2_re[:,:,2,14][2,1]]	
+		)
+	e2 = mean(
+			[FC2_re[:,:,2,4][1,1] FC2_re[:,:,2,4][2,2] 
+			FC2_re[:,:,2,6][1,1] FC2_re[:,:,2,6][3,3] 
+			FC2_re[:,:,2,8][2,2] FC2_re[:,:,2,8][3,3]
+			FC2_re[:,:,2,10][2,2] FC2_re[:,:,2,10][3,3] 
+			FC2_re[:,:,2,12][1,1] FC2_re[:,:,2,12][3,3] 
+			FC2_re[:,:,2,14][1,1] FC2_re[:,:,2,14][2,2]]	
+		)
+	f2 = mean(
+			[FC2_re[:,:,2,4][3,3] FC2_re[:,:,2,6][2,2] FC2_re[:,:,2,8][1,1]
+			 FC2_re[:,:,2,10][1,1] FC2_re[:,:,2,12][2,2] FC2_re[:,:,2,14][3,3]]	
+		)
+	g2 = mean(
+		[FC2_re[:,:,2,16][1,1] FC2_re[:,:,2,16][2,2] FC2_re[:,:,2,16][3,3]]	
+	)
+
+	h2 = mean(
+			[FC2_re[:,:,2,15][1,1] FC2_re[:,:,2,15][2,2] FC2_re[:,:,2,15][3,3]]	
+		)
+	
+	i2 = mean(
+			[FC2_re[:,:,2,15][1,2] FC2_re[:,:,2,15][1,3] FC2_re[:,:,2,15][2,3]
+			FC2_re[:,:,2,15][2,1] FC2_re[:,:,2,15][3,1] FC2_re[:,:,2,15][3,2]]	
+		)
+	return a1, b1, c1, d1, e1, f1, g1 ,h1, i1, a2, b2, c2, d2, e2, f2, g2 ,h2, i2
+end
+
+# ╔═╡ 5cdace51-80fc-4e8e-a44f-f4c3a2904a6e
+Phon = [8.84079769, -2.17135805, -1.53562839, -0.57639562, -0.56959785, 0.95278962, -0.17339672, 0.0977112, 0.09038681, 9.82853394, -2.17159846, -1.53566622, -0.49387626, -0.44004598, 0.14936429, -0.06960335, 0.0972293, -0.09037709]
+
+# ╔═╡ 7f3fa67b-c5d8-4b70-b660-c9d5d2192fd0
+rmsd(Phon, Predict; normalize=false)
+
+# ╔═╡ 82e0f6f6-aa85-48ec-8875-3163624dcd83
+rmsd(Phon, Predict; normalize=false)
+
+# ╔═╡ d51a9d54-2174-45dd-8f1e-0a8c7d8cf7f6
+begin
+	Predict_r = collect(get_element(FC2_re))
+	Predict_p = collect(get_element(FC2_p))
+end
+
+# ╔═╡ 101938bd-cf7e-4a72-a20a-7816915fa607
+rmsd(Phon, Predict_r; normalize=false)
+
+# ╔═╡ 088eb711-b36d-4b11-b779-b79a3aae2029
+begin
+	nd = [1,5,10,15,20,30,40,50,60,80,100,130,160,199,250,300]
+	P2 = zeros(( 48, 48, size(nd,1)))
+	SR2 = zeros((size(nd,1)))
 end;
 
-# ╔═╡ 54f99a19-dbc1-47e9-9c48-08f75d2fe890
-@time for i in 1:size(nd,1)
-	numt1 = nd[i]
+# ╔═╡ fc7ef5d4-c323-4978-ae3f-cd94fe996b49
+@time for i1 in 1:size(nd,1)
+	numt1 = nd[i1]
 	equi, feature, energy, force, Target = ASEFeatureTarget(
     "feature_vasp", "energy_vasp", "force_vasp", numt1, DIM);
 
 	Kₘₘ = Marginal(kernel, feature, σₑ, σₙ);
-	K₃ₙₘ = Coveriance_fc3(kernel, feature, equi);
-	Mp = PosteriorFC3(Kₘₘ, K₃ₙₘ, Target);
+	K₂ₙₘ = Coveriance_fc2(kernel, feature, equi);
+	Mp = PosteriorFC2(Kₘₘ, K₂ₙₘ, Target);
 	
-	P3[:,:,:,i] = Mp 
+	P2[:,:,i1] = Mp 
 	
-	SumRule3[i] = abs(sum(Mp))
+	SR2[i1] = abs(sum(Mp))
 end 
 
-# ╔═╡ fd40efd4-6f5e-4ebf-b672-1828e46d756c
-animCar = @animate for i in 1:size(nd,1)
-	heatmap(1:size(P3[2,:,:,i],1),
-		    1:size(P3[2,:,:,i],2), P3[3,:,:,i],
-		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
-			aspectratio=:equal,
-			size=(700, 700),
-		    xlabel="feature coord. (n x d)",
-			ylabel="feature coord. (n x d)",
-		    title="Si_FC3 (Traning Data = " *string(nd[i]) *")")
-end
-
-# ╔═╡ 0a00768a-0818-48a4-ab8b-07b1cd26776d
-gif(animCar, "Si2_FC3_Cart.gif", fps=1)
-
-# ╔═╡ 8b57cdb5-8e71-4235-b1fa-e447b96b5cd6
-begin
-	SumR = zeros((18))
-	for iii in 1:18
-		SumR[iii] = abs(sum(P3[1:3,1:3,:,iii]))
-	end
-end
-
-# ╔═╡ 279fb6ff-69a6-46cf-a762-77320d0439ea
-anim = @animate for i in 1:size(nd,1)
-	plot(nd[1:i], SumR[1:i],
-		xlabel="Training points",
-		ylabel="Sum of FC3 element",
-		xlim = (-1, 505), 
-		ylim = (-1.0, 100.0),
-		labels = "Cartesian",
-		linewidth=3,
-		title="Si2_Sum-Rule_FC3 (Traning Data = " *string(nd[i]) *")"
-	)
-end
-
-# ╔═╡ 95afdffc-381e-4eeb-8ee2-e3f8b7a201a7
-gif(anim, "Si2_FC3_sum.gif", fps=2)
-
-# ╔═╡ 308fccbc-2d8b-485c-8bba-be3727d19359
-
-
-# ╔═╡ 29523478-be0a-44bb-9c67-31874fd41ff3
-function recon_FC3(FC3)
-	FC3_re = zeros(3,3,3,Int(size(FC3,1)/3),Int(size(FC3,1)/3),Int(size(FC3,1)/3));
-	for i in 1:Int(size(FC3,1)/3)
-		for j in 1:Int(size(FC3,1)/3)
-			for k in 1:Int(size(FC3,1)/3)
-				FC3_re[:,:,:,i,j,k] = FC3[3*(i-1)+1:3*i,3*(j-1)+1:3*j,3*(k-1)+1:3*k]
-			end
-		end
-	end
-	return FC3_re
-end
-
-# ╔═╡ 7ea2a5f7-cd7e-4fc8-9cf5-a7c471219e9b
-nd 
-
-# ╔═╡ 90c017a6-d217-4aec-bce4-28ab0ab6ef20
-FC3_re = recon_FC3(P3[:,:,:,16]);
-
-# ╔═╡ c7e121af-e8d2-4db5-9f55-1f605e643578
-FC3_re[1,2,3,1,1,1]
-
-# ╔═╡ d4d61bb0-d2cf-40fe-abfe-550d23ad4c3f
-P3[1:3,1:3,1:3,18]
-
-# ╔═╡ e909acc2-885b-4423-b966-6608de88c6ed
-scatter(nd[1:18], abs.( P3[1,2,3,1:18] - (-32.50811164*ones((18)))),
-		xlabel="Training points",
-		ylabel="Sum of FC3 element",
-		xlim = (-1, 505), 
-		#ylim = (-1.0, 100.0),
-		labels = "Cartesian",
-		linewidth=3,
-		title="Si2_Sum-Rule_FC3 "
-	)
-
-# ╔═╡ 2df67575-873f-407d-bc03-4713d2223810
-sort(unique(P3[:,:,:,18]))
-
-# ╔═╡ 9ed65f7b-90a5-4665-8689-5dd88a3ef32e
-abs.( P3[1,2,3,1:18] - (-32.50811164*ones((18))))
-
-# ╔═╡ a00fea0d-14f6-49e5-b762-aa6af153f800
-begin
-	A = (
-		P3[1:3,1:3,1:3,18] - P3[4:6,4:6,4:6,18] +
-		P3[7:9,7:9,7:9,18] - P3[10:12,10:12,10:12,18] +
-		P3[13:15,13:15,13:15,18] - P3[16:18,16:18,16:18,18] +
-		P3[19:21,19:21,19:21,18] - P3[22:24,22:24,22:24,18] +
-		P3[25:27,25:27,25:27,18] - P3[28:30,28:30,28:30,18] +
-		P3[31:33,31:33,31:33,18] - P3[34:36,34:36,34:36,18] +
-		P3[37:39,37:39,37:39,18] - P3[40:42,40:42,40:42,18] +
-		P3[43:45,43:45,43:45,18] - P3[46:48,46:48,46:48,18]
-	)/16;
-	a = A[1,2,3]
-end
-
-# ╔═╡ 13b902e2-da13-49b1-83bc-ee2c71a5444d
-round.(A, digits=4)
-
-# ╔═╡ 95244769-1438-4366-9960-176cf35b13e3
-begin
-	B = (
-		P3[1:3,4:6,4:6,18] + P3[4:6,1:3,4:6,18] + P3[4:6,4:6,1:3,18] -
-		P3[1:3,1:3,4:6,18] - P3[4:6,1:3,1:3,18] - P3[1:3,4:6,1:3,18] + 
-		P3[7:9,10:12,10:12,18] 	 + P3[10:12,7:9,10:12,18]   + P3[10:12,10:12,7:9,18] - P3[7:9,7:9,10:12,18] 	 - P3[10:12,7:9,7:9,18] 	- P3[7:9,10:12,7:9,18] + 
-		P3[13:15,16:18,16:18,18] + P3[16:18,13:15,16:18,18] + P3[16:18,16:18,13:15,18] -
-		P3[13:15,13:15,16:18,18] - P3[16:18,13:15,13:15,18] - P3[13:15,16:18,13:15,18] + 
-		P3[19:21,22:24,22:24,18] + P3[22:24,19:21,22:24,18] + P3[22:24,22:24,19:21,18] -
-		P3[19:21,19:21,22:24,18] - P3[22:24,19:21,19:21,18] - P3[19:21,22:24,19:21,18] +
-		P3[25:27,28:30,28:30,18] + P3[28:30,25:27,28:30,18] + P3[28:30,28:30,25:27,18] -
-		P3[25:27,25:27,28:30,18] - P3[28:30,25:27,25:27,18] - P3[25:27,28:30,25:27,18] +
-		P3[31:33,34:36,34:36,18] + P3[34:36,31:33,34:36,18] + P3[34:36,34:36,31:33,18] -
-		P3[31:33,31:33,34:36,18] - P3[34:36,31:33,31:33,18] - P3[31:33,34:36,31:33,18] + 
-		P3[37:39,40:42,40:42,18] + P3[40:42,37:39,40:42,18] + P3[40:42,40:42,37:39,18] -
-		P3[37:39,37:39,40:42,18] - P3[40:42,37:39,37:39,18] - P3[37:39,40:42,37:39,18] +
-		P3[43:45,46:48,46:48,18] + P3[46:48,43:45,46:48,18] + P3[46:48,46:48,43:45,18] -
-		P3[43:45,43:45,46:48,18] - P3[46:48,43:45,43:45,18] - P3[43:45,46:48,43:45,18]
-	)/48;
-	b = B[2,3,1]
-	c = mean([B[1,2,1] B[1,3,1] B[2,2,1] B[3,3,1] B[1,1,2] B[1,2,2] B[2,3,2] B[3,3,2] B[1,1,3] B[1,3,3] B[2,3,3] B[2,2,3]])
-	d = mean([B[1,1,1] B[2,2,2] B[3,3,3]])
-end
-
-# ╔═╡ 7e0434f5-cfec-4923-92a8-4d17dc64162d
-round.(B, digits=4)
-
-# ╔═╡ bbc76ac2-8b3a-4053-ae45-f2da5c39a2e7
-function get_element_FC3(FC)
- 	A = (
-		FC[1:3,1:3,1:3] - FC[4:6,4:6,4:6] +
-		FC[7:9,7:9,7:9] - FC[10:12,10:12,10:12] +
-		FC[13:15,13:15,13:15] - FC[16:18,16:18,16:18] +
-		FC[19:21,19:21,19:21] - FC[22:24,22:24,22:24] +
-		FC[25:27,25:27,25:27] - FC[28:30,28:30,28:30] +
-		FC[31:33,31:33,31:33] - FC[34:36,34:36,34:36] +
-		FC[37:39,37:39,37:39] - FC[40:42,40:42,40:42] +
-		FC[43:45,43:45,43:45] - FC[46:48,46:48,46:48]
-	)/16;
-	a = A[1,2,3]
-	B = (
-		FC[1:3,4:6,4:6] + FC[4:6,1:3,4:6] + FC[4:6,4:6,1:3] -
-		FC[1:3,1:3,4:6] - FC[4:6,1:3,1:3] - FC[1:3,4:6,1:3] + 
-		FC[7:9,10:12,10:12] 	+ FC[10:12,7:9,10:12]   + FC[10:12,10:12,7:9] - FC[7:9,7:9,10:12] 	 	- FC[10:12,7:9,7:9] 	- FC[7:9,10:12,7:9] + 
-		FC[13:15,16:18,16:18] + FC[16:18,13:15,16:18] + FC[16:18,16:18,13:15] -
-		FC[13:15,13:15,16:18] - FC[16:18,13:15,13:15] - FC[13:15,16:18,13:15] + 
-		FC[19:21,22:24,22:24] + FC[22:24,19:21,22:24] + FC[22:24,22:24,19:21] -
-		FC[19:21,19:21,22:24] - FC[22:24,19:21,19:21] - FC[19:21,22:24,19:21] +
-		FC[25:27,28:30,28:30] + FC[28:30,25:27,28:30] + FC[28:30,28:30,25:27] -
-		FC[25:27,25:27,28:30] - FC[28:30,25:27,25:27] - FC[25:27,28:30,25:27] +
-		FC[31:33,34:36,34:36] + FC[34:36,31:33,34:36] + FC[34:36,34:36,31:33] -
-		FC[31:33,31:33,34:36] - FC[34:36,31:33,31:33] - FC[31:33,34:36,31:33] + 
-		FC[37:39,40:42,40:42] + FC[40:42,37:39,40:42] + FC[40:42,40:42,37:39] -
-		FC[37:39,37:39,40:42] - FC[40:42,37:39,37:39] - FC[37:39,40:42,37:39] +
-		FC[43:45,46:48,46:48] + FC[46:48,43:45,46:48] + FC[46:48,46:48,43:45] -
-		FC[43:45,43:45,46:48] - FC[46:48,43:45,43:45] - FC[43:45,46:48,43:45]
-	)/48
-	b = B[2,3,1]
-	c = mean([B[1,2,1] B[1,3,1] B[2,2,1] B[3,3,1] B[1,1,2] B[1,2,2] B[2,3,2] B[3,3,2] B[1,1,3] B[1,3,3] B[2,3,3] B[2,2,3]])
-	d = mean([B[1,1,1] B[2,2,2] B[3,3,3]])
-	return a, b, c, d
-end 
-
-# ╔═╡ b6a0e216-4f8f-4d8f-901d-a82562f725fc
-begin
-	a_phon = -32.49047112
-	b_phon = mean([-8.47988436 -8.47409855])
-	c_phon = mean([-5.94222619 -5.94222619 -5.92986869 -5.80924175 -5.80643197 -5.80397521 -5.80116543])
-	d_phon = mean([-3.19953761 -3.19645264 -3.1948417 -3.19287462 -3.19137552])
-end
-
-# ╔═╡ 81582d60-1063-451e-9367-9bf712b2b440
-phon = [a_phon, b_phon, c_phon, d_phon]
-
-# ╔═╡ c956dc5b-5179-4269-a777-9f30de14cf40
-zeros((size(P3,4)))
-
-# ╔═╡ c4adbac8-f1d3-4b84-a2ec-9ffa07208458
+# ╔═╡ 555866ca-e862-43c2-b8bb-00718a92ada1
 function RMSE(FC_set, Phonopy)
-	rmse = zeros((size(FC_set,4)))
-	for iii in 1:size(FC_set,4)
-		a, b, c, d = get_element_FC3(FC_set[:,:,:,iii])
-		gpfc = [a, b, c, d ]
+	rmse = zeros((size(FC_set,3)))
+	rmse_pma = zeros((size(FC_set,3)))
+	rmse_pra = zeros((size(FC_set,3)))
+	rmse_p   = zeros((size(FC_set,3)))
+	mean_ph = mean(Phonopy)
+	range_ph = maximum(Phonopy) - minimum(Phonopy)
+	
+	for iii in 1:size(FC_set,3)
+		FC2_re = recon_FC2(FC_set[:,:,iii])
+		a1, b1, c1, d1, e1, f1, g1 ,h1, i1, a2, b2, c2, d2, e2, f2, g2 ,h2, i2 = get_element(FC2_re)
+		gpfc = [a1, b1, c1, d1, e1, f1, g1 ,h1, i1, a2, b2, c2, d2, e2, f2, g2 ,h2, i2]
 		rmse[iii] = rmsd(gpfc, Phonopy)
+		rmse_pma[iii] = (rmse[iii]/mean_ph)*100
+		rmse_pra[iii] = (rmse[iii]/range_ph)*100
 	end
-	return rmse
+	return rmse, rmse_pma, rmse_pra
 end
 
-# ╔═╡ 7e2d79d9-a794-4a6a-bfde-14ab00bd2f09
-RMSE(P3, phon )
-
-# ╔═╡ 0d140e80-37e9-452c-828b-60563c55ab0b
-scatter(nd[1:18], RMSE(P3, phon ),
-		xlabel="Training points",
-		ylabel="Sum of FC3 element",
-		xlim = (-1, 505), 
-		#ylim = (-1.0, 100.0),
-		labels = "Cartesian",
-		linewidth=3,
-		title="Si2_Sum-Rule_FC3 "
-	)
-
-# ╔═╡ 77b73e5a-51e1-4f7e-ba81-3f3b9ae567a0
-rmsd([a, b, c, d], phon)
-
-# ╔═╡ c9582dfa-c7a4-4485-9a2e-e7d6997aebdb
-equi2, feature2, energy2, force2, Target2 = ASEFeatureTarget(
-    "feature_vasp", "energy_vasp", "force_vasp", 1, 3);
-
-# ╔═╡ a365a29d-cdd8-4cc9-8595-44bfea13c4e6
-begin
-	println("Atom1")
-	println(equi2[4:6])
-	println("Atom2")
-	println(equi2[16:18])
-	println("Atom3")
-	println(equi2[10:12])
-end
-
-# ╔═╡ 9d8ac6ff-ce01-44c4-b82e-36def04b5eb7
-M =  [
-	[1 0 0]
-	[0 0 1]
-	[0 1 0]
-]
-
-# ╔═╡ 72a7d4d3-5a6b-4fc6-a41e-22ffcc1e2df1
-M*equi2[10:12]
-
-# ╔═╡ f3f783ee-2a78-4bf6-8490-7266214b67d6
-equi2[16:18]
-
-# ╔═╡ 4d0986be-2091-4a48-a3ee-9e35bae59c7c
-round.(P3[4:6,4:6,10:12,18], digits=4)
-
-# ╔═╡ cd2d91d4-4972-4331-b0ee-de537f168623
-round.(P3[4:6,10:12,4:6,18], digits=4)
-
-# ╔═╡ 9ec67efb-ccbd-47b8-8ae1-5785b1641b39
-round.(P3[10:12,4:6,4:6,18], digits=4)
-
-# ╔═╡ 47f689cc-77b6-4a41-817e-39bb0908f06b
-round.(P3[4:6,1:3,16:18,18], digits=4)
-
-# ╔═╡ 53c4514d-a691-47c4-9b57-90d8064fe55c
-P3[7:9,10:12,10:12,18]
-
-# ╔═╡ d99399f0-3704-4b8a-8483-ab781757bc33
-
+# ╔═╡ 1cd8e56d-8cfd-45de-a502-e47233e2c696
+RMSE(P2, Phon)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -432,6 +487,17 @@ Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
+
+[compat]
+CSV = "~0.10.12"
+DataFrames = "~1.6.1"
+DelimitedFiles = "~1.9.1"
+Einsum = "~0.4.1"
+ForwardDiff = "~0.10.36"
+KernelFunctions = "~0.10.63"
+Plots = "~1.39.0"
+StatsBase = "~0.34.2"
+Zygote = "~0.6.69"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -440,7 +506,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.11.0-rc1"
 manifest_format = "2.0"
-project_hash = "406607c40a1f2fa5f3a3670c02391c2c55d7fc4a"
+project_hash = "c3373afb7f60ff88525061b67a42c3e5584e4926"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -595,9 +661,9 @@ version = "2.4.2"
 
 [[deps.ConstructionBase]]
 deps = ["LinearAlgebra"]
-git-tree-sha1 = "d8a9c0b6ac2d9081bf76324b39c78ca3ce4f0c98"
+git-tree-sha1 = "a33b7ced222c6165f624a3f2b55945fac5a598d9"
 uuid = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
-version = "1.5.6"
+version = "1.5.7"
 
     [deps.ConstructionBase.extensions]
     ConstructionBaseIntervalSetsExt = "IntervalSets"
@@ -743,9 +809,9 @@ version = "1.11.0"
 
 [[deps.FillArrays]]
 deps = ["LinearAlgebra"]
-git-tree-sha1 = "0653c0a2396a6da5bc4766c43041ef5fd3efbe57"
+git-tree-sha1 = "fd0002c0b5362d7eb952450ad5eb742443340d6e"
 uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
-version = "1.11.0"
+version = "1.12.0"
 
     [deps.FillArrays.extensions]
     FillArraysPDMatsExt = "PDMats"
@@ -828,16 +894,16 @@ uuid = "46192b85-c4d5-4398-a991-12ede77f4527"
 version = "0.1.6"
 
 [[deps.GR]]
-deps = ["Artifacts", "Base64", "DelimitedFiles", "Downloads", "GR_jll", "HTTP", "JSON", "Libdl", "LinearAlgebra", "Preferences", "Printf", "Qt6Wayland_jll", "Random", "Serialization", "Sockets", "TOML", "Tar", "Test", "p7zip_jll"]
-git-tree-sha1 = "629693584cef594c3f6f99e76e7a7ad17e60e8d5"
+deps = ["Artifacts", "Base64", "DelimitedFiles", "Downloads", "GR_jll", "HTTP", "JSON", "Libdl", "LinearAlgebra", "Pkg", "Preferences", "Printf", "Random", "Serialization", "Sockets", "TOML", "Tar", "Test", "UUIDs", "p7zip_jll"]
+git-tree-sha1 = "27442171f28c952804dede8ff72828a96f2bfc1f"
 uuid = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
-version = "0.73.7"
+version = "0.72.10"
 
 [[deps.GR_jll]]
 deps = ["Artifacts", "Bzip2_jll", "Cairo_jll", "FFMPEG_jll", "Fontconfig_jll", "FreeType2_jll", "GLFW_jll", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "Pixman_jll", "Qt6Base_jll", "Zlib_jll", "libpng_jll"]
-git-tree-sha1 = "a8863b69c2a0859f2c2c87ebdc4c6712e88bdf0d"
+git-tree-sha1 = "025d171a2847f616becc0f84c8dc62fe18f0f6dd"
 uuid = "d2c73de3-f751-5644-a686-071e5b155ba9"
-version = "0.73.7+0"
+version = "0.72.10+0"
 
 [[deps.Gettext_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Libiconv_jll", "Pkg", "XML2_jll"]
@@ -975,9 +1041,9 @@ version = "0.0.31+0"
 
 [[deps.LLVMOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "d986ce2d884d49126836ea94ed5bfb0f12679713"
+git-tree-sha1 = "e16271d212accd09d52ee0ae98956b8a05c4b626"
 uuid = "1d63c593-3942-5779-bab2-d838dc0a180e"
-version = "15.0.7+0"
+version = "17.0.6+0"
 
 [[deps.LZO_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1265,10 +1331,10 @@ uuid = "995b91a9-d308-5afd-9ec6-746e21dbc043"
 version = "1.4.1"
 
 [[deps.Plots]]
-deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers", "GR", "JLFzf", "JSON", "LaTeXStrings", "Latexify", "LinearAlgebra", "Measures", "NaNMath", "Pkg", "PlotThemes", "PlotUtils", "PrecompileTools", "Printf", "REPL", "Random", "RecipesBase", "RecipesPipeline", "Reexport", "RelocatableFolders", "Requires", "Scratch", "Showoff", "SparseArrays", "Statistics", "StatsBase", "TOML", "UUIDs", "UnicodeFun", "UnitfulLatexify", "Unzip"]
-git-tree-sha1 = "082f0c4b70c202c37784ce4bfbc33c9f437685bf"
+deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers", "GR", "JLFzf", "JSON", "LaTeXStrings", "Latexify", "LinearAlgebra", "Measures", "NaNMath", "Pkg", "PlotThemes", "PlotUtils", "PrecompileTools", "Preferences", "Printf", "REPL", "Random", "RecipesBase", "RecipesPipeline", "Reexport", "RelocatableFolders", "Requires", "Scratch", "Showoff", "SparseArrays", "Statistics", "StatsBase", "UUIDs", "UnicodeFun", "UnitfulLatexify", "Unzip"]
+git-tree-sha1 = "ccee59c6e48e6f2edf8a5b64dc817b6729f99eb5"
 uuid = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-version = "1.40.5"
+version = "1.39.0"
 
     [deps.Plots.extensions]
     FileIOExt = "FileIO"
@@ -1315,27 +1381,9 @@ version = "1.11.0"
 
 [[deps.Qt6Base_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Vulkan_Loader_jll", "Xorg_libSM_jll", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_cursor_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "libinput_jll", "xkbcommon_jll"]
-git-tree-sha1 = "492601870742dcd38f233b23c3ec629628c1d724"
+git-tree-sha1 = "37b7bb7aabf9a085e0044307e1717436117f2b3b"
 uuid = "c0090381-4147-56d7-9ebc-da0b1113ec56"
-version = "6.7.1+1"
-
-[[deps.Qt6Declarative_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Qt6Base_jll", "Qt6ShaderTools_jll"]
-git-tree-sha1 = "e5dd466bf2569fe08c91a2cc29c1003f4797ac3b"
-uuid = "629bc702-f1f5-5709-abd5-49b8460ea067"
-version = "6.7.1+2"
-
-[[deps.Qt6ShaderTools_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Qt6Base_jll"]
-git-tree-sha1 = "1a180aeced866700d4bebc3120ea1451201f16bc"
-uuid = "ce943373-25bb-56aa-8eca-768745ed7b5a"
-version = "6.7.1+1"
-
-[[deps.Qt6Wayland_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Qt6Base_jll", "Qt6Declarative_jll"]
-git-tree-sha1 = "729927532d48cf79f49070341e1d918a65aba6b0"
-uuid = "e99dba38-086e-5de3-a5b1-6e4c66e897c3"
-version = "6.7.1+1"
+version = "6.5.3+1"
 
 [[deps.REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "StyledStrings", "Unicode"]
@@ -1922,52 +1970,55 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╠═63df6c30-e9f5-11ee-3fc6-5bd52f28f0f2
-# ╠═4d64d58d-1a82-417e-9d21-74036e431368
-# ╠═b9885cb5-0745-4fbe-b30a-5251289c4832
-# ╠═59646fc6-1422-4004-8c9a-80a7416c9761
-# ╠═9b93cb84-5991-4494-b1cb-e103d0fb3e0e
-# ╠═9fe36618-f4ef-4c84-9dd0-f1d03e8bdbb1
-# ╠═5038344e-f4e5-4a74-93c6-44e7c7587bdf
-# ╠═74412c53-4a9b-490e-b4b1-c4301710166f
-# ╠═9acfbb37-06d7-40d4-97b1-c5e34b517533
-# ╠═54f99a19-dbc1-47e9-9c48-08f75d2fe890
-# ╠═fd40efd4-6f5e-4ebf-b672-1828e46d756c
-# ╠═0a00768a-0818-48a4-ab8b-07b1cd26776d
-# ╠═8b57cdb5-8e71-4235-b1fa-e447b96b5cd6
-# ╠═279fb6ff-69a6-46cf-a762-77320d0439ea
-# ╠═95afdffc-381e-4eeb-8ee2-e3f8b7a201a7
-# ╠═308fccbc-2d8b-485c-8bba-be3727d19359
-# ╠═29523478-be0a-44bb-9c67-31874fd41ff3
-# ╠═7ea2a5f7-cd7e-4fc8-9cf5-a7c471219e9b
-# ╠═90c017a6-d217-4aec-bce4-28ab0ab6ef20
-# ╠═c7e121af-e8d2-4db5-9f55-1f605e643578
-# ╠═d4d61bb0-d2cf-40fe-abfe-550d23ad4c3f
-# ╠═e909acc2-885b-4423-b966-6608de88c6ed
-# ╠═2df67575-873f-407d-bc03-4713d2223810
-# ╠═9ed65f7b-90a5-4665-8689-5dd88a3ef32e
-# ╠═a00fea0d-14f6-49e5-b762-aa6af153f800
-# ╠═13b902e2-da13-49b1-83bc-ee2c71a5444d
-# ╠═95244769-1438-4366-9960-176cf35b13e3
-# ╠═7e0434f5-cfec-4923-92a8-4d17dc64162d
-# ╠═bbc76ac2-8b3a-4053-ae45-f2da5c39a2e7
-# ╠═b6a0e216-4f8f-4d8f-901d-a82562f725fc
-# ╠═81582d60-1063-451e-9367-9bf712b2b440
-# ╠═c956dc5b-5179-4269-a777-9f30de14cf40
-# ╠═c4adbac8-f1d3-4b84-a2ec-9ffa07208458
-# ╠═7e2d79d9-a794-4a6a-bfde-14ab00bd2f09
-# ╠═0d140e80-37e9-452c-828b-60563c55ab0b
-# ╠═77b73e5a-51e1-4f7e-ba81-3f3b9ae567a0
-# ╠═c9582dfa-c7a4-4485-9a2e-e7d6997aebdb
-# ╠═a365a29d-cdd8-4cc9-8595-44bfea13c4e6
-# ╠═9d8ac6ff-ce01-44c4-b82e-36def04b5eb7
-# ╠═72a7d4d3-5a6b-4fc6-a41e-22ffcc1e2df1
-# ╠═f3f783ee-2a78-4bf6-8490-7266214b67d6
-# ╠═4d0986be-2091-4a48-a3ee-9e35bae59c7c
-# ╠═cd2d91d4-4972-4331-b0ee-de537f168623
-# ╠═9ec67efb-ccbd-47b8-8ae1-5785b1641b39
-# ╠═47f689cc-77b6-4a41-817e-39bb0908f06b
-# ╠═53c4514d-a691-47c4-9b57-90d8064fe55c
-# ╠═d99399f0-3704-4b8a-8483-ab781757bc33
+# ╠═37c774b2-d55c-11ee-1c9f-0b3cacbf9179
+# ╠═51463e77-9e95-43dc-bb50-40275e7b7966
+# ╠═b6aa3986-7515-4605-adc0-09f8c80035fa
+# ╠═c3d17d52-711c-432a-9f3d-7a7e082a9820
+# ╠═f164ae2b-e4fd-4307-b8f1-66710e29c908
+# ╠═7f3fa67b-c5d8-4b70-b660-c9d5d2192fd0
+# ╠═7150c40a-ba7b-4a0a-80e8-090f606e52f2
+# ╠═82e0f6f6-aa85-48ec-8875-3163624dcd83
+# ╠═e62f0b5c-f521-4ff8-b153-cc868aec1e5f
+# ╠═202378b4-a9fb-4a18-a793-1ea781b034d6
+# ╠═fe0638b5-758b-4ff2-afec-ad6c2ca917a4
+# ╠═a92c24e9-9882-4f0e-ad51-3145ae8ec6b3
+# ╠═7f82e862-182d-407b-a8d3-5807f21d93fd
+# ╠═3e7146ab-dcbf-42c8-b60c-540e3c28b60f
+# ╠═185467f5-39dd-4207-bede-217480061a76
+# ╠═21f5d2e7-d8fb-4f76-924a-70e544619ab1
+# ╠═5e72d87f-3eb5-4833-9a92-703cafc07c26
+# ╠═c6173687-4c23-49d2-8a9d-5e0ec8ecf636
+# ╠═ecd99af7-6ca0-4f63-9489-328ef6045428
+# ╠═62ff7cd0-feec-4784-9590-2e1ca704cbc1
+# ╠═a9522f05-4036-4985-adeb-7125d2b2c948
+# ╠═54442166-7135-43a8-8934-a11809087e55
+# ╠═efcb0223-e6b2-4563-90e0-4589a9bf1459
+# ╠═876a107e-481c-4037-a890-3c2335135922
+# ╠═f7157840-a2a1-452f-af27-aefd6f8b0c2d
+# ╠═8b355b7d-ee53-4318-b0b9-732861b156d7
+# ╠═a619419c-49c0-4e91-9780-250094de1e7a
+# ╠═f6bb2a6f-5973-40cb-9c4f-d2fca41d49b8
+# ╠═8e1179d0-189f-4c22-9ac7-2ea40bffbe7f
+# ╠═eee3b3d8-9373-4e52-8f45-b39105f4a678
+# ╠═90bf6cb7-f22b-4177-898f-69aab16554bb
+# ╠═fa71741a-c1c8-4b8d-81b1-c4d9e63ba5ed
+# ╠═f658d29d-4651-43ad-99cb-c288ffdaef5d
+# ╠═a3cab574-f6ee-4644-9aa9-bcbd9a16bf59
+# ╠═8e7a3e31-09dd-4950-9344-ebcc8204db61
+# ╠═1953404a-b50b-4977-ace4-40c2d9eb4cd1
+# ╠═35c7ab43-dff6-46a8-a7c3-c7b5ce8b4e10
+# ╠═58efdf5e-1865-4cf7-b728-837482d346f3
+# ╠═83e668b6-2e12-4b9d-b11d-bce26477e220
+# ╠═344e4fd5-79d3-4705-8e19-7e9f973b328b
+# ╠═71f4a8b6-0414-4a5d-8fbd-31d94df20403
+# ╠═cd890923-e0fe-4280-bd20-b35b4e272746
+# ╠═7dce16bd-8718-4311-8a00-8820032504f3
+# ╠═5cdace51-80fc-4e8e-a44f-f4c3a2904a6e
+# ╠═d51a9d54-2174-45dd-8f1e-0a8c7d8cf7f6
+# ╠═101938bd-cf7e-4a72-a20a-7816915fa607
+# ╠═088eb711-b36d-4b11-b779-b79a3aae2029
+# ╠═fc7ef5d4-c323-4978-ae3f-cd94fe996b49
+# ╠═555866ca-e862-43c2-b8bb-00718a92ada1
+# ╠═1cd8e56d-8cfd-45de-a502-e47233e2c696
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
