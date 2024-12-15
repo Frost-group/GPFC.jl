@@ -10,6 +10,8 @@ begin
 end;
 
 begin
+	using Pkg
+	Pkg.activate(".")
     Pkg.add("KernelFunctions")
     Pkg.add("ForwardDiff")
     Pkg.add("Zygote")
@@ -22,15 +24,23 @@ begin
 	Pkg.add("Plots")
     Pkg.add("StatsBase")
     Pkg.add("ProgressMeter")
+	Pkg.add("JuLIP")
 	using KernelFunctions, ForwardDiff, Zygote
 	using LinearAlgebra, Einsum, Statistics
-	using CSV, DataFrames, DelimitedFiles
+	using JuLIP, CSV, DataFrames, DelimitedFiles
 	using Plots, StatsBase
 	using ProgressMeter
-end
+end;
 
-Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))
-Pkg.add("ACEpotentials")
+begin
+	using Pkg
+	Pkg.activate(".")
+	#Pkg.activate("C:/Users/Keerati/.julia/environments/v1.11")
+	Pkg.Registry.add("General") 
+	Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))
+	Pkg.add("ACEpotentials")
+	using ACEpotentials
+end;
 
-using GPFC
 
+bead_tiny_dataset = JuLIP.read_extxyz("C:/Users/Keerati/Documents/GitHub/GPFC.jl/notebooks/Si_dia/vasp/2024_12/12/d_Si.extxyz")
