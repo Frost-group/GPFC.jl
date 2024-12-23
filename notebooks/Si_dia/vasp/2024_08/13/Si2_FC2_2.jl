@@ -95,7 +95,10 @@ end
 
 # ╔═╡ a92c24e9-9882-4f0e-ad51-3145ae8ec6b3
 equi, feature, energy, force, Target = ASEFeatureTarget(
-    "feature_vasp", "energy_vasp", "force_vasp", Num, DIM);
+    "/Users/paintokk/Documents/GitHub/GPFC.jl/notebooks/Si_dia/vasp/2024_08/13/feature_vasp",
+	"/Users/paintokk/Documents/GitHub/GPFC.jl/notebooks/Si_dia/vasp/2024_08/13/energy_vasp", 
+	"/Users/paintokk/Documents/GitHub/GPFC.jl/notebooks/Si_dia/vasp/2024_08/13/force_vasp",
+	Num, DIM);
 
 # ╔═╡ 7f82e862-182d-407b-a8d3-5807f21d93fd
 equi
