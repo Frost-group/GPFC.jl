@@ -58,8 +58,10 @@ function ASEFeatureTarget(FileFeature, FileEnergy, FileForce, numt::Int64, dimA:
 end
 
 equi, feature, energy, force, Target = ASEFeatureTarget(
-    "feature_vasp", "energy_vasp", "force_vasp", Num, DIM);
-
+    "notebooks/Si_dia/vasp/2024_12/11/feature_vasp",
+	"notebooks/Si_dia/vasp/2024_12/11/energy_vasp",
+	"notebooks/Si_dia/vasp/2024_12/11/force_vasp", Num, DIM);
+equi
 
 function Marginal(kernel, X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
 		dim = size(X,1)
@@ -149,3 +151,5 @@ K₂ₙₘ = run_with_timer(Coveriance_fc2, kernel, feature, equi);
 FC2 =run_with_timer(PosteriorFC2, Kₘₘ, K₂ₙₘ, Target);
 
 FC2
+
+feature
