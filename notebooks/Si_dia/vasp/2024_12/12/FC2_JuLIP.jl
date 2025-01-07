@@ -18,7 +18,8 @@ Pkg.add([
     "DelimitedFiles",    # Work with delimited text files
     "ProgressMeter",     # Display progress bars
     "JuLIP",             # Atomistic simulations
-    "StaticArraysCore"
+    "StaticArraysCore",
+    "Optim"
 ])
 
 # Import Packages
@@ -50,6 +51,8 @@ using JuLIP              # Atomistic simulations
 
 using StaticArraysCore
 
+using Optim
+
 #data = read_extxyz("/Users/paintokk/Documents/GitHub/GPFC.jl/notebooks/Si_dia/vasp/2024_12/12/d_Si.extxyz")
 
 function Read_JuLIP_Atoms(extxyz_filename::String, num_structure)
@@ -68,12 +71,12 @@ function Read_JuLIP_Atoms(extxyz_filename::String, num_structure)
     return equi, x, Target, n
 end
 
-equi, x, Target, n = Read_JuLIP_Atoms("notebooks/Si_dia/vasp/2024_12/12/d_Si.extxyz", 499);
+equi, x, Target, n = Read_JuLIP_Atoms("notebooks/Si_dia/vasp/2024_12/12/d_Si.extxyz", Num);
 
 begin
-	σₒ = 0.05                  # Kernel Scale
+	σₒ = 0.05                   # Kernel Scale
 	l = 0.4		    
-	Num = 499            # Number of training points
+	Num = 100                  # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
 	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3
@@ -159,34 +162,6 @@ function Coveriance_fc2(kernel, X::Matrix{Float64}, xₒ::Vector{Float64})
 end
 
 function PosteriorFC2(Marginal, Covariance, Target)
-	dimₚ = size(Covariance, 1)
-	dimₜ = size(Marginal, 1)
-	Kₘₘ⁻¹ = inv(Marginal)  
-	Kₙₘ = Covariance
-	
-	MarginalTar = zeros(dimₜ)
-	@einsum MarginalTar[m] = Kₘₘ⁻¹[m, n] * Target[n]
-	
-	size(Kₙₘ) == (dimₚ, dimₚ, dimₜ)
-	Meanₚ = zeros(dimₚ, dimₚ)
-	@einsum Meanₚ[i, j] = Kₙₘ[i, j, m] * MarginalTar[m]
-
-	println("FC2 calculated successfully!")
-	return Meanₚ 
-end
-
-function run_with_timer(task_function, args...)
-    println("Starting task...")
-    elapsed_time = @elapsed results = task_function(args...)
-    println("Calculation time: $(elapsed_time) seconds")
-	return results 
-end
-
-Kₘₘ = @time run_with_timer(Marginal, kernel, x, σₑ, σₙ);
-K₂ₙₘ = @time run_with_timer(Coveriance_fc2, kernel, x, equi);
-FC2 = @time run_with_timer(PosteriorFC2, Kₘₘ, K₂ₙₘ, Target);
-
-function PosteriorFC22(Marginal, Covariance, Target)
     dimₚ, _, dimₜ = size(Covariance)
 
     # Use more efficient linear algebra for solving systems instead of matrix inversion
@@ -202,9 +177,16 @@ function PosteriorFC22(Marginal, Covariance, Target)
     return Meanₚ 
 end
 
-FC22 = @time run_with_timer(PosteriorFC22, Kₘₘ, K₂ₙₘ, Target);
+function run_with_timer(task_function, args...)
+    println("Starting task...")
+    elapsed_time = @elapsed results = task_function(args...)
+    println("Calculation time: $(elapsed_time) seconds")
+	return results 
+end
 
-FC2 == FC22
+Kₘₘ = @time run_with_timer(Marginal, kernel, x, σₑ, σₙ);
+K₂ₙₘ = @time run_with_timer(Coveriance_fc2, kernel, x, equi);
+FC2 = @time run_with_timer(PosteriorFC2, Kₘₘ, K₂ₙₘ, Target);
 
 heatmap(1:48,
 		    1:48, FC2,
@@ -214,3 +196,37 @@ heatmap(1:48,
 		    xlabel="feature coord. (n x d)",
 			ylabel="feature coord. (n x d)",
 		    title="d-Si_FC2 (Traning Data = " *string(n) *")")
+
+
+function negative_log_marginal_likelihood(params, X, Target)
+    # Extract hyperparameters
+    σₒ, l, σₑ, σₙ = params
+            
+    # Define kernel with updated parameters
+    kernel = (σₒ^2) * SqExponentialKernel() ∘ ScaleTransform(l)
+            
+    # Compute Marginal Likelihood
+    Kₘₘ = Marginal(kernel, X, σₑ, σₙ)
+
+    ϵ = 1e-8  # Jitter for numerical stability
+    Kₘₘ += ϵ * I(size(Kₘₘ, 1))  # Add small value to diagonal
+    Kₘₘ = (Kₘₘ + Kₘₘ') / 2
+
+        # Compute log determinant and quadratic term
+    L = cholesky(Kₘₘ)    # Use Cholesky decomposition for stability
+    logdetK = 2 * sum(log.(diag(L.U)))  # Log determinant
+    quad_term = Target' * (L \ (L' \ Target))  # Quadratic term using linear solver
+        
+    # Negative log marginal likelihood
+    return 0.5 * (quad_term + logdetK + length(Target) * log(2π))
+end
+
+# Initial guess for hyperparameters
+initial_params = [0.05, 0.4, 1e-5, 1e-5]
+
+# Optimize using Nelder-Mead or BFGS
+result = optimize(
+    params -> negative_log_marginal_likelihood(params, x, Target),  # Loss function
+    initial_params,                                                 # Initial guess
+    NelderMead()                                                    # Optimization algorithm
+)
