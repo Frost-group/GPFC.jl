@@ -221,8 +221,8 @@ end
 # Read and process atomic structures from a specified file.
 # Input: Extended XYZ file path and number of structures to process.
 # Output: Equilibrium positions, concatenated atomic positions, target values, and structure count.
-equi, equi0, x, Target, n = Read_JuLIP_Atoms("notebooks/Si_dia/vasp/Data/d_Si.extxyz", 100);
-equi1, x1, Target1, n1, nr1 = Read_JuLIP_Atoms_rotation("notebooks/Si_dia/vasp/Data/d_Si.extxyz", 10, 100);
+equi, equi0, x, Target, n = Read_JuLIP_Atoms("notebooks/Si_dia/vasp/Data/d_Si.extxyz", 50);
+equi1, x1, Target1, n1, nr1 = Read_JuLIP_Atoms_rotation("notebooks/Si_dia/vasp/Data/d_Si.extxyz", 50, 5);
 # Define functions to compute derivatives and Hessians of the kernel.
 
 function kernelfunction1(kernel, x₁, x₂)
@@ -347,13 +347,27 @@ Kₘₘ1 = @time run_with_timer(Marginal, kernel, x1, σₑ, σₙ);
 K₂ₙₘ1 = @time run_with_timer(Coveriance_fc2, kernel, x1, equi1);
 FC21 = @time run_with_timer(PosteriorFC2, Kₘₘ1, K₂ₙₘ1, Target1);
 
+
+x1
+
 Kₘₘ
 
-Kₘₘ1 
+inv(Kₘₘ1) 
 
 FC2 
 
 FC21
+
+
+heatmap(1:14455,
+		    1:14455, inv(Kₘₘ1),
+		    c=cgrad(["#064635","#519259", "#96BB7C", "#F0BB62", "#FAD586","#F4EEA9"]),
+			aspectratio=:equal,
+			size=(700, 700),
+		    xlabel="feature coord. (n x d)",
+			ylabel="feature coord. (n x d)",
+		    title="d-Si_FC2 (Traning Data = " *string(n) *")")
+
 
 heatmap(1:48,
 		    1:48, FC2,
@@ -372,3 +386,4 @@ heatmap(1:48,
 		    xlabel="feature coord. (n x d)",
 			ylabel="feature coord. (n x d)",
 		    title="d-Si_FC2 (Traning Data = " *string(n1) *")")
+
