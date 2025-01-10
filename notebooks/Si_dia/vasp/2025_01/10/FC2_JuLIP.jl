@@ -69,9 +69,11 @@ begin
 	kernel = σₒ^2 * SqExponentialKernel() ∘ ScaleTransform(l)
 
     # Define Gaussian noise parameters for energy and force measurements.
-	σₑ = 1e-5  # Energy Gaussian noise
-	σₙ = 1e-5  # Force Gaussian noise 
+	σₑ = 1e-8  # Energy Gaussian noise
+	σₙ = 1e-8  # Force Gaussian noise 
 end;
+
+
 
 # Function to read and process atomic structures from an extended XYZ file.
 function Read_JuLIP_Atoms(extxyz_filename::String, num_structure)
