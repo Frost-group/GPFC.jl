@@ -76,7 +76,7 @@ equi, x, Target, n = Read_JuLIP_Atoms("notebooks/Si_dia/vasp/2024_12/12/d_Si.ext
 begin
 	σₒ = 0.05                   # Kernel Scale
 	l = 0.4		    
-	Num = 100                  # Number of training points
+	Num = 100                   # Number of training points
 	DIM = 3                     # Dimension of Materials
 	model = 1                   # Model for Gaussian noise. 1: σₙ = σₑ/l, 2: σₑ =! σₙ 
 	order = 1                   # Order of the Answer; 0: Energy, 1: Forces, 2: FC2, 3: FC3

@@ -73,3 +73,30 @@ begin
 	σₙ = 1e-8  # Force Gaussian noise 
 end;
 
+# Import packages.
+using AbstractGPs, Plots
+
+# Generate toy synthetic data.
+x = rand(10,2)
+y = sin.(x)
+
+# Define GP prior with Matern-3/2 kernel
+f = GP(Matern32Kernel())
+
+# Finite projection of `f` at inputs `x`.
+# Added Gaussian noise with variance 0.001.
+fx = f(x, 0.001)
+
+# Log marginal probability of `y` under `f` at `x`.
+# Quantity typically maximised to train hyperparameters.
+logpdf(fx, y)
+
+# Exact posterior given `y`. This is another GP.
+p_fx = posterior(fx, y)
+
+# Log marginal posterior predictive probability.
+logpdf(p_fx(x), y)
+
+# Plot posterior.
+scatter(x, y; label="Data")
+plot!(-0.5:0.001:1.5, p_fx; label="Posterior")
