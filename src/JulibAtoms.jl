@@ -6,13 +6,11 @@ function Read_JuLIP_Atoms(extxyz_filename::String, num_structure)
     n = num_structure
 
     # Extract atomic positions for each structure and flatten them.
-    X1 = [reduce(vcat, data[ii].X) for ii in 1:n]
-    X0 = [reduce(vcat, data[1].X) for _ in 1:n]
-    X = X1 - X0 
+    X = [reduce(vcat, data[ii].X) for ii in 1:n]
 
     # Store the equilibrium structure (positions of the first structure).
     equi = X[1]
-    equi0 = X1[1]
+
     # Horizontally Concatenate all atomic positions into a matrix.
     x = hcat(X...)
 
@@ -32,7 +30,7 @@ function Read_JuLIP_Atoms(extxyz_filename::String, num_structure)
     Target = vcat(e, ∇e)
 
     # Return the equilibrium structure, positions, target values, and structure count.
-    return equi, equi0, x, Target, n
+    return equi, x, Target, n
 end
 
 function quaternion_to_rotation_matrix(q::Quaternion)

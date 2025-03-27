@@ -48,7 +48,6 @@ using ProgressMeter      # Progress bar display
 # Atomistic Simulations
 using JuLIP              # Atomistic simulations
 
-
 function Read_JuLIP_Atoms(extxyz_filename::String, num_structure)
     # Read data from the specified extended XYZ file.
     data = read_extxyz(extxyz_filename)
@@ -83,91 +82,15 @@ function Read_JuLIP_Atoms(extxyz_filename::String, num_structure)
     # Return the equilibrium structure, positions, target values, and structure count.
     return equi, x, Target, n
 end
+include("/Users/kk419/Documents/GitHub/GPFC.jl/src/Analy_kernel.jl")
+export rbf_kernel
+export kernel_1st_derivative
+export kernel_2nd_derivative
+export kernel_3nd_derivative
+export kernel_4th_derivative
 
 
- # RBF Kernel
-function rbf_kernel(x::Vector{Float64}, x_star::Vector{Float64}, σ::Float64, l::Float64)
-    r = x .- x_star
-    d2 = sum(r .^ 2)
-    return σ^2 * exp(-0.5 * d2 / l^2)
-end
-
-# 1st-Order Derivative (Gradient)
-function kernel_1st_derivative(x, x_star, σ, l)
-    r = x .- x_star
-    k_val = rbf_kernel(x, x_star, σ, l)
-    return -k_val * r / l^2
-end
-
-# 2nd-Order Derivative (Hessian)
-function kernel_2nd_derivative(x, x_star, σ, l)
-    n = length(x)
-    r = x .- x_star
-    k_val = rbf_kernel(x, x_star, σ, l)
-    H = zeros(n, n)
-    for i in 1:n
-        for j in 1:n
-            delta = i == j ? 1.0 : 0.0
-            H[i, j] = k_val * (r[i] * r[j] / l^4 - delta / l^2)
-        end
-    end
-    return H
-end
-
-# 3rd-Order Derivative (Rank-3 Tensor)
-function kernel_3rd_derivative(x, x_star, σ, l)
-    n = length(x)
-    r = x .- x_star
-    k_val = rbf_kernel(x, x_star, σ, l)
-    T = zeros(n, n, n)
-    for i in 1:n
-        for j in 1:n
-            for k in 1:n
-                T[i, j, k] = k_val * (
-                    -r[i] * r[j] * r[k] / l^6 +
-                    ((i == j ? r[k] : 0.0) +
-                     (i == k ? r[j] : 0.0) +
-                     (j == k ? r[i] : 0.0)) / l^4
-                )
-            end
-        end
-    end
-    return T
-end
-
-# 4th-Order Derivative (Rank-4 Tensor)
-function kernel_4th_derivative(x, x_star, σ, l)
-    n = length(x)
-    r = x .- x_star
-    k_val = rbf_kernel(x, x_star, σ, l)
-    T4 = zeros(n, n, n, n)
-    for i in 1:n
-        for j in 1:n
-            for k in 1:n
-                for m in 1:n
-                    term1 = r[i] * r[j] * r[k] * r[m] / l^8
-                    term2 = (
-                        (i == j ? r[k]*r[m] : 0.0) +
-                        (i == k ? r[j]*r[m] : 0.0) +
-                        (i == m ? r[j]*r[k] : 0.0) +
-                        (j == k ? r[i]*r[m] : 0.0) +
-                        (j == m ? r[i]*r[k] : 0.0) +
-                        (k == m ? r[i]*r[j] : 0.0)
-                    ) / l^6
-                    term3 = (
-                        (i == j && k == m ? 1.0 : 0.0) +
-                        (i == k && j == m ? 1.0 : 0.0) +
-                        (i == m && j == k ? 1.0 : 0.0)
-                    ) / l^4
-                    T4[i, j, k, m] = k_val * (term1 - term2 + term3)
-                end
-            end
-        end
-    end
-    return T4
-end
-
-function Marginal(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
+function Marginal_ana(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
     # Get dimensions and total size based on input data.
     dim, num = size(X)
     total_size = (1 + dim) * num
@@ -202,7 +125,7 @@ function Marginal(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
     return Kₘₘ
 end
 
-function Coveriance_fc2(X::Matrix{Float64}, xₒ::Vector{Float64})
+function Coveriance_fc2_ana(X::Matrix{Float64}, xₒ::Vector{Float64})
     # Get dimensions of input data.
     dim = size(X,1)
     num = size(X,2)
@@ -265,7 +188,7 @@ begin
 	l = 1.90  # Length scale parameter for the kernel
 
 	# Specify the number of training points to be used in the model.
-	Num = 500  # Number of training points: Max 509 training points
+	Num = 50  # Number of training points: Max 509 training points
 
 	# Define the kernel function for the Gaussian Process.
 	# It uses a squared exponential kernel with a scaling transformation.
@@ -279,8 +202,8 @@ end;
 
 equi, x, Target, n = Read_JuLIP_Atoms("d_Si.extxyz", Num);
 
-Kₘₘ = @time run_with_timer(Marginal, x, σₑ, σₙ);
-K₂ₙₘ = @time run_with_timer(Coveriance_fc2, x, equi);
+Kₘₘ = @time run_with_timer(Marginal_ana, x, σₑ, σₙ);
+K₂ₙₘ = @time run_with_timer(Coveriance_fc2_ana, x, equi);
 FC2 = @time run_with_timer(PosteriorFC2, Kₘₘ, K₂ₙₘ, Target);
 
 FC2

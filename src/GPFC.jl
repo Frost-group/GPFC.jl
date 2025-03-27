@@ -1,35 +1,34 @@
-
 module GPFC
 
 # Import Packages
 
 # Core Libraries
-using LinearAlgebra      # Linear algebra operations
-using StaticArrays
-using Random
-using Statistics         # Basic statistics
-using DelimitedFiles     # Work with delimited files
+#using LinearAlgebra      # Linear algebra operations
+#using StaticArrays
+#using Random
+#using Statistics         # Basic statistics
+#using DelimitedFiles     # Work with delimited files
 
 # Data Handling and I/O
-using CSV                # Read/write CSV files
-using DataFrames         # Tabular data manipulation
+#using CSV                # Read/write CSV files
+#using DataFrames         # Tabular data manipulation
 
 # Automatic Differentiation
-using ForwardDiff        # Forward-mode AD
-using Zygote             # Reverse-mode AD
+#using ForwardDiff        # Forward-mode AD
+#using Zygote             # Reverse-mode AD
 
 # Kernel Methods and Tensor Operations
-using KernelFunctions    # Kernel methods for ML
-using Einsum             # Einstein summation notation
+#using KernelFunctions    # Kernel methods for ML
+#using Einsum             # Einstein summation notation
 
 # Visualization and Utilities
-using Plots              # Visualization
-using StatsBase          # Extended statistics functions
-using ProgressMeter      # Progress bar display
+#using Plots              # Visualization
+#using StatsBase          # Extended statistics functions
+#using ProgressMeter      # Progress bar display
 
 # Atomistic Simulations
-using JuLIP              # Atomistic simulations
-using Quaternions
+#using JuLIP              # Atomistic simulations
+#using Quaternions
 
 include("JulibAtoms.jl")
 export Read_JuLIP_Atoms 
@@ -55,6 +54,12 @@ export Posterior_force
 export PosteriorFC2
 export PosteriorFC3
 
+include("Analy_kernel.jl")
+export rbf_kernel
+export kernel_1st_derivative
+export kernel_2nd_derivative
+export kernel_3nd_derivative
+export kernel_4th_derivative
 
 end
 
