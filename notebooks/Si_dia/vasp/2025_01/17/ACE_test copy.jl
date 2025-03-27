@@ -2,27 +2,32 @@ using Pkg
 Pkg.activate(".")
 # uncomment the next line if the General registry is not yet installed,
 # e.g. if using Julia for the first time.
+# Pkg.Registry.add("General")  
+Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))
+Pkg.add("ACEpotentials")
+
+# uncomment the next line if the General registry is not yet installed,
+# e.g. if using Julia for the first time.
 # Pkg.Registry.add("General")
-Pkg.activate(".")
 Pkg.add(["LaTeXStrings", "MultivariateStats", "Plots", "PrettyTables", 
          "Suppressor", "ExtXYZ", "Unitful", "Distributed", "AtomsCalculators", 
          ])
 
 using LaTeXStrings, MultivariateStats, Plots, PrettyTables, Printf, 
 		 Statistics, Suppressor, ExtXYZ, Unitful
-
-Pkg.Registry.add(RegistrySpec(url="https://github.com/ACEsuit/ACEregistry"))
-Pkg.add("ACEpotentials")
-
+		 
 using ACEpotentials
+using ACE1
 
 Pkg.status()
 
 data_file = "notebooks/Si_dia/vasp/Data/d_Si.extxyz"
 data = ExtXYZ.load(data_file)
 
-train_data = data[1:5:end];
-test_data = data[2:10:end];
+train_data = data[1:10:end]
+test_data = data[2:2:end]
+
+
 
 hyperparams = (elements = [:Si,],
 					order = 3,
