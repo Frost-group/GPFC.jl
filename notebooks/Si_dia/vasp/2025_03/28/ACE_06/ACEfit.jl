@@ -23,7 +23,7 @@ end
 train_data = data[1:10:end]
 test_data = data[2:2:end]
 train_data = data[1:10]
-test_data = data[21:509]
+test_data = data[11:509]
 
 function get_Pr(p, q, r0, rcut)
     basis = ACE1x.ace_basis(; elements = [:Si,],
@@ -84,7 +84,7 @@ begin
 	        order = 2,
 	        totaldegree = 10, 
 			r0 = rnn(:Si),
-	        rcut = 20.0,
+	        rcut = 6.0,
 			#transform = (:agnesi, p, q),
 			pair_transform = (:agnesi, p, q),
 			pair_envelope = (:x, 2, 2),
@@ -94,7 +94,7 @@ begin
 	@show length(model1.basis);
 end
 
-data_keys1 = (energy_key = "energy", force_key = "force", virial_key = "")
+data_keys1 = (energy_key = "energy", force_key = "forces", virial_key = "")
 solver = ACEfit.BLR(committee_size=500, factorization=:svd)
 acefit!(model1, train_data; solver=solver, data_keys1...);
 

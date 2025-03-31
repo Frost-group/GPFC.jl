@@ -254,18 +254,95 @@ function PosteriorFC2(Marginal, Covariance, Target)
 end
 
 function PosteriorFC3(Marginal, Covariance, Target)
-	dimₚ = size(Covariance, 1)
-	dimₜ = size(Marginal, 1)
-	Kₘₘ⁻¹ = inv(Marginal)  
-	Kₙₘ = Covariance
-	
-	MarginalTar = zeros(dimₜ)
-	@einsum MarginalTar[m] = Kₘₘ⁻¹[m, n] * Target[n]
-	
-	size(Kₙₘ) == (dimₚ, dimₚ, dimₚ, dimₜ)
+	# Get dimensions for processing.
+    dimₚ, _, dimₜ = size(Covariance)
+
+    # Use efficient linear algebra to solve systems instead of matrix inversion.
+    Kₘₘ⁻¹_Target = Marginal \ Target  # Solves Marginal * x = Target
+
+	# Preallocate result matrix.
 	Meanₚ = zeros(dimₚ, dimₚ, dimₚ)
-	@einsum Meanₚ[i, j, k] = Kₙₘ[i, j, k, m] * MarginalTar[m]
+
+	@einsum Meanₚ[i, j, k] =  Covariance[i, j, k, m] * Kₘₘ⁻¹_Target[m]
 
 	println("FC3 calculated successfully!")
 	return Meanₚ 
+end
+
+function rbf_kernel(x::Vector{Float64}, x_star::Vector{Float64}, σ::Float64, l::Float64)
+    r = x .- x_star
+    d2 = sum(r .^ 2)
+    return σ * exp(-0.5 * d2 / l^2)
+end
+
+function Marginal_ana(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
+    # Get dimensions and total size based on input data.
+    dim, num = size(X)
+    total_size = (1 + dim) * num
+
+    # Preallocate full covariance matrix.
+    KK = zeros(total_size, total_size)
+
+    # Fill covariance matrix using the kernel and its derivatives.
+    @showprogress "Processing items..." for i in 1:num
+        x_i = X[:, i]  # Pre-compute to avoid repeated access
+        for j in 1:num
+            x_j = X[:, j]
+
+            # Fill covariance components directly.
+            KK[i, j] = rbf_kernel(x_i, x_j, σₒ, l)
+            KK[num+1+(i-1)*dim:num+i*dim, j] = kernel_1st_derivative(x_i, x_j, σₒ, l)
+            KK[i, num+1+(j-1)*dim:num+j*dim] = -KK[num+1+(i-1)*dim:num+i*dim, j]
+            KK[num+1+(i-1)*dim:num+i*dim, num+1+(j-1)*dim:num+j*dim] = -kernel_2nd_derivative(x_i, x_j, σₒ, l)
+        end
+    end
+
+    # Add noise components (preallocated identity matrices).
+    Iee = σₑ^2 * I(num)
+    Iff = σₙ^2 * I(dim * num)
+    Ief = zeros(num, dim * num)
+
+    II = vcat(hcat(Iee, Ief), hcat(Ief', Iff))
+
+    # Compute marginal likelihood.
+    Kₘₘ = KK + II
+    println("Marginal Likelihood calculated successfully!")
+    return Kₘₘ
+end
+
+function Coveriance_fc2_ana(X::Matrix{Float64}, xₒ::Vector{Float64})
+    # Get dimensions of input data.
+    dim = size(X,1)
+    num = size(X,2)
+
+    # Preallocate covariance matrix container.
+    K₂ₙₘ = zeros((dim, dim, (1+dim)*num))
+
+    # Process covariance components.
+    @showprogress "Processing items..." for j in 1:num
+        # Fill covariance of Energy vs FC2.
+        K₂ₙₘ[:,:,j] = reshape(
+            kernel_2nd_derivative(X[:,j], xₒ, σₒ, l)
+            , (dim, dim)
+        )
+        # Fill covariance of Force vs FC2.
+        K₂ₙₘ[:,:,(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] = reshape(
+            kernel_3rd_derivative(X[:,j], xₒ, σₒ, l)
+            , (dim, dim, dim)
+        )
+    end
+    println("Covariance Likelihood calculated successfully!")
+    return K₂ₙₘ
+end
+
+function run_with_timer(task_function, args...)
+    # Print a starting message.
+    println("Starting task...")
+
+    # Measure elapsed time during task execution.
+    elapsed_time = @elapsed results = task_function(args...)
+
+    # Print the elapsed time.
+    println("Calculation time: $(elapsed_time) seconds")
+    return results 
 end

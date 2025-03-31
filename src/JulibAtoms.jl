@@ -11,6 +11,7 @@ function Read_JuLIP_Atoms(extxyz_filename::String, num_structure)
     # Store the equilibrium structure (positions of the first structure).
     equi = X[1]
 
+    mass = data[1].M 
     # Horizontally Concatenate all atomic positions into a matrix.
     x = hcat(X...)
 
@@ -30,16 +31,16 @@ function Read_JuLIP_Atoms(extxyz_filename::String, num_structure)
     Target = vcat(e, ∇e)
 
     # Return the equilibrium structure, positions, target values, and structure count.
-    return equi, x, Target, n
+    return equi, x, Target, e, ∇E, n, mass
 end
 
-function quaternion_to_rotation_matrix(q::Quaternion)
+#function quaternion_to_rotation_matrix(q::Quaternion)
     # Make sure q is normalized (if not already). 
     # If `q` is already a unit quaternion, you can skip this step or check norm ~ 1.0.
 
     # Extract components
-    w = real(q)                 # scalar part
-    (x, y, z) = imag_part(qr)   # i, j ,k component
+    #w = real(q)                 # scalar part
+    #(x, y, z) = imag_part(qr)   # i, j ,k component
 
     # For a unit quaternion q = w + xi + yj + zk
     # the rotation matrix R is given by (in row-major form):
@@ -50,79 +51,79 @@ function quaternion_to_rotation_matrix(q::Quaternion)
     #
     # This can be derived from q * v * q⁻¹ for a vector v.
 
-    return @SMatrix [
-        w^2 + x^2 - y^2 - z^2  2x*y - 2w*z            2x*z + 2w*y
-        2x*y + 2w*z            w^2 - x^2 + y^2 - z^2  2y*z - 2w*x
-        2x*z - 2w*y            2y*z + 2w*x            w^2 - x^2 - y^2 + z^2
-    ]
-end
+    #return @SMatrix [
+    #    w^2 + x^2 - y^2 - z^2  2x*y - 2w*z            2x*z + 2w*y
+    #    2x*y + 2w*z            w^2 - x^2 + y^2 - z^2  2y*z - 2w*x
+    #    2x*z - 2w*y            2y*z + 2w*x            w^2 - x^2 - y^2 + z^2
+   # ]
+#end
 
-function rotate_3n_points(R::AbstractMatrix{<:Real}, coords::AbstractVector{<:Real})
+#function rotate_3n_points(R::AbstractMatrix{<:Real}, coords::AbstractVector{<:Real})
     # Ensure coords has length multiple of 3
-    @assert length(coords) % 3 == 0 "coords must have length multiple of 3"
-    N = length(coords) ÷ 3
+    #@assert length(coords) % 3 == 0 "coords must have length multiple of 3"
+   # N = length(coords) ÷ 3
     
     # Reshape coords to a 3 x N matrix 
     #   M[:, i] = ( x_i, y_i, z_i )
-    M = reshape(coords, 3, N)
+   # M = reshape(coords, 3, N)
     
     # Apply the rotation matrix: R * M  =>  3 x N
-    M_rot = R * M
-    
+    #M_rot = R * M
+   # 
     # Flatten back into 3N-vector
-    return vec(M_rot)
-end
+   # return vec(M_rot)
+#end
 
-function Read_JuLIP_Atoms_rotation(extxyz_filename::String, num_structure, num_rotation)
-    data = read_extxyz(extxyz_filename)
+#function Read_JuLIP_Atoms_rotation(extxyz_filename::String, num_structure, num_rotation)
+    #data = read_extxyz(extxyz_filename)
 
-    n = num_structure
+    #n = num_structure
 
     # Extract atomic positions for each structure and flatten them
-    X11 = [reduce(vcat, data[ii].X) for ii in 1:n]
-    X0 = [reduce(vcat, data[1].X) for _ in 1:n]
-    X1 = X11 .- X0  # Subtract reference positions
-    equi = X1[1]
+    #X11 = [reduce(vcat, data[ii].X) for ii in 1:n]
+    #X0 = [reduce(vcat, data[1].X) for _ in 1:n]
+    #X1 = X11 .- X0  # Subtract reference positions
+    #equi = X1[1]
     # Extract energies and forces for each structure
-    E1 = [get_data(data[ii], "energy") for ii in 1:n]
-    ∇E1 = [-reduce(vcat, get_data(data[ii], "forces")) for ii in 1:n]
+    #E1 = [get_data(data[ii], "energy") for ii in 1:n]
+    #∇E1 = [-reduce(vcat, get_data(data[ii], "forces")) for ii in 1:n]
 
     # Initialize storage vectors
-    X = [X1[1]]  # Include the first structure
-    E = [E1[1]]
-    ∇E = [∇E1[1]]
+    #X = [X1[1]]  # Include the first structure
+    #E = [E1[1]]
+    #∇E = [∇E1[1]]
 
 # Loop over structures and rotations
-    for ii in 2:n
+    #for ii in 2:n
         # Add the original structure data
-        push!(X, X1[ii])
-        push!(E, E1[ii])
-        push!(∇E, ∇E1[ii])
+        #push!(X, X1[ii])
+        #push!(E, E1[ii])
+        #push!(∇E, ∇E1[ii])
 
         # Generate rotations
-        for jj in 1:num_rotation
+        #for jj in 1:num_rotation
             #Random.seed!(jj)  # Seed random number generator
 
             # Generate a random quaternion and normalize it
-            qr = normalize(Quaternion(randn(), randn(), randn(), randn()))
+            #qr = normalize(Quaternion(randn(), randn(), randn(), randn()))
 
             # Convert quaternion to rotation matrix
-            R = quaternion_to_rotation_matrix(qr)
+            #R = quaternion_to_rotation_matrix(qr)
 
             # Rotate positions and forces, append results
-            push!(X, rotate_3n_points(R, X1[ii]))
-            push!(E, E1[ii])  # Energy remains unchanged for rotations
-            push!(∇E, rotate_3n_points(R, ∇E1[ii]))
-        end
-    end
+            #push!(X, rotate_3n_points(R, X1[ii]))
+            #push!(E, E1[ii])  # Energy remains unchanged for rotations
+            #push!(∇E, rotate_3n_points(R, ∇E1[ii]))
+        #end
+    #end
 
     # Concatenate final results
-    X_final = hcat(X...)  # Combine all vectors in X into a matrix
-    E_final = E  # Energies are stored as a vector
-    ∇E_final = vcat(∇E...)  # Combine all force vectors row-wise
-    Target_final = vcat(E_final, ∇E_final)  # Combine energy and force data
+   # X_final = hcat(X...)  # Combine all vectors in X into a matrix
+   # E_final = E  # Energies are stored as a vector
+   # ∇E_final = vcat(∇E...)  # Combine all force vectors row-wise
+    #Target_final = vcat(E_final, ∇E_final)  # Combine energy and force data
 
 
     # Return the equilibrium structure, positions, target values, and structure count.
-    return equi, X_final, Target_final, n, num_rotation
-end
+    #return equi, X_final, Target_final, n, num_rotation
+#end
