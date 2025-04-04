@@ -128,7 +128,7 @@ end
 
 
 x2d = reshape(x[1:48,2], 2*3, 8)
-q = [0., 0., 0.]
+q = [0.5, 0.5, 0.5]
 R = reshape(equi, 2*3, 8)
 m =  vcat(fill(mass[1], 3), fill(mass[2], 3))
 f = hcat(∇E...)
@@ -138,10 +138,10 @@ begin
 	σₒ = 0.05  # Kernel Scale (Standard deviation of the Gaussian Process prior)
 
 	# Define the length scale parameter for the kernel, which determines smoothness.
-	l = 1.90  # Length scale parameter for the kernel
+	l = 1.00  # Length scale parameter for the kernel
 
 	# Specify the number of training points to be used in the model.
-	Num = 300  # Number of training points: Max 509 training points
+	Num = 500  # Number of training points: Max 509 training points
 
 	# Define the kernel function for the Gaussian Process.
 	# It uses a squared exponential kernel with a scaling transformation.
@@ -172,16 +172,38 @@ heatmap(1:12,
 		    title="d-Si_FC2 (Traning Data = " *string(n) *")")
 
 sum(FC2_ph[1:6,1:6]/mass[1])
-sqrt(mass[1])
 
-FC2_ph[1:6,1:6]/mass[1]
-(FC2_ph[1:6,1:6] + FC2_ph[7:12,7:12])/mass[1]
 
-(FC2_ph[1:6,7:12] + FC2_ph[7:12,1:6])/mass[1] 
+matrix = [
+    0.489005 - 0im       0.03670245 + 0im    0.03670245 + 0im     -0.1804861 - 0.1804861im     0.10651578 + 0.10651578im    0.10651578 + 0.10651578im;
+    0.03670245 - 0im     0.489005 - 0im      0.03670245 + 0im      0.10651578 + 0.10651578im   -0.1804861 - 0.1804861im     0.10651578 + 0.10651578im;
+    0.03670245 - 0im     0.03670245 - 0im    0.489005 - 0im        0.10651578 + 0.10651578im    0.10651578 + 0.10651578im  -0.1804861 - 0.1804861im;
+   -0.1804861 + 0.1804861im  0.10651578 - 0.10651578im  0.10651578 - 0.10651578im  0.489005 - 0im  0.03670245 + 0im     0.03670245 + 0im;
+    0.10651578 - 0.10651578im -0.1804861 + 0.1804861im  0.10651578 - 0.10651578im  0.03670245 - 0im  0.489005 - 0im     0.03670245 + 0im;
+    0.10651578 - 0.10651578im  0.10651578 - 0.10651578im -0.1804861 + 0.1804861im  0.03670245 - 0im  0.03670245 - 0im   0.489005 - 0im
+]
+real(matrix)
+imag(matrix)
 
-[ 0.489005 -0.j,  0.03670245+0.j, 0.03670245+0.j, -0.1804861 -0.1804861j, 0.10651578+0.10651578j,  0.10651578+0.10651578j],
-[ 0.03670245-0.j,  0.489005  -0.j, 0.03670245+0.j,  0.10651578+0.10651578j, -0.1804861 -0.1804861j ,  0.10651578+0.10651578j],
-[ 0.03670245-0.j,  0.03670245-0.j, 0.489005  -0.j,  0.10651578+0.10651578j, 0.10651578+0.10651578j, -0.1804861 -0.1804861j ],
-[-0.1804861 +0.1804861j,  0.10651578-0.10651578j, 0.10651578-0.10651578j,  0.489005  -0.j, 0.03670245+0.j,  0.03670245+0.j],
-[ 0.10651578-0.10651578j, -0.1804861 +0.1804861j , 0.10651578-0.10651578j,  0.03670245-0.j, 0.489005  -0.j,  0.03670245+0.j],
-[ 0.10651578-0.10651578j,  0.10651578-0.10651578j, -0.1804861 +0.1804861j,  0.03670245-0.j, 0.03670245-0.j,  0.489005  -0.j]]
+using LinearAlgebra  # make sure this is included
+
+function real_to_wirtinger_transform(n::Int)
+    Iₙ = Matrix{Float64}(I, n, n)  # Identity matrix
+    T = (1 / sqrt(2)) * [
+        Iₙ        im * Iₙ;
+        Iₙ      -im * Iₙ
+    ]
+    return T  # 2n × 2n complex matrix
+end
+
+# Example: for 6 complex variables (12x12 transform)
+T = real_to_wirtinger_transform(6)
+
+
+FC2_wirtinger = T'*FC2_ph/mass[1] * T
+
+real(FC2_wirtinger)
+imag(FC2_wirtinger)
+
+real(matrix)
+imag(matrix)
