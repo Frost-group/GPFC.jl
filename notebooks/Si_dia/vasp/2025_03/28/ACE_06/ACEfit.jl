@@ -1,4 +1,5 @@
 using Pkg
+cd("/Users/kk419/Documents/GitHub/GPFC.jl/notebooks/Si_dia/vasp/2025_03/28/ACE_06")
 Pkg.activate(".")
 Base.active_project()
 Pkg.instantiate()
@@ -17,7 +18,7 @@ using LaTeXStrings, MultivariateStats, Plots, Printf,
 	Statistics, Suppressor, ACEpotentials
 
 begin	
-	cd("C:/Users/Keerati/Documents/GitHub/GPFC.jl/notebooks/Si_dia/vasp/2025_03/28/ACE_06/")
+	#cd("C:/Users/Keerati/Documents/GitHub/GPFC.jl/notebooks/Si_dia/vasp/2025_03/28/ACE_06/")
     data= read_extxyz("d_Si.extxyz")
 end
 
@@ -33,7 +34,7 @@ Si_dataset = read_extxyz("Si_dataset.xyz");
 
 train_data = data[1:10:end]
 test_data = data[2:2:end]
-train_data = data[1:10]
+train_data = data[1:50]
 test_data = data[11:509]
 
 function get_Pr(p, q, r0, rcut, td)
@@ -57,14 +58,14 @@ end
 
 Si_scale = [1.0, 1.633, 1.915, 2.31, 2.52]
 begin
-	r_cut = 6.0; a = 2
+	r_cut = 6.0; a = 0.2
 	rdf_tiny = ACEpotentials.get_rdf(train_data, r_cut; rescale = true)
 	plt_rdf_1 = stephist(rdf_tiny[(:Si,:Si)], 
 		bins=150, label = "rdf",
 		title="d-Si_trainset", titlefontsize=10,
 		xlabel = L"r[\AA]", ylabel = "RDF",
 		yticks = [1e+2/a, 2e+2/a, 3e+2/a, 4e+2/a, 5e+2/a], xlims=(0,6.5), ylims=(0.0, 5e+2/a),
-		size=(400,200), left_margin = 2Plots.mm, fill=true, fillalpha=0.5, color= "#F0BB62")
+		size=(300,200), left_margin = 2Plots.mm, fill=true, fillalpha=0.5, color= "#F0BB62")
 	vline!(rnn(:Si)*Si_scale, label = "r1, r2, ...", lw=1, color = "black", ls = :dash)
 	
 	b = 0.02
@@ -74,7 +75,7 @@ begin
 		title="d-Si_testset", titlefontsize=10,
 		xlabel = L"r[\AA]", ylabel = "RDF",
 		yticks = [1e+2/b, 2e+2/b, 3e+2/b, 4e+2/b, 5e+2/b], xlims=(0,6.5), ylims=(0.0, 5e+2/b),
-		size=(400,200), left_margin = 2Plots.mm, fill=true, fillalpha=0.5, color= "#F0BB62")
+		size=(300,200), left_margin = 2Plots.mm, fill=true, fillalpha=0.5, color= "#F0BB62")
 	vline!(rnn(:Si)*Si_scale, label = "r1, r2, ...", lw=1, color = "black", ls = :dash)
 	
 	td = 5 
@@ -101,8 +102,10 @@ begin
 	vline!([r0*s2,], lw=2, ls = :dash, c= "#F0BB62", label = "r0")
 	vline!([r0*s1,], lw=2, ls = :dash, c= "#6E9A50", label = "r0")
 	vline!([r0*s,], lw=2, ls = :dash, c= "#C64756", label = "r0")
-    plot!(plt_rdf_1, plt_rdf_2, plt, layout=(3,1), size=(900,600))
-	#savefig("_RDF_RBF_Si.png") 
+    plot!(plt_rdf_1, 
+	#plt_rdf_2,
+	plt, layout=(2,1), size=(900,400))
+	savefig("_RDF_RBF_Si.png") 
 	#savefig("RDF_bead.png") 
 end
 
