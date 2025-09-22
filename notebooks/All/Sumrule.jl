@@ -411,8 +411,7 @@ begin
 	plot!(size=(850,700))
 	plot!(nd2, [Si2_k3_error GaAs_k3_error CdTe_k3_error NaCl_k3_error  PbTe_k3_error],
 			    color = ["#F0BB62" "#6E9A50" "#184D47" "#FF90BB" "#C64756"],
-				labels = ["d-"*L"\textbf{Si}:"*L"\;\Phi^{(3)}_{\Gamma}" L"\textbf{GaAs}:"*L"\;\Phi^{(3)}_{\Gamma}" L"\textbf{CdTe}:"*L"\;\Phi^{(3)}_{\Gamma}" L"\textbf{NaCl}:"*L"\;\Phi^{(3)}_{\Gamma}" L"\textbf{PbTe}:"*L"\;\Phi^{(3)}_{\Gamma}"],
-				linestyle = :dashdot,
+				 linestyle = :dashdot,
 				linewidth=3.5,
 				marker=[:circle :utriangle :dtriangle :diamond :rect],
 				label="Line with Markers"

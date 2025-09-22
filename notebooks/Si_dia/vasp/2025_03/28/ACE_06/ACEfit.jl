@@ -1,5 +1,6 @@
 using Pkg
-cd("/Users/kk419/Documents/GitHub/GPFC.jl/notebooks/Si_dia/vasp/2025_03/28/ACE_06")
+#cd("/Users/kk419/Documents/GitHub/GPFC.jl/notebooks/Si_dia/vasp/2025_03/28/ACE_06")
+cd("C:/Users/Keerati/Documents/GitHub/GPFC.jl/notebooks/Si_dia/vasp/2025_03/28/ACE_06/")
 Pkg.activate(".")
 Base.active_project()
 Pkg.instantiate()
@@ -18,7 +19,7 @@ using LaTeXStrings, MultivariateStats, Plots, Printf,
 	Statistics, Suppressor, ACEpotentials
 
 begin	
-	#cd("C:/Users/Keerati/Documents/GitHub/GPFC.jl/notebooks/Si_dia/vasp/2025_03/28/ACE_06/")
+	cd("C:/Users/Keerati/Documents/GitHub/GPFC.jl/notebooks/Si_dia/vasp/2025_03/28/ACE_06/")
     data= read_extxyz("d_Si.extxyz")
 end
 
@@ -58,25 +59,26 @@ end
 
 Si_scale = [1.0, 1.633, 1.915, 2.31, 2.52]
 begin
+	gr(dpi=1200) 
 	r_cut = 6.0; a = 0.2
 	rdf_tiny = ACEpotentials.get_rdf(train_data, r_cut; rescale = true)
 	plt_rdf_1 = stephist(rdf_tiny[(:Si,:Si)], 
-		bins=150, label = "rdf",
+		bins=50, label = "RDF",
 		title="d-Si_trainset", titlefontsize=10,
 		xlabel = L"r[\AA]", ylabel = "RDF",
 		yticks = [1e+2/a, 2e+2/a, 3e+2/a, 4e+2/a, 5e+2/a], xlims=(0,6.5), ylims=(0.0, 5e+2/a),
 		size=(300,200), left_margin = 2Plots.mm, fill=true, fillalpha=0.5, color= "#F0BB62")
-	vline!(rnn(:Si)*Si_scale, label = "r1, r2, ...", lw=1, color = "black", ls = :dash)
+	vline!(rnn(:Si)*Si_scale, label = L"r_{1}, r_{2}, ..., r_{5}", lw=1, color = "black", ls = :dash)
 	
 	b = 0.02
 	rdf = ACEpotentials.get_rdf(test_data, r_cut; rescale = true);
 	plt_rdf_2 = stephist(rdf[(:Si,:Si)],
-		bins=150, label = "rdf",
+		bins=50, label = "RDF",
 		title="d-Si_testset", titlefontsize=10,
 		xlabel = L"r[\AA]", ylabel = "RDF",
 		yticks = [1e+2/b, 2e+2/b, 3e+2/b, 4e+2/b, 5e+2/b], xlims=(0,6.5), ylims=(0.0, 5e+2/b),
 		size=(300,200), left_margin = 2Plots.mm, fill=true, fillalpha=0.5, color= "#F0BB62")
-	vline!(rnn(:Si)*Si_scale, label = "r1, r2, ...", lw=1, color = "black", ls = :dash)
+	vline!(rnn(:Si)*Si_scale, label = L"r_{1}, r_{2}, ..., r_{5}", lw=1, color = "black", ls = :dash)
 	
 	td = 5 
 	r0 = rnn(:Si); rcut = 6.0; s = 1
@@ -89,26 +91,48 @@ begin
 	rr2, Pr2 = get_Pr(1, 4, r0*s2, rcut, td)
 	plt = plot()
 	for n = 1:length(Pr)
-	    plot!(plt, rr2, Pr2[n], lw=2, label = "P_$n", 
+	    plot!(plt, rr2, Pr2[n], lw=2, label = "", 
+		 #label = "P_$n", 
 			xlabel = L"r[\AA]", ylabel = "RBF", legend=false, xlims=(0,6.5),
 			color= "#C64756")
-		plot!(plt, rr1, Pr1[n], lw=2, label = "P_$n", 
+		plot!(plt, rr1, Pr1[n], lw=2, label = "", 
 			xlabel = L"r[\AA]", ylabel = "RBF", legend=false, xlims=(0,6.5),
 			color= "#6E9A50")
-		plot!(plt, rr, Pr[n], lw=2, label = "P_$n", 
+		plot!(plt, rr, Pr[n], lw=2, label = "", 
 			xlabel = L"r[\AA]", ylabel = "RBF", legend=false, xlims=(0,6.5),
-			color= "#F0BB62")
+			color= "#F0BB62",)
 	end
-	vline!([r0*s2,], lw=2, ls = :dash, c= "#F0BB62", label = "r0")
-	vline!([r0*s1,], lw=2, ls = :dash, c= "#6E9A50", label = "r0")
-	vline!([r0*s,], lw=2, ls = :dash, c= "#C64756", label = "r0")
+	vline!([r0*s2,], lw=2, ls = :dash, c= "#F0BB62", label = L"r_{1}", legend=true)
+	vline!([r0*s1,], lw=2, ls = :dash, c= "#6E9A50", label = L"\overline{r}_{3}", legend=true)
+	vline!([r0*s,], lw=2, ls = :dash, c= "#C64756", label = L"\overline{r}_{5}", legend=true)
     plot!(plt_rdf_1, 
 	#plt_rdf_2,
-	plt, layout=(2,1), size=(900,400))
+	plt, layout=(2,1), size=(800,400))
 	savefig("_RDF_RBF_Si.png") 
 	#savefig("RDF_bead.png") 
 end
 
+
+begin
+	gr(dpi=1200) 
+	r_cut_adf = 1.25 * rnn(:Si)
+	eq_angle = 1.91 # radians
+	adf_tiny = ACEpotentials.get_adf(train_data, r_cut_adf);
+	plt_adf_1 = histogram(adf_tiny, bins=10, label = "adf", yticks = [], c = 3,
+						title = "Si_tiny_dataset", titlefontsize = 10,
+						xlabel = L"\theta", ylabel = "ADF",
+						xlims = (0, 2π), size=(400,200), left_margin = 2Plots.mm)
+	vline!([ eq_angle,], label = "109.5˚", lw=1, color = "black")
+		
+	adf = ACEpotentials.get_adf(test_data, r_cut_adf);
+	plt_adf_2 = histogram(adf, bins=10, label = "adf", yticks = [], c = 3,
+						title = "Si_dataset", titlefontsize = 10,
+						xlabel = L"\theta", ylabel = "ADF",
+						xlims = (0, 2π), size=(400,200), left_margin = 2Plots.mm)
+	vline!([ eq_angle,], label = "109.5˚", lw=1, color = "black")
+		
+	plot(plt_adf_1, plt_adf_2, layout=(2,1), size=(600,400))
+end
 
 Si_scale = [1.0, 1.633, 1.915, 2.31, 2.52]
 begin
@@ -117,7 +141,7 @@ begin
 	model1 = acemodel(elements = [:Si,],
 	        order = 2,
 	        totaldegree = 5,
-			r0 = rnn(:Si)* mean(Si_scale[1:5]),
+			r0 = rnn(:Si),
 	        rcut = 6.0,
 			#transform = (:agnesi, p, q),
 			pair_transform = (:agnesi, p, q),
@@ -160,44 +184,67 @@ begin
 
 	bead_tiny_energies = extract_energies(train_data)
 	bead_energies = extract_energies(test_data)
+
+	
+	GC.gc()
+end
+
+begin
+	function extract_forces(dataset)
+	    forces = []
+	    for atoms in dataset
+	        for key in keys(atoms.data)
+	            if lowercase(key) == "forces"
+	                push!(forces, atoms.data[key])
+	            end
+	        end
+	    end
+	    return forces
+	end;
+
+	bead_tiny_forces = extract_forces(train_data)
+	bead_forces = extract_forces(test_data)
+	
 	
 	GC.gc()
 end
 
 
-function assess_model(model, train_dataset)
+function assess_model_forces(model, train_dataset)
 
     plot([-6,-4], [-6,-4]; lc=:black, label="")
 
-    model_energies = []
+    model_forces = []
     model_std = []
     for atoms in test_data
-        ene, co_ene = ACE1.co_energy(model.potential, atoms)
-        push!(model_energies, ene/length(atoms))
-        push!(model_std, std(co_ene/length(atoms)))
+        forc, co_forc = ACE1.co_forces(model.potential, atoms)
+        push!(model_forces, forc/(3*length(atoms)))
+        push!(model_std, std.(co_forc/(3*length(atoms))))
     end
 	
-    rmse = sqrt(sum((model_energies - bead_energies).^2)/length(test_data))
-    mae = sum(abs.(model_energies - bead_energies))/length(test_data)
+    rmse = sqrt.(sum.((model_forces - bead_forces).^2)/(3*length(test_data)))
+    mae = sum(abs.(model_forces - bead_forces))/(3*length(test_data))
 
 #println(bead_energies)
-println("_____________________________")	
-println(model_energies)
-    scatter!(bead_energies, model_energies;
+println("_____________________________")
+println(model_forces)
+    scatter!(bead_forces, model_forces;
              label="full dataset",
              title = @sprintf("d-Si Structures Used In Training:  %i out of %i\n", length(train_dataset), length(test_data)) *
-                     @sprintf("RMSE (MAE) For Entire Dataset:  %.0f (%.0f) meV/atom", 1000*rmse, 1000*mae),
+                     @sprintf("RMSE (MAE) For Entire Dataset:  %.0f (%.0f) meV/atom", rmse, mae),
              titlefontsize = 8,
              yerror = model_std,
-             xlabel="Energy [eV/atom]", xlims=(-5.424,-5.42),
-             ylabel="Model Energy [eV/atom]", ylims=(-5.424,-5.42),
+             xlabel="Force [eV/"*L"\text{\AA}"*"]", xlims=(-5.424,-5.42),
+             ylabel="Model Force [eV/"*L"\text{\AA}"*"]", ylims=(-5.424,-5.42),
              aspect_ratio = :equal, color="#F0BB62")
 
-    model_energies = [energy(model.potential,atoms)/length(atoms) for atoms in train_dataset]
-    scatter!(extract_energies(train_dataset), model_energies;
+    model_forces = [forces(model.potential,atoms)/length(atoms) for atoms in train_dataset]
+    scatter!(extract_forces(train_dataset), model_forces;
              label="training set", color="#064635")
 #savefig("fitting_Si_.png") 
+
 end;
 
-assess_model(model1, train_data)
-  
+assess_model_forces(model1, train_data)
+
+assess_model_forces(model1, train_data)

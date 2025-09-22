@@ -30,7 +30,7 @@ end
 Si_dataset = read_extxyz("Si_dataset.xyz");
 
 
-train_data = data[1:10]
+train_data = data[1:50]
 test_data = data[11:497]
 
 function get_Pr(p, q, r0, rcut, td)
@@ -52,36 +52,116 @@ function get_Pr(p, q, r0, rcut, td)
 end
 
 begin
-	r_cut = 15.0; a = 0.1
-
-	rdf_tiny = ACEpotentials.get_rdf(test_data, r_cut; rescale = true)
-	plt_PbPb = stephist(rdf_tiny[(:Pb,:Pb)], 
+	gr(dpi=1200) 
+	r_cut = 6.5; a = .2
+	plt = plot()
+	rdf_tiny = ACEpotentials.get_rdf(train_data, r_cut; rescale = true)
+	plt_PbPb = stephist(rdf_tiny[(:Pb,:Pb)].-1.1, 
 		bins=150, label = "rdf",
 		title="PbPb_trainset", titlefontsize=10,
 		xlabel = L"r[\AA]", ylabel = "RDF",
 		yticks = [1e+2/a, 2e+2/a, 3e+2/a, 4e+2/a, 5e+2/a], xlims=(0.,r_cut+0.5), ylims=(0.0, 5e+2/a),
 		size=(400,200), left_margin = 2Plots.mm, fill=true, fillalpha=0.5, color= "#F0BB62")
-	vline!(rnn(:Pb)*[1.0, 1.633, 1.915, 2.31, 2.52], label = "r1, r2, ...", lw=1, color = "black", ls = :dash)
+	vline!(rnn(:Pb)*[1.0, 21.633, 21.915, 2.31, 2.52], label = "r1, r2, ...", lw=1, color = "black", ls = :dash)
 	
-	plt_PbTe = stephist(rdf_tiny[(:Pb,:Te)], 
+	plt_PbTe = stephist(rdf_tiny[(:Pb,:Te)].+0.43, 
 		bins=150, label = "rdf",
 		title="PbTe_trainset", titlefontsize=10,
 		xlabel = L"r[\AA]", ylabel = "RDF",
-		yticks = [1e+2/a, 2e+2/a, 3e+2/a, 4e+2/a, 5e+2/a], xlims=(0.,r_cut+0.5), ylims=(0.0, 5e+2/a),
+		yticks = [1e+2/a/2, 2e+2/a/2, 3e+2/a/2, 4e+2/a/2, 5e+2/a/2], xlims=(0.,r_cut+0.5), ylims=(0.0, 5e+2/a/2),
 		size=(400,200), left_margin = 2Plots.mm, fill=true, fillalpha=0.5, color= "#F0BB62")
 	vline!((rnn(:Pb)+rnn(:Te))/2*[1.0, 1.633, 1.915, 2.31, 2.52], label = "r1, r2, ...", lw=1, color = "black", ls = :dash)
 	
-	plt_TeTe = stephist(rdf_tiny[(:Te,:Te)], 
+	plt_TeTe = stephist(rdf_tiny[(:Te,:Te)].-0.7, 
 		bins=150, label = "rdf",
 		title="TeTe_trainset", titlefontsize=10,
 		xlabel = L"r[\AA]", ylabel = "RDF",
 		yticks = [1e+2/a, 2e+2/a, 3e+2/a, 4e+2/a, 5e+2/a], xlims=(0.,r_cut+0.5), ylims=(0.0, 5e+2/a),
 		size=(400,200), left_margin = 2Plots.mm, fill=true, fillalpha=0.5, color= "#F0BB62")
-	vline!(rnn(:Te)*[1.0, 1.633, 1.915, 2.31, 2.52], label = "r1, r2, ...", lw=1, color = "black", ls = :dash)
+	vline!(rnn(:Te)*[1.0, 21.633, 1.915, 2.31, 2.52], label = "r1, r2, ...", lw=1, color = "black", ls = :dash)
 
 	plot(plt_PbPb, plt_PbTe, plt_TeTe, layout = (3,1), size = (900,600), left_margin = 6Plots.mm)
 end
+Si_scale = [1.0, 1.633, 1.915, 2.31, 2.52]
+begin
+	gr(dpi=1200) 
+	r_cut = 6.5; a = .2
+	rdf_tiny = ACEpotentials.get_rdf(train_data, r_cut; rescale = true)
+	plt = plot()
+	stephist!(rdf_tiny[(:Pb,:Pb)].-1.1, 
+		bins=100, label = "PbPb RDF",
+		title="PbPb_trainset", titlefontsize=10,
+		xlabel = L"r[\AA]", ylabel = "RDF",
+		yticks = [1e+2/a, 2e+2/a, 3e+2/a, 4e+2/a, 5e+2/a], xlims=(0.,r_cut+0.5), ylims=(0.0, 5e+2/a),
+		size=(400,200), left_margin = 2Plots.mm, fill=true, fillalpha=0.5, color= "#F0BB62")
+	vline!(rnn(:Pb)*[1.0, 21.633, 21.915, 2.31, 2.52], label = "PbPb "*L"r_0", lw=2, color = "#F0BB62", ls = :dash)
+	
+	stephist!(rdf_tiny[(:Pb,:Te)].+0.43, 
+			bins=100, label = "PbTe RDF",
+			title="PbTe_trainset", titlefontsize=10,
+			xlabel = L"r[\AA]", ylabel = "RDF",
+			yticks = [1e+2/a/2, 2e+2/a/2, 3e+2/a/2, 4e+2/a/2, 5e+2/a/2], xlims=(0.,r_cut+0.5), ylims=(0.0, 5e+2/a/2),
+			size=(400,200), left_margin = 2Plots.mm, fill=true, fillalpha=0.5, color= "#6E9A50")
+	vline!((rnn(:Pb)+rnn(:Te))/2*[1.0, 1.633, 1.915, 2.31, 2.52], label = "PbTe "*L"r_0", lw=2, color = "#6E9A50", ls = :dash)
+		
+	stephist!(rdf_tiny[(:Te,:Te)].-0.7, 
+			bins=100, label = "TeTe RDF",
+			title="Trainset", titlefontsize=10,
+			xlabel = L"r[\AA]", ylabel = "RDF",
+			yticks = [1e+2/a, 2e+2/a, 3e+2/a, 4e+2/a, 5e+2/a], xlims=(0.,r_cut+0.5), ylims=(0.0, 5e+2/a),
+			size=(400,200), left_margin = 2Plots.mm, fill=true, fillalpha=0.5, color= "#C64756")
+	vline!(rnn(:Te)*[1.0, 21.633, 1.915, 2.31, 2.52], label = "TeTe "*L"r_0", lw=2, color = "#C64756", ls = :dash)
+	
+	td = 5 
+	r0 = (rnn(:Pb)+rnn(:Te))/2; rcut = 6.5; s = 1
+	rr, Pr = get_Pr(1, 4, r0*Si_scale[s], rcut, td)
 
+	plt1 = plot()
+	for n = 1:length(Pr)
+		plot!(plt1, rr, Pr[n], lw=2, label = "", 
+			xlabel = L"r[\AA]", ylabel = "RBF", legend=false, xlims=(0,r_cut+0.5),
+			color= "black",)
+	end
+	vline!([r0*s,], lw=2, ls = :dash, c= "black", label = "PbTe "*L"r_0", legend=true)
+
+	plot!(plt, plt1, layout=(2,1), size=(800,400))
+	savefig("_RDF_RBF_PbTe.png") 
+end
+
+begin
+	r_cut_adf_Pb = 1.25 * rnn(:Pb) #
+	r_cut_adf_Te = 1.25 * rnn(:Te) #
+	r_cut_adf_PbTe = 1.25 * (rnn(:Te)+rnn(:Pb))/2 #
+	
+	eq_angle = [45, 60, 90, 120, 135]* pi/180 # radians
+	
+	adf_tiny_Pb = ACEpotentials.get_adf(test_data, r_cut_adf_Pb);
+	plt_adf_1 = stephist(adf_tiny_Pb, bins=50, label = "adf", yticks = [], c = 3,
+	                    title = "Pb", titlefontsize = 10,
+	                    xlabel = L"\theta", ylabel = "ADF Pb",
+	                    xlims = (0, π), size=(400,200), left_margin = 2Plots.mm, 
+						fill=true, fillalpha=0.5, color= "#F0BB62")
+	vline!([ eq_angle[3],], label = "90˚", lw=1, color = "black")
+
+
+	adf_tiny_Te = ACEpotentials.get_adf(test_data, r_cut_adf_Te);
+	plt_adf_2= stephist(adf_tiny_Te, bins=50, label = "adf", yticks = [], c = 3,
+	                    title = "Te", titlefontsize = 10,
+	                    xlabel = L"\theta", ylabel = "ADF Te",
+	                    xlims = (0, π), size=(400,200), left_margin = 2Plots.mm,
+						fill=true, fillalpha=0.5, color= "#F0BB62")
+	vline!([ eq_angle,], label = "45˚, 60˚, 90˚, 120˚, 135˚", lw=1, color = "black")
+	
+	adf_tiny_PbTe = ACEpotentials.get_adf(test_data, r_cut_adf_PbTe);
+	plt_adf_3= stephist(adf_tiny_PbTe, bins=50, label = "adf", yticks = [], c = 3,
+	                    title = "PbTe", titlefontsize = 10,
+	                    xlabel = L"\theta", ylabel = "ADF PbTe",
+	                    xlims = (0, π), size=(400,200), left_margin = 2Plots.mm,
+						fill=true, fillalpha=0.5, color= "#F0BB62")
+	vline!([ eq_angle,], label = "45˚, 60˚, 90˚, 120˚, 135˚", lw=1, color = "black")
+
+	plot(plt_adf_1, plt_adf_2, plt_adf_3, layout=(3,1), size=(600,600))
+end
 
 begin
 	r_cut = 6.0; a = 2
@@ -150,6 +230,8 @@ begin
 	)
 	@show length(model1.basis);
 end
+
+
 n = 3
 train_data = data[1:n]
 test_data = data[n+1:497]
