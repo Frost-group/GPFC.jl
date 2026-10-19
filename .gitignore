@@ -1,1 +1,5 @@
 /Manifest.toml
+
+# OS and editor files
+.DS_Store
+.vscode/

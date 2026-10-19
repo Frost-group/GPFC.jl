@@ -88,7 +88,7 @@ function Coveriance_energy(kernel, X::Matrix{Float64}, xₒ::Vector{Float64})
 		#Fillin convarian of Energy vs Energy
 		K₀ₙₘ[j] = kernel(vec_j, xₒ)
 		#Fillin convarian of Force vs Energy
-		K₀ₙₘ[(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] =  kernelfunction(kernel, vec_j, xₒ)
+		K₀ₙₘ[(num+1)+((j-1)*dim):(num+1)+((j)*dim)-1] =  kernelfunction1(kernel, vec_j, xₒ)
 	end
 	println("Covariance Likelihood calculated successfully!")
 	return K₀ₙₘ
@@ -269,13 +269,7 @@ function PosteriorFC3(Marginal, Covariance, Target)
 	return Meanₚ 
 end
 
-function rbf_kernel(x::Vector{Float64}, x_star::Vector{Float64}, σ::Float64, l::Float64)
-    r = x .- x_star
-    d2 = sum(r .^ 2)
-    return σ * exp(-0.5 * d2 / l^2)
-end
-
-function Marginal_ana(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
+function Marginal_ana(X::Matrix{Float64}, σₒ::Float64, l::Float64, σₑ::Float64, σₙ::Float64)
     # Get dimensions and total size based on input data.
     dim, num = size(X)
     total_size = (1 + dim) * num
@@ -310,7 +304,7 @@ function Marginal_ana(X::Matrix{Float64}, σₑ::Float64, σₙ::Float64)
     return Kₘₘ
 end
 
-function Coveriance_fc2_ana(X::Matrix{Float64}, xₒ::Vector{Float64})
+function Coveriance_fc2_ana(X::Matrix{Float64}, xₒ::Vector{Float64}, σₒ::Float64, l::Float64)
     # Get dimensions of input data.
     dim = size(X,1)
     num = size(X,2)
